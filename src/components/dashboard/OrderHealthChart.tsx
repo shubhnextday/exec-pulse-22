@@ -40,12 +40,13 @@ export function OrderHealthChart({ onTrack, atRisk, offTrack }: OrderHealthChart
             </Pie>
             <Tooltip 
               contentStyle={{ 
-                backgroundColor: 'hsl(220 18% 12%)', 
-                border: '1px solid hsl(220 15% 20%)',
+                backgroundColor: 'hsl(0 0% 100%)', 
+                border: '1px solid hsl(0 0% 88%)',
                 borderRadius: '12px',
                 padding: '8px 12px',
+                boxShadow: '0 4px 12px hsl(0 0% 0% / 0.1)',
               }}
-              labelStyle={{ color: '#fff' }}
+              labelStyle={{ color: 'hsl(0 0% 5%)' }}
               formatter={(value: number, name: string) => [
                 `${value} orders (${total > 0 ? Math.round((value / total) * 100) : 0}%)`, 
                 name

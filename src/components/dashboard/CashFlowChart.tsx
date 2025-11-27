@@ -41,16 +41,16 @@ export function CashFlowChart({ data }: CashFlowChartProps) {
                 <stop offset="100%" stopColor="#F05323"/>
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 15% 18%)" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(0 0% 90%)" vertical={false} />
             <XAxis 
               dataKey="formattedDate" 
-              stroke="hsl(220 10% 45%)"
+              stroke="hsl(0 0% 50%)"
               fontSize={11}
               tickLine={false}
               axisLine={false}
             />
             <YAxis 
-              stroke="hsl(220 10% 45%)"
+              stroke="hsl(0 0% 50%)"
               fontSize={11}
               tickLine={false}
               axisLine={false}
@@ -58,12 +58,13 @@ export function CashFlowChart({ data }: CashFlowChartProps) {
             />
             <Tooltip 
               contentStyle={{ 
-                backgroundColor: 'hsl(220 18% 12%)', 
-                border: '1px solid hsl(220 15% 20%)',
+                backgroundColor: 'hsl(0 0% 100%)', 
+                border: '1px solid hsl(0 0% 88%)',
                 borderRadius: '12px',
                 padding: '10px 14px',
+                boxShadow: '0 4px 12px hsl(0 0% 0% / 0.1)',
               }}
-              labelStyle={{ color: '#fff', fontWeight: 600, marginBottom: '4px' }}
+              labelStyle={{ color: 'hsl(0 0% 5%)', fontWeight: 600, marginBottom: '4px' }}
               formatter={(value: number) => [`$${value.toLocaleString()}`, 'Expected Revenue']}
             />
             <Area 
