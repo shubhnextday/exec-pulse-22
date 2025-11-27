@@ -6,39 +6,31 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// JIRA custom field mappings from the API documentation
+// JIRA custom field mappings - VERIFIED from API
 const FIELD_MAPPINGS = {
+  // Core fields
+  customer: 'customfield_10038',           // Customer (Dropdown) - use .value
+  agent: 'customfield_11573',              // Agent (Dropdown) - use .value
+  accountManager: 'customfield_11393',     // Account Manager (User Picker) - use .displayName
+  
+  // Financial fields
+  orderTotal: 'customfield_11567',         // Order Total (Number)
+  depositAmount: 'customfield_10074',      // Deposit Amount (Number)
+  remainingAmount: 'customfield_11569',    // Remaining Amount (Number)
+  
   // Order fields
-  quantityOrdered: 'customfield_10073',
-  depositAmount: 'customfield_10074',
-  dateOrdered: 'customfield_10040',
-  datePaid: 'customfield_10041',
-  dateReceived: 'customfield_10042',
-  bulkTestingStart: 'customfield_10043',
-  bulkTestingComplete: 'customfield_10044',
-  mfgActualEnd: 'customfield_10045',
-  mfgActualStart: 'customfield_10046',
-  pkgStart: 'customfield_10047',
-  finalTestingComplete: 'customfield_10050',
-  finalPaymentReceived: 'customfield_10051',
-  mfgDepositPaid: 'customfield_10052',
-  mfgFinalPaymentDate: 'customfield_10053',
-  finalTesting: 'customfield_10049',
-  rawMatTesting: 'customfield_10075',
-  rawMatTestingComplete: 'customfield_10076',
-  actualShipDate: 'customfield_11161',
-  accountManager: 'customfield_11393',
-  productId: 'customfield_10732',
-  designer: 'customfield_11493',
-  // Additional fields we need
-  orderTotal: 'customfield_10077', // Adjust based on actual field
-  finalPayment: 'customfield_10078', // Adjust based on actual field
-  commissionPercent: 'customfield_10079', // Adjust based on actual field
-  commissionPaid: 'customfield_10080', // Adjust based on actual field
-  estShipDate: 'customfield_10081', // Adjust based on actual field
-  agent: 'customfield_10082', // Adjust based on actual field
-  orderHealth: 'customfield_10083', // Adjust based on actual field
-  daysInProduction: 'customfield_10084', // Adjust based on actual field
+  quantityOrdered: 'customfield_10073',    // Quantity Ordered (Number)
+  salesOrderNumber: 'customfield_10113',   // Sales Order # (Text)
+  productName: 'customfield_10115',        // Product Name (Text)
+  productId: 'customfield_10732',          // Product_ID (Text)
+  
+  // Date fields
+  dateOrdered: 'customfield_10040',        // Date Ordered
+  actualShipDate: 'customfield_11161',     // Actual Ship Date
+  commissionPaidDate: 'customfield_11578', // Commission Paid (Date)
+  
+  // Production fields
+  daysInProduction: 'customfield_10930',   // Days In Production (Number)
 };
 
 serve(async (req) => {
@@ -121,27 +113,46 @@ serve(async (req) => {
       // Transform CM issues to orders
       const orders = (cmData.issues || []).map((issue: any) => {
         const fields = issue.fields;
+        
+        // Extract customer name from dropdown field
+        const customerValue = fields[FIELD_MAPPINGS.customer]?.value || 'Unknown';
+        
+        // Extract agent from dropdown field  
+        const agentValue = fields[FIELD_MAPPINGS.agent]?.value || null;
+        
+        // Extract account manager from user picker field
+        const accountManagerValue = fields[FIELD_MAPPINGS.accountManager]?.displayName || null;
+        
+        // Extract financial values
+        const orderTotal = fields[FIELD_MAPPINGS.orderTotal] || 0;
+        const depositAmount = fields[FIELD_MAPPINGS.depositAmount] || 0;
+        const remainingAmount = fields[FIELD_MAPPINGS.remainingAmount] || (orderTotal - depositAmount);
+        
+        // Extract other fields
+        const productName = fields[FIELD_MAPPINGS.productName] || fields.summary || 'Unknown Product';
+        const salesOrderNumber = fields[FIELD_MAPPINGS.salesOrderNumber] || issue.key;
+        
         return {
           id: issue.key,
-          salesOrderNumber: issue.key,
-          customer: fields.customfield_11261 || fields.summary?.split(' - ')[0] || 'Unknown',
-          productName: fields.summary || 'Unknown Product',
+          salesOrderNumber: salesOrderNumber,
+          customer: customerValue,
+          productName: productName,
           quantityOrdered: fields[FIELD_MAPPINGS.quantityOrdered] || 0,
-          orderTotal: fields.customfield_10077 || 0,
-          depositAmount: fields[FIELD_MAPPINGS.depositAmount] || 0,
-          finalPayment: fields.customfield_10078 || 0,
-          remainingDue: (fields.customfield_10077 || 0) - (fields[FIELD_MAPPINGS.depositAmount] || 0),
+          orderTotal: orderTotal,
+          depositAmount: depositAmount,
+          finalPayment: orderTotal - depositAmount,
+          remainingDue: remainingAmount,
           startDate: fields[FIELD_MAPPINGS.dateOrdered] || fields.created?.substring(0, 10),
           dueDate: fields.duedate,
-          estShipDate: fields.customfield_10081 || fields.duedate,
+          estShipDate: fields.duedate,
           actualShipDate: fields[FIELD_MAPPINGS.actualShipDate],
           currentStatus: fields.status?.name || 'Unknown',
           expectedStatus: fields.status?.name || 'Unknown',
           orderHealth: getOrderHealth(fields),
           daysBehindSchedule: calculateDaysBehind(fields),
-          daysInProduction: calculateDaysInProduction(fields),
-          agent: fields.customfield_10082?.displayName,
-          accountManager: fields[FIELD_MAPPINGS.accountManager]?.displayName,
+          daysInProduction: fields[FIELD_MAPPINGS.daysInProduction] || calculateDaysInProduction(fields),
+          agent: agentValue,
+          accountManager: accountManagerValue,
           orderNotes: fields.description?.content?.[0]?.content?.[0]?.text || '',
         };
       });
@@ -167,7 +178,7 @@ serve(async (req) => {
 
       // Calculate summary metrics
       const summary = {
-        totalActiveCustomers: new Set(orders.map((o: any) => o.customer)).size,
+        totalActiveCustomers: new Set(orders.map((o: any) => o.customer).filter((c: string) => c && c !== 'Unknown')).size,
         totalActiveOrders: orders.length,
         totalMonthlyRevenue: orders.reduce((sum: number, o: any) => sum + (o.orderTotal || 0), 0),
         totalOutstandingPayments: orders.reduce((sum: number, o: any) => sum + (o.remainingDue || 0), 0),
@@ -180,12 +191,13 @@ serve(async (req) => {
         },
       };
 
-      // Get unique customers and agents for filters
-      const customers = ['All Customers', ...new Set(orders.map((o: any) => o.customer).filter(Boolean))];
+      // Get unique customers and agents for filters (excluding empty/Unknown values)
+      const customers = ['All Customers', ...new Set(orders.map((o: any) => o.customer).filter((c: string) => c && c !== 'Unknown'))];
       const agents = ['All Agents', ...new Set(orders.map((o: any) => o.agent).filter(Boolean))];
       const accountManagers = ['All Account Managers', ...new Set(orders.map((o: any) => o.accountManager).filter(Boolean))];
 
       console.log('Dashboard data compiled successfully');
+      console.log(`Unique customers: ${customers.length - 1}, Agents: ${agents.length - 1}, Account Managers: ${accountManagers.length - 1}`);
 
       return new Response(JSON.stringify({
         success: true,
