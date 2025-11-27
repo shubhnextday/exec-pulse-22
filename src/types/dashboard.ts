@@ -1,0 +1,105 @@
+// Dashboard Types based on JIRA field mappings
+
+export type OrderHealth = 'on-track' | 'at-risk' | 'off-track';
+export type EpicStatus = 'active' | 'on-hold' | 'complete';
+
+export interface Order {
+  id: string;
+  salesOrderNumber: string;
+  customer: string;
+  productName: string;
+  quantityOrdered: number;
+  orderTotal: number;
+  depositAmount: number;
+  finalPayment: number;
+  remainingDue: number;
+  startDate: string;
+  dueDate: string;
+  estShipDate: string;
+  actualShipDate?: string;
+  currentStatus: string;
+  expectedStatus: string;
+  orderHealth: OrderHealth;
+  daysBehindSchedule: number;
+  daysInProduction: number;
+  agent?: string;
+  accountManager?: string;
+  orderNotes?: string;
+}
+
+export interface LabelOrder {
+  id: string;
+  orderId: string;
+  labelOrderDate: string;
+  designDueDate: string;
+  currentStatus: string;
+  daysInStatus: number;
+  expectedPackagingDate: string;
+  printDaysRequired: number;
+}
+
+export interface WebProject {
+  id: string;
+  epicName: string;
+  epicKey: string;
+  status: EpicStatus;
+  totalTasks: number;
+  notStarted: number;
+  inProgress: number;
+  completed: number;
+  percentComplete: number;
+  startDate: string;
+  dueDate: string;
+  isOffTrack: boolean;
+}
+
+export interface TeamMember {
+  id: string;
+  name: string;
+  avatar?: string;
+  openTasks: number;
+  completedThisMonth: number;
+}
+
+export interface Commission {
+  id: string;
+  agent: string;
+  customer: string;
+  orderTotal: number;
+  commissionPercent: number;
+  commissionDue: number;
+  commissionPaid: number;
+  commissionPaidDate?: string;
+}
+
+export interface ExecutiveSummary {
+  totalActiveCustomers: number;
+  totalActiveOrders: number;
+  totalMonthlyRevenue: number;
+  totalOutstandingPayments: number;
+  totalCommissionsDue: number;
+  totalActiveProjects: number;
+  orderHealthBreakdown: {
+    onTrack: number;
+    atRisk: number;
+    offTrack: number;
+  };
+}
+
+export interface CashFlowProjection {
+  date: string;
+  expectedAmount: number;
+  customer: string;
+  orderCount: number;
+}
+
+export interface FilterState {
+  dateRange: {
+    start: string;
+    end: string;
+  };
+  customer: string | null;
+  agent: string | null;
+  projectType: 'all' | 'manufacturing' | 'web-development';
+  accountManager: string | null;
+}
