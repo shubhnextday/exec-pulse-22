@@ -2,82 +2,89 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Executive Dashboard Design System - Dark Corporate Theme */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+/* NextDay Nutra Executive Dashboard - Next Generation Design */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @layer base {
   :root {
+    /* Brand Colors - NextDay Nutra */
+    --brand-orange: 14 87% 54%;       /* #F05323 */
+    --brand-slate: 209 24% 48%;       /* #5d7996 */
+    --brand-white: 0 0% 100%;         /* #FFFFFF */
+    
     /* Dark Executive Theme */
-    --background: 222 47% 6%;
-    --foreground: 210 40% 96%;
+    --background: 220 20% 8%;
+    --foreground: 0 0% 98%;
 
-    --card: 222 47% 8%;
-    --card-foreground: 210 40% 96%;
+    --card: 220 18% 10%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 222 47% 10%;
-    --popover-foreground: 210 40% 96%;
+    --popover: 220 18% 12%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 199 89% 48%;
-    --primary-foreground: 222 47% 6%;
+    --primary: 14 87% 54%;            /* #F05323 - Brand Orange */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 222 47% 14%;
-    --secondary-foreground: 210 40% 90%;
+    --secondary: 209 24% 48%;          /* #5d7996 - Brand Slate */
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 222 47% 12%;
-    --muted-foreground: 215 20% 55%;
+    --muted: 220 15% 15%;
+    --muted-foreground: 220 10% 55%;
 
-    --accent: 262 83% 58%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 14 87% 54%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 222 47% 16%;
-    --input: 222 47% 14%;
-    --ring: 199 89% 48%;
+    --border: 220 15% 18%;
+    --input: 220 15% 14%;
+    --ring: 14 87% 54%;
 
     --radius: 0.75rem;
 
-    /* Status Colors */
-    --success: 142 76% 36%;
-    --success-foreground: 142 76% 96%;
+    /* Status Colors - Using brand palette */
+    --success: 142 70% 45%;
+    --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
-    --warning-foreground: 38 92% 10%;
+    --warning-foreground: 0 0% 10%;
     --danger: 0 72% 51%;
-    --danger-foreground: 0 72% 96%;
+    --danger-foreground: 0 0% 98%;
 
-    /* Chart Colors */
-    --chart-1: 199 89% 48%;
-    --chart-2: 262 83% 58%;
-    --chart-3: 142 76% 36%;
-    --chart-4: 38 92% 50%;
-    --chart-5: 0 72% 51%;
+    /* Chart Colors - Next Gen Palette */
+    --chart-1: 14 87% 54%;            /* Brand Orange */
+    --chart-2: 209 24% 48%;           /* Brand Slate */
+    --chart-3: 14 87% 70%;            /* Light Orange */
+    --chart-4: 209 24% 65%;           /* Light Slate */
+    --chart-5: 14 60% 40%;            /* Dark Orange */
+
+    /* Order Health Colors */
+    --on-track: 142 70% 45%;
+    --at-risk: 38 92% 50%;
+    --off-track: 0 72% 51%;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(199 89% 48%) 0%, hsl(262 83% 58%) 100%);
-    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(160 84% 39%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(222 47% 10%) 0%, hsl(222 47% 8%) 100%);
-    --gradient-glow: radial-gradient(circle at 50% 0%, hsl(199 89% 48% / 0.15) 0%, transparent 50%);
+    --gradient-primary: linear-gradient(135deg, hsl(14 87% 54%) 0%, hsl(14 87% 45%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(209 24% 48%) 0%, hsl(209 24% 38%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(220 18% 12%) 0%, hsl(220 18% 9%) 100%);
+    --gradient-glow: radial-gradient(circle at 50% 0%, hsl(14 87% 54% / 0.1) 0%, transparent 50%);
 
     /* Shadows */
-    --shadow-sm: 0 1px 2px hsl(222 47% 4% / 0.5);
-    --shadow-md: 0 4px 6px -1px hsl(222 47% 4% / 0.5), 0 2px 4px -2px hsl(222 47% 4% / 0.5);
-    --shadow-lg: 0 10px 15px -3px hsl(222 47% 4% / 0.5), 0 4px 6px -4px hsl(222 47% 4% / 0.5);
-    --shadow-glow: 0 0 40px hsl(199 89% 48% / 0.2);
+    --shadow-sm: 0 1px 2px hsl(220 20% 4% / 0.5);
+    --shadow-md: 0 4px 6px -1px hsl(220 20% 4% / 0.5), 0 2px 4px -2px hsl(220 20% 4% / 0.5);
+    --shadow-lg: 0 10px 15px -3px hsl(220 20% 4% / 0.5), 0 4px 6px -4px hsl(220 20% 4% / 0.5);
+    --shadow-glow: 0 0 40px hsl(14 87% 54% / 0.15);
+    --shadow-glow-secondary: 0 0 40px hsl(209 24% 48% / 0.15);
 
     /* Sidebar */
-    --sidebar-background: 222 47% 7%;
-    --sidebar-foreground: 210 40% 90%;
-    --sidebar-primary: 199 89% 48%;
-    --sidebar-primary-foreground: 222 47% 6%;
-    --sidebar-accent: 222 47% 12%;
-    --sidebar-accent-foreground: 210 40% 96%;
-    --sidebar-border: 222 47% 14%;
-    --sidebar-ring: 199 89% 48%;
-  }
-
-  .dark {
-    /* Dark mode is default */
+    --sidebar-background: 220 18% 7%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 14 87% 54%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 15% 14%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 220 15% 14%;
+    --sidebar-ring: 14 87% 54%;
   }
 }
 
@@ -97,87 +104,97 @@
 
   /* Custom scrollbar */
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-muted/30;
+    @apply bg-transparent;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-muted-foreground/30 rounded-full;
+    @apply bg-muted-foreground/20 rounded-full;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-muted-foreground/50;
+    @apply bg-muted-foreground/40;
   }
 }
 
 @layer components {
-  /* Metric Cards */
+  /* Next Gen Metric Cards */
   .metric-card {
-    @apply relative overflow-hidden rounded-xl border border-border/50 bg-card p-6;
-    background: var(--gradient-card);
+    @apply relative overflow-hidden rounded-2xl border border-border/30 p-6;
+    background: linear-gradient(180deg, hsl(220 18% 11%) 0%, hsl(220 18% 9%) 100%);
   }
 
   .metric-card::before {
     content: '';
-    @apply absolute inset-0 opacity-0 transition-opacity duration-300;
-    background: var(--gradient-glow);
+    @apply absolute inset-0 opacity-0 transition-opacity duration-500;
+    background: radial-gradient(circle at 50% -20%, hsl(14 87% 54% / 0.08) 0%, transparent 60%);
   }
 
   .metric-card:hover::before {
     @apply opacity-100;
   }
 
+  .metric-card:hover {
+    border-color: hsl(14 87% 54% / 0.3);
+    box-shadow: 0 0 30px hsl(14 87% 54% / 0.1);
+  }
+
   /* Status Indicators */
   .status-on-track {
-    @apply bg-success/20 text-success border-success/30;
+    @apply bg-success/15 text-success border-success/30;
   }
 
   .status-at-risk {
-    @apply bg-warning/20 text-warning border-warning/30;
+    @apply bg-warning/15 text-warning border-warning/30;
   }
 
   .status-off-track {
-    @apply bg-danger/20 text-danger border-danger/30;
+    @apply bg-danger/15 text-danger border-danger/30;
   }
 
-  /* Data Tables */
+  /* Data Tables - Next Gen */
   .data-table {
     @apply w-full text-sm;
   }
 
   .data-table th {
-    @apply px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground bg-muted/30;
+    @apply px-4 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground;
+    background: linear-gradient(180deg, hsl(220 15% 12%) 0%, hsl(220 15% 10%) 100%);
   }
 
   .data-table td {
-    @apply px-4 py-3 border-t border-border/30;
+    @apply px-4 py-3.5 border-t border-border/20;
+  }
+
+  .data-table tr {
+    @apply transition-colors duration-200;
   }
 
   .data-table tr:hover {
-    @apply bg-muted/20;
+    background: hsl(14 87% 54% / 0.03);
   }
 
   /* Glass Effect */
   .glass {
-    @apply bg-card/80 backdrop-blur-xl border border-border/50;
+    @apply bg-card/90 backdrop-blur-2xl border border-border/30;
   }
 
   /* Glow Effects */
   .glow-primary {
-    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+    box-shadow: 0 0 30px hsl(14 87% 54% / 0.25);
   }
 
-  .glow-success {
-    box-shadow: 0 0 20px hsl(var(--success) / 0.3);
+  .glow-secondary {
+    box-shadow: 0 0 30px hsl(209 24% 48% / 0.25);
   }
 
   /* Navigation Active State */
   .nav-item {
-    @apply flex items-center gap-3 px-4 py-2.5 rounded-lg text-muted-foreground transition-all duration-200;
+    @apply flex items-center gap-3 px-4 py-2.5 rounded-xl text-muted-foreground transition-all duration-200;
   }
 
   .nav-item:hover {
@@ -185,46 +202,47 @@
   }
 
   .nav-item.active {
-    @apply bg-primary/10 text-primary border-l-2 border-primary;
+    @apply bg-primary/10 text-primary;
+    border-left: 3px solid hsl(14 87% 54%);
   }
 
-  /* Pulse Animation for Alerts */
+  /* Pulse Animation */
   .pulse-alert {
     animation: pulse-alert 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 
   @keyframes pulse-alert {
-    0%, 100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.6;
-    }
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
   }
 
-  /* Mono Numbers */
+  /* Mono Numbers - Enhanced */
   .mono {
     font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+    letter-spacing: -0.02em;
   }
 
-  /* Progress Bar */
+  /* Progress Bar - Next Gen */
   .progress-bar {
-    @apply h-2 rounded-full bg-muted overflow-hidden;
+    @apply h-1.5 rounded-full bg-muted/50 overflow-hidden;
   }
 
   .progress-bar-fill {
-    @apply h-full rounded-full transition-all duration-500;
+    @apply h-full rounded-full transition-all duration-700 ease-out;
+    background: linear-gradient(90deg, hsl(14 87% 54%) 0%, hsl(14 87% 60%) 100%);
   }
 
   /* Fade In Animation */
   .fade-in {
-    animation: fadeIn 0.5s ease-out forwards;
+    animation: fadeIn 0.6s ease-out forwards;
+    opacity: 0;
   }
 
   @keyframes fadeIn {
     from {
       opacity: 0;
-      transform: translateY(10px);
+      transform: translateY(12px);
     }
     to {
       opacity: 1;
@@ -233,10 +251,69 @@
   }
 
   /* Stagger Animation */
-  .stagger-1 { animation-delay: 0.1s; }
-  .stagger-2 { animation-delay: 0.2s; }
-  .stagger-3 { animation-delay: 0.3s; }
-  .stagger-4 { animation-delay: 0.4s; }
-  .stagger-5 { animation-delay: 0.5s; }
-  .stagger-6 { animation-delay: 0.6s; }
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.1s; }
+  .stagger-3 { animation-delay: 0.15s; }
+  .stagger-4 { animation-delay: 0.2s; }
+  .stagger-5 { animation-delay: 0.25s; }
+  .stagger-6 { animation-delay: 0.3s; }
+
+  /* Chart Container */
+  .chart-container {
+    @apply relative rounded-2xl border border-border/30 p-6;
+    background: linear-gradient(180deg, hsl(220 18% 11%) 0%, hsl(220 18% 9%) 100%);
+  }
+
+  /* Stat Value - Large Display */
+  .stat-value {
+    @apply text-4xl font-bold tracking-tight;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .stat-value-secondary {
+    @apply text-3xl font-semibold tracking-tight;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Filter Bar */
+  .filter-select {
+    @apply bg-muted/30 border-border/30 text-foreground;
+  }
+
+  .filter-select:hover {
+    border-color: hsl(14 87% 54% / 0.3);
+  }
+
+  .filter-select:focus {
+    border-color: hsl(14 87% 54%);
+    box-shadow: 0 0 0 2px hsl(14 87% 54% / 0.15);
+  }
+
+  /* Badge - Next Gen */
+  .badge-primary {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    background: hsl(14 87% 54% / 0.15);
+    color: hsl(14 87% 54%);
+  }
+
+  .badge-secondary {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    background: hsl(209 24% 48% / 0.15);
+    color: hsl(209 24% 65%);
+  }
+
+  /* Icon Container */
+  .icon-container {
+    @apply flex items-center justify-center w-10 h-10 rounded-xl;
+  }
+
+  .icon-container-primary {
+    background: hsl(14 87% 54% / 0.1);
+    color: hsl(14 87% 54%);
+  }
+
+  .icon-container-secondary {
+    background: hsl(209 24% 48% / 0.1);
+    color: hsl(209 24% 60%);
+  }
 }

@@ -1,4 +1,4 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface OrderHealthChartProps {
   onTrack: number;
@@ -8,27 +8,31 @@ interface OrderHealthChartProps {
 
 export function OrderHealthChart({ onTrack, atRisk, offTrack }: OrderHealthChartProps) {
   const data = [
-    { name: 'On Track', value: onTrack, color: 'hsl(142 76% 36%)' },
-    { name: 'At Risk', value: atRisk, color: 'hsl(38 92% 50%)' },
-    { name: 'Off Track', value: offTrack, color: 'hsl(0 72% 51%)' },
+    { name: 'On Track', value: onTrack, color: '#22c55e' },      // Green
+    { name: 'At Risk', value: atRisk, color: '#F05323' },        // Brand Orange
+    { name: 'Off Track', value: offTrack, color: '#ef4444' },    // Red
   ];
 
   const total = onTrack + atRisk + offTrack;
 
   return (
-    <div className="metric-card opacity-0 animate-slide-up" style={{ animationDelay: '300ms' }}>
-      <h3 className="text-lg font-semibold mb-4">Order Health Distribution</h3>
-      <div className="h-[200px]">
+    <div className="chart-container opacity-0 animate-slide-up" style={{ animationDelay: '300ms' }}>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Order Health</h3>
+        <span className="badge-secondary">{total} orders</span>
+      </div>
+      <div className="h-[180px] relative">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={data}
               cx="50%"
               cy="50%"
-              innerRadius={50}
-              outerRadius={70}
+              innerRadius={55}
+              outerRadius={75}
               paddingAngle={3}
               dataKey="value"
+              strokeWidth={0}
             >
               {data.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
@@ -36,27 +40,39 @@ export function OrderHealthChart({ onTrack, atRisk, offTrack }: OrderHealthChart
             </Pie>
             <Tooltip 
               contentStyle={{ 
-                backgroundColor: 'hsl(222 47% 10%)', 
-                border: '1px solid hsl(222 47% 16%)',
-                borderRadius: '8px',
+                backgroundColor: 'hsl(220 18% 12%)', 
+                border: '1px solid hsl(220 15% 20%)',
+                borderRadius: '12px',
+                padding: '8px 12px',
               }}
-              labelStyle={{ color: 'hsl(210 40% 96%)' }}
+              labelStyle={{ color: '#fff' }}
+              formatter={(value: number, name: string) => [
+                `${value} orders (${total > 0 ? Math.round((value / total) * 100) : 0}%)`, 
+                name
+              ]}
             />
           </PieChart>
         </ResponsiveContainer>
+        {/* Center text */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="text-center">
+            <p className="text-2xl font-bold mono text-foreground">{total > 0 ? Math.round((onTrack / total) * 100) : 0}%</p>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Healthy</p>
+          </div>
+        </div>
       </div>
-      <div className="grid grid-cols-3 gap-2 mt-4">
+      <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-border/30">
         {data.map((item) => (
           <div key={item.name} className="text-center">
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex items-center justify-center gap-1.5 mb-1">
               <div 
-                className="w-3 h-3 rounded-full" 
+                className="w-2.5 h-2.5 rounded-full" 
                 style={{ backgroundColor: item.color }}
               />
-              <span className="text-xs text-muted-foreground">{item.name}</span>
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{item.name}</span>
             </div>
-            <p className="text-lg font-semibold mono mt-1">
-              {Math.round((item.value / total) * 100)}%
+            <p className="text-lg font-bold mono text-foreground">
+              {item.value}
             </p>
           </div>
         ))}
