@@ -1,9 +1,15 @@
-import { Bell, Download, RefreshCw, User } from 'lucide-react';
+import { Bell, Download, RefreshCw, User, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
-export function Header() {
-  const lastSync = new Date();
+interface HeaderProps {
+  lastSynced?: string | null;
+  onRefresh?: () => void;
+  isLoading?: boolean;
+}
+
+export function Header({ lastSynced, onRefresh, isLoading }: HeaderProps) {
+  const syncTime = lastSynced ? parseISO(lastSynced) : new Date();
 
   return (
     <header className="flex items-center justify-between mb-8 opacity-0 animate-slide-up">
@@ -16,11 +22,21 @@ export function Header() {
       <div className="flex items-center gap-3">
         <div className="text-right mr-4">
           <p className="text-xs text-muted-foreground">Last synced with JIRA</p>
-          <p className="text-sm font-medium">{format(lastSync, 'MMM d, yyyy h:mm a')}</p>
+          <p className="text-sm font-medium">{format(syncTime, 'MMM d, yyyy h:mm a')}</p>
         </div>
-        <Button variant="outline" size="sm" className="gap-2">
-          <RefreshCw className="h-4 w-4" />
-          Sync Now
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="gap-2"
+          onClick={onRefresh}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="h-4 w-4" />
+          )}
+          {isLoading ? 'Syncing...' : 'Sync Now'}
         </Button>
         <Button variant="outline" size="sm" className="gap-2">
           <Download className="h-4 w-4" />
