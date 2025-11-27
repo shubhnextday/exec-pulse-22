@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { LucideIcon } from 'lucide-react';
+import { LucideIcon, Info } from 'lucide-react';
 
 interface MetricCardProps {
   title: string;
@@ -12,6 +12,7 @@ interface MetricCardProps {
   iconColor?: string;
   className?: string;
   delay?: number;
+  showInfo?: boolean;
 }
 
 export function MetricCard({ 
@@ -21,20 +22,26 @@ export function MetricCard({
   icon: Icon, 
   iconColor = 'text-primary',
   className,
-  delay = 0
+  delay = 0,
+  showInfo = false
 }: MetricCardProps) {
   return (
     <div 
       className={cn(
-        "metric-card opacity-0 animate-slide-up",
+        "metric-card opacity-0 animate-slide-up cursor-pointer",
         className
       )}
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="flex items-start justify-between">
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="text-3xl font-semibold tracking-tight mono">{value}</p>
+        <div className="space-y-2 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
+            {showInfo && (
+              <Info className="h-3.5 w-3.5 text-muted-foreground/50 hover:text-muted-foreground transition-colors" />
+            )}
+          </div>
+          <p className="stat-value text-foreground">{value}</p>
           {change && (
             <p className={cn(
               "text-sm font-medium",
@@ -45,13 +52,14 @@ export function MetricCard({
           )}
         </div>
         <div className={cn(
-          "p-3 rounded-xl bg-primary/10",
+          "icon-container",
+          iconColor.includes('primary') && "icon-container-primary",
+          iconColor.includes('secondary') && "icon-container-secondary",
           iconColor.includes('success') && "bg-success/10",
           iconColor.includes('warning') && "bg-warning/10",
           iconColor.includes('danger') && "bg-danger/10",
-          iconColor.includes('accent') && "bg-accent/10",
         )}>
-          <Icon className={cn("h-6 w-6", iconColor)} />
+          <Icon className={cn("h-5 w-5", iconColor)} />
         </div>
       </div>
     </div>

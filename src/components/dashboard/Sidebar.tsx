@@ -41,12 +41,12 @@ export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
         <div className="flex items-center justify-between">
           {!collapsed && (
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                <span className="text-sm font-bold text-primary-foreground">ND</span>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#F05323' }}>
+                <span className="text-sm font-bold text-white">ND</span>
               </div>
               <div>
-                <h1 className="font-semibold text-sm">NextDay Nutra</h1>
-                <p className="text-xs text-muted-foreground">Executive Dashboard</p>
+                <h1 className="font-semibold text-sm text-foreground">NextDay Nutra</h1>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Executive Dashboard</p>
               </div>
             </div>
           )}
@@ -78,7 +78,7 @@ export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
             )}
           >
             <item.icon className="h-5 w-5 flex-shrink-0" />
-            {!collapsed && <span className="truncate">{item.label}</span>}
+            {!collapsed && <span className="truncate text-sm">{item.label}</span>}
           </button>
         ))}
       </nav>
@@ -90,14 +90,14 @@ export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
           collapsed && "justify-center px-0"
         )}>
           <Settings className="h-5 w-5 flex-shrink-0" />
-          {!collapsed && <span>Settings</span>}
+          {!collapsed && <span className="text-sm">Settings</span>}
         </button>
         <button className={cn(
           "w-full nav-item text-danger hover:text-danger",
           collapsed && "justify-center px-0"
         )}>
           <LogOut className="h-5 w-5 flex-shrink-0" />
-          {!collapsed && <span>Sign Out</span>}
+          {!collapsed && <span className="text-sm">Sign Out</span>}
         </button>
       </div>
     </aside>
