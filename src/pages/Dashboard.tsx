@@ -96,7 +96,7 @@ export default function Dashboard() {
         .filter(c => c && c !== 'Unknown')
     );
     
-    // Active Orders: Total count of filtered orders
+    // Active Orders: Total count of filtered orders (excludes cancelled/completed)
     const activeOrders = filteredOrders.length;
     
     // Monthly Revenue: Sum of orderTotal from filtered orders
@@ -105,12 +105,8 @@ export default function Dashboard() {
     // Outstanding Payments: Sum of remainingDue from filtered orders
     const outstandingPayments = filteredOrders.reduce((sum, order) => sum + (order.remainingDue || 0), 0);
     
-    // Commissions Due: Calculated based on orders (placeholder - needs commission field mapping)
-    const commissionsDue = filteredOrders.reduce((sum, order) => {
-      // Example: 5% commission on order total where commission not yet paid
-      const commission = (order.orderTotal || 0) * 0.05;
-      return sum + commission;
-    }, 0);
+    // Commissions Due: Sum of commissionDue field from all filtered orders
+    const commissionsDue = filteredOrders.reduce((sum, order) => sum + (order.commissionDue || 0), 0);
     
     // Active Projects: Count from web projects (not filtered by order filters)
     const activeProjects = displayWebProjects.filter(p => p.status === 'active').length;
@@ -135,11 +131,11 @@ export default function Dashboard() {
 
   // Metric explanations for tooltips
   const metricExplanations = {
-    activeCustomers: `Unique customers with orders matching current filters.\n\nSource: JIRA CM Project → Customer field (customfield_10038)\n\nCalculation: COUNT(DISTINCT customer) from filtered orders`,
-    activeOrders: `Total orders matching current filters.\n\nSource: JIRA CM Project → All issues\n\nCalculation: COUNT(*) from filtered orders`,
+    activeCustomers: `Unique customers with active orders matching current filters.\n\nSource: JIRA CM Project → Customer field (customfield_10038)\n\nCalculation: COUNT(DISTINCT customer) from filtered active orders\n\nExcludes: Cancelled, Done, Shipped, Complete statuses`,
+    activeOrders: `Total active orders matching current filters.\n\nSource: JIRA CM Project → All CM issues\n\nCalculation: COUNT(*) from filtered orders\n\nExcludes: Cancelled, Done, Shipped, Complete statuses`,
     monthlyRevenue: `Sum of all order totals matching current filters.\n\nSource: JIRA CM Project → Order Total field (customfield_11567)\n\nCalculation: SUM(orderTotal) from filtered orders`,
     outstanding: `Total remaining payments due on filtered orders.\n\nSource: JIRA CM Project → Remaining Amount field (customfield_11569)\n\nCalculation: SUM(remainingDue) from filtered orders`,
-    commissions: `Estimated commissions due (5% of order total).\n\nSource: Calculated from Order Total\n\nCalculation: SUM(orderTotal × 0.05) from filtered orders`,
+    commissions: `Total commissions due from JIRA.\n\nSource: JIRA CM Project → Commission Due field (customfield_11577)\n\nCalculation: SUM(commissionDue) from filtered orders`,
     activeProjects: `Web development projects currently in progress.\n\nSource: JIRA WEB Project → Epic issues\n\nCalculation: COUNT(*) where status = 'active'`,
   };
 

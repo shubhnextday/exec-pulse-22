@@ -17,6 +17,7 @@ const FIELD_MAPPINGS = {
   orderTotal: 'customfield_11567',         // Order Total (Number)
   depositAmount: 'customfield_10074',      // Deposit Amount (Number)
   remainingAmount: 'customfield_11569',    // Remaining Amount (Number)
+  commissionDue: 'customfield_11577',      // Commission Due (Number)
   
   // Order fields
   quantityOrdered: 'customfield_10073',    // Quantity Ordered (Number)
@@ -32,6 +33,9 @@ const FIELD_MAPPINGS = {
   // Production fields
   daysInProduction: 'customfield_10930',   // Days In Production (Number)
 };
+
+// Statuses that indicate an order is cancelled/not active
+const CANCELLED_STATUSES = ['cancelled', 'canceled', 'done', 'shipped', 'complete', 'completed', 'closed'];
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -132,6 +136,9 @@ serve(async (req) => {
         const productName = fields[FIELD_MAPPINGS.productName] || fields.summary || 'Unknown Product';
         const salesOrderNumber = fields[FIELD_MAPPINGS.salesOrderNumber] || issue.key;
         
+        // Extract commission due
+        const commissionDue = fields[FIELD_MAPPINGS.commissionDue] || 0;
+        
         return {
           id: issue.key,
           salesOrderNumber: salesOrderNumber,
@@ -142,6 +149,7 @@ serve(async (req) => {
           depositAmount: depositAmount,
           finalPayment: orderTotal - depositAmount,
           remainingDue: remainingAmount,
+          commissionDue: commissionDue,
           startDate: fields[FIELD_MAPPINGS.dateOrdered] || fields.created?.substring(0, 10),
           dueDate: fields.duedate,
           estShipDate: fields.duedate,
@@ -176,20 +184,30 @@ serve(async (req) => {
         };
       });
 
+      // Filter active orders (exclude cancelled/completed statuses)
+      const activeOrders = orders.filter((o: any) => {
+        const status = o.currentStatus?.toLowerCase() || '';
+        return !CANCELLED_STATUSES.some(s => status.includes(s));
+      });
+
       // Calculate summary metrics
+      const totalCommissionsDue = orders.reduce((sum: number, o: any) => sum + (o.commissionDue || 0), 0);
+      
       const summary = {
-        totalActiveCustomers: new Set(orders.map((o: any) => o.customer).filter((c: string) => c && c !== 'Unknown')).size,
-        totalActiveOrders: orders.length,
+        totalActiveCustomers: new Set(activeOrders.map((o: any) => o.customer).filter((c: string) => c && c !== 'Unknown')).size,
+        totalActiveOrders: activeOrders.length,
         totalMonthlyRevenue: orders.reduce((sum: number, o: any) => sum + (o.orderTotal || 0), 0),
         totalOutstandingPayments: orders.reduce((sum: number, o: any) => sum + (o.remainingDue || 0), 0),
-        totalCommissionsDue: 0, // Calculate from commission fields
+        totalCommissionsDue: totalCommissionsDue,
         totalActiveProjects: webProjects.filter((p: any) => p.status === 'active').length,
         orderHealthBreakdown: {
-          onTrack: orders.filter((o: any) => o.orderHealth === 'on-track').length,
-          atRisk: orders.filter((o: any) => o.orderHealth === 'at-risk').length,
-          offTrack: orders.filter((o: any) => o.orderHealth === 'off-track').length,
+          onTrack: activeOrders.filter((o: any) => o.orderHealth === 'on-track').length,
+          atRisk: activeOrders.filter((o: any) => o.orderHealth === 'at-risk').length,
+          offTrack: activeOrders.filter((o: any) => o.orderHealth === 'off-track').length,
         },
       };
+      
+      console.log(`Total orders: ${orders.length}, Active orders: ${activeOrders.length}, Commission Due: $${totalCommissionsDue}`);
 
       // Get unique customers and agents for filters (excluding empty/Unknown values)
       const customers = ['All Customers', ...new Set(orders.map((o: any) => o.customer).filter((c: string) => c && c !== 'Unknown'))];
