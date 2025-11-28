@@ -13,6 +13,7 @@ export interface Order {
   depositAmount: number;
   finalPayment: number;
   remainingDue: number;
+  commissionDue: number;
   startDate: string;
   dueDate: string;
   estShipDate: string;
