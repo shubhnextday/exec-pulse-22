@@ -31,17 +31,24 @@ const initialState: JiraDataState = {
   error: null,
 };
 
+interface FetchFilters {
+  dateFrom?: string;
+  customer?: string;
+  agent?: string;
+  accountManager?: string;
+}
+
 export function useJiraData() {
   const [state, setState] = useState<JiraDataState>(initialState);
 
-  const fetchDashboardData = useCallback(async () => {
+  const fetchDashboardData = useCallback(async (filters?: FetchFilters) => {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      console.log('Fetching JIRA data...');
+      console.log('Fetching JIRA data with filters:', filters);
       
       const { data, error } = await supabase.functions.invoke('jira-sync', {
-        body: { action: 'dashboard' },
+        body: { action: 'dashboard', filters: filters || {} },
       });
 
       if (error) {
@@ -112,6 +119,6 @@ export function useJiraData() {
     ...state,
     fetchDashboardData,
     fetchFields,
-    refresh: fetchDashboardData,
+    refresh: () => fetchDashboardData(),
   };
 }

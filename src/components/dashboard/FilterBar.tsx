@@ -7,6 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 interface FilterBarProps {
   customers: string[];
@@ -54,16 +55,19 @@ export function FilterBar({
           <span className="text-xs font-semibold uppercase tracking-wider">Filters</span>
         </div>
         
+        {/* Date Range */}
         <Select value={dateRange} onValueChange={onDateRangeChange}>
-          <SelectTrigger className="w-[160px] h-9 text-sm bg-muted/30 border-border/30 hover:border-primary/30 transition-colors">
+          <SelectTrigger className="w-[180px] h-9 text-sm bg-muted/30 border-border/30 hover:border-primary/30 transition-colors">
             <Calendar className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
             <SelectValue placeholder="Date Range" />
           </SelectTrigger>
           <SelectContent className="bg-popover border-border/50">
-            <SelectItem value="current-month">Current Month</SelectItem>
-            <SelectItem value="last-month">Last Month</SelectItem>
+            <SelectItem value="last-6-months">Last 6 Months</SelectItem>
             <SelectItem value="last-90-days">Last 90 Days</SelectItem>
-            <SelectItem value="nov-2025">Nov 2025+</SelectItem>
+            <SelectItem value="last-30-days">Last 30 Days</SelectItem>
+            <SelectItem value="this-month">This Month</SelectItem>
+            <SelectItem value="nov-2025">November 2025</SelectItem>
+            <SelectItem value="dec-2025">December 2025</SelectItem>
           </SelectContent>
         </Select>
 
