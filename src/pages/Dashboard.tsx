@@ -197,11 +197,11 @@ export default function Dashboard() {
       .slice(0, 12); // Show next 12 dates for readability
   }, [filteredOrders]);
 
-  // Calculate commissions from real order data
+  // Calculate commissions from real order data - ACCURATE from JIRA
   const realCommissions = useMemo(() => {
-    // Group by agent and aggregate commission data
+    // Group by agent and aggregate commission data from filtered orders
     const agentMap = new Map<string, { 
-      orders: { customer: string; orderTotal: number; commissionDue: number }[];
+      orders: { customer: string; orderTotal: number; commissionDue: number; orderId: string }[];
       totalCommission: number;
     }>();
     
@@ -215,33 +215,35 @@ export default function Dashboard() {
         customer: order.customer,
         orderTotal: order.orderTotal || 0,
         commissionDue: order.commissionDue || 0,
+        orderId: order.id,
       });
       data.totalCommission += order.commissionDue || 0;
     });
 
-    // Convert to commission records
+    // Convert to commission records - include ALL with commissions
     return Array.from(agentMap.entries())
       .filter(([agent]) => agent !== 'Unassigned')
       .flatMap(([agent, data]) => 
-        data.orders.map((order, idx) => ({
-          id: `${agent}-${idx}`,
-          agent,
-          customer: order.customer,
-          orderTotal: order.orderTotal,
-          commissionPercent: order.orderTotal > 0 ? (order.commissionDue / order.orderTotal) * 100 : 0,
-          commissionDue: order.commissionDue,
-          commissionPaid: 0,
-        }))
-      )
-      .filter(c => c.commissionDue > 0)
-      .slice(0, 10);
+        data.orders
+          .filter(order => order.commissionDue > 0)
+          .map((order) => ({
+            id: order.orderId,
+            agent,
+            customer: order.customer,
+            orderTotal: order.orderTotal,
+            commissionPercent: order.orderTotal > 0 ? (order.commissionDue / order.orderTotal) * 100 : 0,
+            commissionDue: order.commissionDue,
+            commissionPaid: 0, // JIRA doesn't track paid status yet
+          }))
+      );
   }, [filteredOrders]);
 
-  // Calculate top customers from real order data
+  // Calculate top customers from filtered orders - ACCURATE from JIRA
   const realTopCustomers = useMemo(() => {
     const customerMap = new Map<string, { totalOrders: number; orderCount: number }>();
     
-    displayOrders.forEach(order => {
+    // Use filtered orders for consistency with other metrics
+    filteredOrders.forEach(order => {
       const customer = order.customer;
       if (!customer || customer === 'Unknown') return;
       
@@ -253,15 +255,47 @@ export default function Dashboard() {
       data.orderCount += 1;
     });
 
+    // Return ALL customers sorted by revenue (no limit)
     return Array.from(customerMap.entries())
       .map(([name, data]) => ({
         name,
         totalOrders: data.totalOrders,
         orderCount: data.orderCount,
       }))
-      .sort((a, b) => b.totalOrders - a.totalOrders)
-      .slice(0, 5);
-  }, [displayOrders]);
+      .sort((a, b) => b.totalOrders - a.totalOrders);
+  }, [filteredOrders]);
+
+  // Calculate team workload from JIRA data - by agent/account manager
+  const realTeamWorkload = useMemo(() => {
+    const agentMap = new Map<string, { openTasks: number; completedThisMonth: number }>();
+    
+    filteredOrders.forEach(order => {
+      const agent = order.agent || order.accountManager || 'Unassigned';
+      if (agent === 'Unassigned') return;
+      
+      if (!agentMap.has(agent)) {
+        agentMap.set(agent, { openTasks: 0, completedThisMonth: 0 });
+      }
+      const data = agentMap.get(agent)!;
+      
+      // Count as open task if not completed/shipped/done
+      const status = order.currentStatus?.toLowerCase() || '';
+      if (status.includes('complete') || status.includes('shipped') || status.includes('done')) {
+        data.completedThisMonth += 1;
+      } else {
+        data.openTasks += 1;
+      }
+    });
+
+    return Array.from(agentMap.entries())
+      .map(([name, data], idx) => ({
+        id: `agent-${idx}`,
+        name,
+        openTasks: data.openTasks,
+        completedThisMonth: data.completedThisMonth,
+      }))
+      .sort((a, b) => b.openTasks - a.openTasks);
+  }, [filteredOrders]);
 
   // Metric explanations for tooltips
   const metricExplanations = {
@@ -493,7 +527,7 @@ export default function Dashboard() {
 
           {/* Bottom Section: Team, Commissions, Top Customers */}
           <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <TeamWorkload members={mockTeamMembers} />
+            <TeamWorkload members={realTeamWorkload.length > 0 ? realTeamWorkload : mockTeamMembers} />
             <CommissionsTable commissions={realCommissions.length > 0 ? realCommissions : mockCommissions} />
             <TopCustomers customers={realTopCustomers.length > 0 ? realTopCustomers : mockTopCustomers} />
           </section>
