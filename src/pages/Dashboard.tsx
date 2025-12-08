@@ -293,13 +293,30 @@ export default function Dashboard() {
             isLoading={isLoading} 
           />
           
-          {/* Error Banner */}
+          {/* Error Banner - shows warning for rate limit, error for other issues */}
           {error && (
-            <div className="mb-6 p-4 rounded-2xl bg-danger/10 border border-danger/30 flex items-center gap-3">
-              <AlertCircle className="h-5 w-5 text-danger" />
+            <div className={cn(
+              "mb-6 p-4 rounded-2xl flex items-center gap-3",
+              error.includes('rate limit') 
+                ? "bg-warning/10 border border-warning/30" 
+                : "bg-danger/10 border border-danger/30"
+            )}>
+              <AlertCircle className={cn(
+                "h-5 w-5",
+                error.includes('rate limit') ? "text-warning" : "text-danger"
+              )} />
               <div className="flex-1">
-                <p className="font-medium text-danger">Failed to sync with JIRA</p>
-                <p className="text-sm text-muted-foreground">{error}</p>
+                <p className={cn(
+                  "font-medium",
+                  error.includes('rate limit') ? "text-warning" : "text-danger"
+                )}>
+                  {error.includes('rate limit') ? 'JIRA Rate Limited' : 'Failed to sync with JIRA'}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {error.includes('rate limit') 
+                    ? 'Showing demo data. Wait 5-10 minutes before retrying.'
+                    : error}
+                </p>
               </div>
               <Button variant="outline" size="sm" onClick={() => refresh()} disabled={isLoading}>
                 {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Retry'}

@@ -87,15 +87,22 @@ export function useJiraData() {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       console.error('Error fetching JIRA data:', errorMessage);
       
+      // Check if it's a rate limit error
+      const isRateLimited = errorMessage.includes('429') || errorMessage.includes('rate limit');
+      
       setState(prev => ({
         ...prev,
         isLoading: false,
-        error: errorMessage,
+        error: isRateLimited 
+          ? 'JIRA rate limit reached. Showing demo data. Try again in a few minutes.'
+          : errorMessage,
       }));
 
       toast({
-        title: "Sync failed",
-        description: errorMessage,
+        title: isRateLimited ? "Rate limited" : "Sync failed",
+        description: isRateLimited 
+          ? "JIRA rate limit reached. Showing demo data for now."
+          : errorMessage,
         variant: "destructive",
       });
     }
