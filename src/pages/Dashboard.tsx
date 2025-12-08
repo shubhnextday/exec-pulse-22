@@ -40,6 +40,33 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
+// Helper to convert dateRange to dateFrom string
+function getDateFromRange(range: string): string {
+  const now = new Date();
+  switch (range) {
+    case 'last-6-months': {
+      const date = new Date(now);
+      date.setMonth(date.getMonth() - 6);
+      return date.toISOString().split('T')[0];
+    }
+    case 'last-90-days':
+      return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    case 'last-30-days':
+      return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    case 'this-month':
+      return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    case 'nov-2025':
+      return '2025-11-01';
+    case 'dec-2025':
+      return '2025-12-01';
+    default:
+      // Default to 6 months ago
+      const defaultDate = new Date(now);
+      defaultDate.setMonth(defaultDate.getMonth() - 6);
+      return defaultDate.toISOString().split('T')[0];
+  }
+}
+
 export default function Dashboard() {
   const [activeSection, setActiveSection] = useState('overview');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -48,7 +75,7 @@ export default function Dashboard() {
   const [selectedCustomer, setSelectedCustomer] = useState('All Customers');
   const [selectedAgent, setSelectedAgent] = useState('All Agents');
   const [selectedAccountManager, setSelectedAccountManager] = useState('All Account Managers');
-  const [dateRange, setDateRange] = useState('nov-2025');
+  const [dateRange, setDateRange] = useState('last-6-months'); // Default to 6 months
 
   // JIRA data hook
   const {
@@ -65,10 +92,11 @@ export default function Dashboard() {
     refresh,
   } = useJiraData();
 
-  // Fetch data on mount
+  // Fetch data when date range changes
   useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+    const dateFrom = getDateFromRange(dateRange);
+    fetchDashboardData({ dateFrom });
+  }, [fetchDashboardData, dateRange]);
 
   // Use JIRA data if available, otherwise fall back to mock data
   const displayOrders = orders.length > 0 ? orders : mockOrders;
