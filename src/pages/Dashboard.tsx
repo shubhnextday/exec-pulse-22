@@ -7,7 +7,6 @@ import { OrderHealthChart } from '@/components/dashboard/OrderHealthChart';
 import { CashFlowChart } from '@/components/dashboard/CashFlowChart';
 import { NeedsAttentionTable } from '@/components/dashboard/NeedsAttentionTable';
 import { WebProjectsTable } from '@/components/dashboard/WebProjectsTable';
-import { TeamWorkload } from '@/components/dashboard/TeamWorkload';
 import { CommissionsTable } from '@/components/dashboard/CommissionsTable';
 import { TopCustomers } from '@/components/dashboard/TopCustomers';
 import { OutstandingDetailsDialog } from '@/components/dashboard/OutstandingDetailsDialog';
@@ -28,7 +27,6 @@ import {
   mockExecutiveSummary,
   mockOrders,
   mockWebProjects,
-  mockTeamMembers,
   mockCommissions,
   mockCashFlowProjections,
   mockTopCustomers,
@@ -265,38 +263,6 @@ export default function Dashboard() {
       .sort((a, b) => b.totalOrders - a.totalOrders);
   }, [filteredOrders]);
 
-  // Calculate team workload from JIRA data - by agent/account manager
-  const realTeamWorkload = useMemo(() => {
-    const agentMap = new Map<string, { openTasks: number; completedThisMonth: number }>();
-    
-    filteredOrders.forEach(order => {
-      const agent = order.agent || order.accountManager || 'Unassigned';
-      if (agent === 'Unassigned') return;
-      
-      if (!agentMap.has(agent)) {
-        agentMap.set(agent, { openTasks: 0, completedThisMonth: 0 });
-      }
-      const data = agentMap.get(agent)!;
-      
-      // Count as open task if not completed/shipped/done
-      const status = order.currentStatus?.toLowerCase() || '';
-      if (status.includes('complete') || status.includes('shipped') || status.includes('done')) {
-        data.completedThisMonth += 1;
-      } else {
-        data.openTasks += 1;
-      }
-    });
-
-    return Array.from(agentMap.entries())
-      .map(([name, data], idx) => ({
-        id: `agent-${idx}`,
-        name,
-        openTasks: data.openTasks,
-        completedThisMonth: data.completedThisMonth,
-      }))
-      .sort((a, b) => b.openTasks - a.openTasks);
-  }, [filteredOrders]);
-
   // Metric explanations for tooltips
   const metricExplanations = {
     activeCustomers: `Unique customers with active orders matching current filters.\n\nSource: JIRA CM Project → Customer field (customfield_10038)\n\nCalculation: COUNT(DISTINCT customer) from filtered active orders\n\nExcludes: Cancelled, Done, Shipped, Complete statuses`,
@@ -525,9 +491,8 @@ export default function Dashboard() {
             <WebProjectsTable projects={displayWebProjects} />
           </section>
 
-          {/* Bottom Section: Team, Commissions, Top Customers */}
-          <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <TeamWorkload members={realTeamWorkload.length > 0 ? realTeamWorkload : mockTeamMembers} />
+          {/* Bottom Section: Commissions, Top Customers */}
+          <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <CommissionsTable commissions={realCommissions.length > 0 ? realCommissions : mockCommissions} />
             <TopCustomers customers={realTopCustomers.length > 0 ? realTopCustomers : mockTopCustomers} />
           </section>
