@@ -66,29 +66,42 @@ serve(async (req) => {
     const { action = 'dashboard' } = await req.json().catch(() => ({}));
 
     if (action === 'dashboard') {
-      // Fetch Contract Manufacturing issues using new JQL search API
+      // Fetch ALL Contract Manufacturing issues using pagination
       const cmJql = 'project = "CM" ORDER BY created DESC';
-      const cmResponse = await fetch(
-        `https://${jiraDomain}/rest/api/3/search/jql`,
-        { 
-          method: 'POST',
-          headers,
-        body: JSON.stringify({
-            jql: cmJql,
-            maxResults: 500,
-            fields: ['*all'],
-          }),
+      let allCmIssues: any[] = [];
+      let startAt = 0;
+      const maxPerPage = 100;
+      let totalIssues = 0;
+      
+      do {
+        const cmResponse = await fetch(
+          `https://${jiraDomain}/rest/api/3/search/jql`,
+          { 
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              jql: cmJql,
+              maxResults: maxPerPage,
+              startAt: startAt,
+              fields: ['*all'],
+            }),
+          }
+        );
+
+        if (!cmResponse.ok) {
+          const errorText = await cmResponse.text();
+          console.error('JIRA CM API error:', cmResponse.status, errorText);
+          throw new Error(`JIRA API error: ${cmResponse.status}`);
         }
-      );
 
-      if (!cmResponse.ok) {
-        const errorText = await cmResponse.text();
-        console.error('JIRA CM API error:', cmResponse.status, errorText);
-        throw new Error(`JIRA API error: ${cmResponse.status}`);
-      }
-
-      const cmData = await cmResponse.json();
-      console.log(`Fetched ${cmData.issues?.length || 0} CM issues`);
+        const cmData = await cmResponse.json();
+        totalIssues = cmData.total || 0;
+        allCmIssues = [...allCmIssues, ...(cmData.issues || [])];
+        startAt += maxPerPage;
+        console.log(`Fetched ${allCmIssues.length}/${totalIssues} CM issues...`);
+      } while (startAt < totalIssues);
+      
+      console.log(`Total CM issues fetched: ${allCmIssues.length}`);
 
       // Fetch Web Development issues (Epics) using new JQL search API
       const webJql = 'project = "WEB" AND issuetype = Epic ORDER BY created DESC';
@@ -115,7 +128,7 @@ serve(async (req) => {
       console.log(`Fetched ${webData.issues?.length || 0} WEB epics`);
 
       // Transform CM issues to orders
-      const orders = (cmData.issues || []).map((issue: any) => {
+      const orders = allCmIssues.map((issue: any) => {
         const fields = issue.fields;
         
         // Extract customer name from dropdown field
