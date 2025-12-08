@@ -26,21 +26,73 @@ const FIELD_MAPPINGS = {
 };
 
 const CANCELLED_STATUSES = ['cancelled', 'canceled'];
-const MAX_ORDERS = 500; // Limit to prevent rate limiting
-const MAX_RETRIES = 3;
-const RETRY_DELAY_MS = 2000;
+const PAGE_SIZE = 100;
+const MAX_RETRIES = 5;
+const INITIAL_RETRY_DELAY_MS = 2000;
 
-// Helper to fetch with retry on rate limit
-async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_RETRIES): Promise<Response> {
+// Helper to fetch with retry on rate limit with exponential backoff
+async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_RETRIES, delay = INITIAL_RETRY_DELAY_MS): Promise<Response> {
   const response = await fetch(url, options);
   
   if (response.status === 429 && retries > 0) {
-    console.log(`Rate limited, waiting ${RETRY_DELAY_MS}ms before retry (${retries} left)`);
-    await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
-    return fetchWithRetry(url, options, retries - 1);
+    console.log(`Rate limited, waiting ${delay}ms before retry (${retries} retries left)`);
+    await new Promise(resolve => setTimeout(resolve, delay));
+    return fetchWithRetry(url, options, retries - 1, delay * 2);
   }
   
   return response;
+}
+
+// Paginate through all JIRA results
+async function fetchAllPages(
+  jiraDomain: string,
+  headers: Record<string, string>,
+  jql: string,
+  fields: string[]
+): Promise<{ issues: any[]; total: number }> {
+  const allIssues: any[] = [];
+  let startAt = 0;
+  let total = 0;
+  
+  while (true) {
+    console.log(`Fetching CM orders: startAt=${startAt}, pageSize=${PAGE_SIZE}`);
+    
+    const response = await fetchWithRetry(
+      `https://${jiraDomain}/rest/api/3/search/jql`,
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          jql,
+          startAt,
+          maxResults: PAGE_SIZE,
+          fields,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('JIRA API error:', response.status, errorText);
+      throw new Error(`JIRA API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const issues = data.issues || [];
+    total = data.total || 0;
+    
+    allIssues.push(...issues);
+    console.log(`Fetched ${issues.length} issues (${allIssues.length}/${total} total)`);
+    
+    if (issues.length < PAGE_SIZE) {
+      break;
+    }
+    
+    startAt += PAGE_SIZE;
+    await new Promise(resolve => setTimeout(resolve, 200));
+  }
+  
+  return { issues: allIssues, total };
 }
 
 serve(async (req) => {
@@ -71,7 +123,6 @@ serve(async (req) => {
       const cmJql = `project = "CM" AND created >= "${dateFrom}" ORDER BY created DESC`;
       console.log('JQL Query:', cmJql);
       
-      // Fetch only essential fields
       const requiredFields = [
         'summary', 'status', 'created', 'duedate',
         FIELD_MAPPINGS.customer, FIELD_MAPPINGS.agent, FIELD_MAPPINGS.accountManager,
@@ -81,29 +132,15 @@ serve(async (req) => {
         FIELD_MAPPINGS.daysInProduction, 'customfield_10083'
       ];
       
-      // Single request with limit to avoid rate limiting
-      const cmResponse = await fetchWithRetry(
-        `https://${jiraDomain}/rest/api/3/search/jql`,
-        { 
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            jql: cmJql,
-            maxResults: MAX_ORDERS,
-            fields: requiredFields,
-          }),
-        }
+      // Fetch ALL CM orders with pagination
+      const { issues: allCmIssues, total: totalOrders } = await fetchAllPages(
+        jiraDomain,
+        headers,
+        cmJql,
+        requiredFields
       );
-
-      if (!cmResponse.ok) {
-        const errorText = await cmResponse.text();
-        console.error('JIRA CM API error:', cmResponse.status, errorText);
-        throw new Error(`JIRA API error: ${cmResponse.status}`);
-      }
-
-      const cmData = await cmResponse.json();
-      const allCmIssues = cmData.issues || [];
-      console.log(`Fetched ${allCmIssues.length} CM issues (limit: ${MAX_ORDERS})`);
+      
+      console.log(`Fetched ALL ${allCmIssues.length} of ${totalOrders} CM orders`);
 
       // Fetch WEB epics (small dataset)
       const webResponse = await fetchWithRetry(
@@ -128,13 +165,11 @@ serve(async (req) => {
         const orderTotal = fields[FIELD_MAPPINGS.orderTotal] || 0;
         const depositAmount = fields[FIELD_MAPPINGS.depositAmount] || 0;
         
-        // Debug: log raw agent field for first few orders
         const rawAgent = fields[FIELD_MAPPINGS.agent];
         if (rawAgent) {
           console.log(`Order ${issue.key} agent field:`, JSON.stringify(rawAgent));
         }
         
-        // Extract agent name - handle different JIRA field formats
         let agentName = null;
         if (rawAgent) {
           agentName = rawAgent.displayName || rawAgent.value || rawAgent.name || 
@@ -211,6 +246,7 @@ serve(async (req) => {
           agents: ['All Agents', ...new Set(orders.map((o: any) => o.agent).filter(Boolean))],
           accountManagers: ['All Account Managers', ...new Set(orders.map((o: any) => o.accountManager).filter(Boolean))],
           lastSynced: new Date().toISOString(),
+          totalOrdersInJira: totalOrders,
         }
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
