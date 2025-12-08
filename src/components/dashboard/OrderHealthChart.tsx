@@ -1,4 +1,5 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { Activity } from 'lucide-react';
 
 interface OrderHealthChartProps {
   onTrack: number;
@@ -8,28 +9,39 @@ interface OrderHealthChartProps {
 
 export function OrderHealthChart({ onTrack, atRisk, offTrack }: OrderHealthChartProps) {
   const data = [
-    { name: 'On Track', value: onTrack, color: '#22c55e' },      // Green
-    { name: 'At Risk', value: atRisk, color: '#F05323' },        // Brand Orange
-    { name: 'Off Track', value: offTrack, color: '#ef4444' },    // Red
+    { name: 'On Track', value: onTrack, color: '#22c55e' },
+    { name: 'At Risk', value: atRisk, color: '#F05323' },
+    { name: 'Off Track', value: offTrack, color: '#ef4444' },
   ];
 
   const total = onTrack + atRisk + offTrack;
 
   return (
-    <div className="chart-container opacity-0 animate-slide-up" style={{ animationDelay: '300ms' }}>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Order Health</h3>
-        <span className="badge-secondary">{total} orders</span>
+    <div className="metric-card opacity-0 animate-slide-up !p-0 overflow-hidden" style={{ animationDelay: '300ms' }}>
+      <div className="flex items-center justify-between p-5 pb-0">
+        <div className="flex items-center gap-3">
+          <div className="icon-container icon-container-primary">
+            <Activity className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="text-base font-semibold text-foreground">Order Health</h3>
+            <p className="text-xs text-muted-foreground">Current status breakdown</p>
+          </div>
+        </div>
+        <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-secondary/15 text-secondary border border-secondary/30">
+          {total} orders
+        </span>
       </div>
-      <div className="h-[180px] relative">
+      
+      <div className="h-[160px] relative px-5">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={data}
               cx="50%"
               cy="50%"
-              innerRadius={55}
-              outerRadius={75}
+              innerRadius={50}
+              outerRadius={68}
               paddingAngle={3}
               dataKey="value"
               strokeWidth={0}
@@ -62,12 +74,13 @@ export function OrderHealthChart({ onTrack, atRisk, offTrack }: OrderHealthChart
           </div>
         </div>
       </div>
-      <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-border/30">
+      
+      <div className="grid grid-cols-3 gap-2 p-5 pt-3 border-t border-border/40 mx-5 mb-5">
         {data.map((item) => (
-          <div key={item.name} className="text-center">
+          <div key={item.name} className="text-center p-2 rounded-lg bg-muted/30">
             <div className="flex items-center justify-center gap-1.5 mb-1">
               <div 
-                className="w-2.5 h-2.5 rounded-full" 
+                className="w-2 h-2 rounded-full" 
                 style={{ backgroundColor: item.color }}
               />
               <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{item.name}</span>

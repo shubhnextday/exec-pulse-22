@@ -28,7 +28,7 @@ export function MetricCard({
   return (
     <div 
       className={cn(
-        "metric-card opacity-0 animate-slide-up cursor-pointer",
+        "metric-card opacity-0 animate-slide-up cursor-pointer group",
         className
       )}
       style={{ animationDelay: `${delay}ms` }}
@@ -36,15 +36,15 @@ export function MetricCard({
       <div className="flex items-start justify-between">
         <div className="space-y-2 flex-1">
           <div className="flex items-center gap-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
             {showInfo && (
-              <Info className="h-3.5 w-3.5 text-muted-foreground/50 hover:text-muted-foreground transition-colors" />
+              <Info className="h-3 w-3 text-muted-foreground/40 group-hover:text-primary transition-colors" />
             )}
           </div>
-          <p className="stat-value text-foreground">{value}</p>
+          <p className="text-3xl font-bold tracking-tight text-foreground mono">{value}</p>
           {change && (
             <p className={cn(
-              "text-sm font-medium",
+              "text-xs font-medium",
               change.isPositive ? "text-success" : "text-danger"
             )}>
               {change.isPositive ? '↑' : '↓'} {Math.abs(change.value)}% from last month
@@ -52,14 +52,14 @@ export function MetricCard({
           )}
         </div>
         <div className={cn(
-          "icon-container",
+          "icon-container transition-transform group-hover:scale-110",
           iconColor.includes('primary') && "icon-container-primary",
           iconColor.includes('secondary') && "icon-container-secondary",
-          iconColor.includes('success') && "bg-success/10",
-          iconColor.includes('warning') && "bg-warning/10",
-          iconColor.includes('danger') && "bg-danger/10",
+          iconColor.includes('success') && "bg-success/10 text-success",
+          iconColor.includes('warning') && "bg-warning/10 text-warning",
+          iconColor.includes('danger') && "bg-danger/10 text-danger",
         )}>
-          <Icon className={cn("h-5 w-5", iconColor)} />
+          <Icon className="h-5 w-5" />
         </div>
       </div>
     </div>

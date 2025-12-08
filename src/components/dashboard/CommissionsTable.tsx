@@ -8,7 +8,6 @@ interface CommissionsTableProps {
 
 export function CommissionsTable({ commissions }: CommissionsTableProps) {
   const totalDue = commissions.reduce((sum, c) => sum + c.commissionDue, 0);
-  const totalPaid = commissions.reduce((sum, c) => sum + c.commissionPaid, 0);
 
   // Group by agent and aggregate
   const byAgent = commissions.reduce((acc, comm) => {
@@ -24,40 +23,42 @@ export function CommissionsTable({ commissions }: CommissionsTableProps) {
 
   return (
     <div className="metric-card opacity-0 animate-slide-up" style={{ animationDelay: '800ms' }}>
-      <div className="flex items-center gap-3 mb-4">
-        <div className="p-2 rounded-lg bg-accent/10">
-          <DollarSign className="h-5 w-5 text-accent" />
+      <div className="flex items-center gap-3 mb-5">
+        <div className="icon-container icon-container-secondary">
+          <DollarSign className="h-5 w-5" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold">Agent Commissions</h3>
-          <p className="text-sm text-muted-foreground">From JIRA Commission Due field</p>
+          <h3 className="text-base font-semibold text-foreground">Agent Commissions</h3>
+          <p className="text-xs text-muted-foreground">From JIRA Commission Due field</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
-          <p className="text-xs text-muted-foreground">Due This Period</p>
-          <p className="text-xl font-bold text-warning mono">${totalDue.toLocaleString()}</p>
+      <div className="grid grid-cols-2 gap-3 mb-5">
+        <div className="p-3 rounded-xl bg-muted/40 border border-border/50">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Due This Period</p>
+          <p className="text-xl font-bold mono text-primary">${totalDue.toLocaleString()}</p>
         </div>
-        <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
-          <p className="text-xs text-muted-foreground">Total Orders</p>
-          <p className="text-xl font-bold mono">{commissions.length}</p>
+        <div className="p-3 rounded-xl bg-muted/40 border border-border/50">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Total Orders</p>
+          <p className="text-xl font-bold mono text-foreground">{commissions.length}</p>
         </div>
       </div>
 
-      <h4 className="text-sm font-medium text-muted-foreground mb-2">By Agent</h4>
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-3">By Agent</p>
       <ScrollArea className="h-[200px] pr-2">
         <div className="space-y-2">
           {agentList.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              No commissions due in current filter
-            </p>
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <DollarSign className="h-10 w-10 text-muted-foreground/30 mb-2" />
+              <p className="text-sm text-muted-foreground">No commissions due</p>
+              <p className="text-xs text-muted-foreground/70">in current filter</p>
+            </div>
           ) : (
             agentList.map(({ agent, total, count }) => (
-              <div key={agent} className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-muted/30 transition-colors border-b border-border/20 last:border-0">
+              <div key={agent} className="flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-muted/30 transition-colors border border-transparent hover:border-border/50">
                 <div>
-                  <p className="font-medium text-sm">{agent}</p>
-                  <p className="text-xs text-muted-foreground">{count} orders with commission</p>
+                  <p className="font-medium text-sm text-foreground">{agent}</p>
+                  <p className="text-[11px] text-muted-foreground">{count} orders with commission</p>
                 </div>
                 <p className="text-base font-semibold mono text-primary">${total.toLocaleString()}</p>
               </div>
@@ -66,7 +67,7 @@ export function CommissionsTable({ commissions }: CommissionsTableProps) {
         </div>
       </ScrollArea>
       
-      <div className="mt-3 pt-3 border-t border-border/30 text-xs text-muted-foreground text-center">
+      <div className="mt-4 pt-3 border-t border-border/40 text-[11px] text-muted-foreground text-center">
         Data source: JIRA customfield_11577
       </div>
     </div>
