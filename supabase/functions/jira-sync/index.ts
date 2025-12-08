@@ -43,7 +43,7 @@ async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_R
   return response;
 }
 
-// Paginate through all JIRA results
+// Paginate through all JIRA results using the new /search/jql endpoint
 async function fetchAllPages(
   jiraDomain: string,
   headers: Record<string, string>,
@@ -57,17 +57,19 @@ async function fetchAllPages(
   while (true) {
     console.log(`Fetching CM orders: startAt=${startAt}, pageSize=${PAGE_SIZE}`);
     
+    // Build URL with query parameters for the new /search/jql endpoint
+    const params = new URLSearchParams({
+      jql: jql,
+      startAt: startAt.toString(),
+      maxResults: PAGE_SIZE.toString(),
+      fields: fields.join(','),
+    });
+    
     const response = await fetchWithRetry(
-      `https://${jiraDomain}/rest/api/3/search/jql`,
+      `https://${jiraDomain}/rest/api/3/search/jql?${params.toString()}`,
       {
-        method: 'POST',
+        method: 'GET',
         headers,
-        body: JSON.stringify({
-          jql,
-          startAt,
-          maxResults: PAGE_SIZE,
-          fields,
-        }),
       }
     );
 
@@ -142,17 +144,18 @@ serve(async (req) => {
       
       console.log(`Fetched ALL ${allCmIssues.length} of ${totalOrders} CM orders`);
 
-      // Fetch WEB epics (small dataset)
+      // Fetch WEB epics (small dataset) using GET with query params
+      const webParams = new URLSearchParams({
+        jql: 'project = "WEB" AND issuetype = Epic ORDER BY created DESC',
+        maxResults: '50',
+        fields: 'summary,status,created,duedate,subtasks',
+      });
+      
       const webResponse = await fetchWithRetry(
-        `https://${jiraDomain}/rest/api/3/search/jql`,
+        `https://${jiraDomain}/rest/api/3/search/jql?${webParams.toString()}`,
         { 
-          method: 'POST',
+          method: 'GET',
           headers,
-          body: JSON.stringify({
-            jql: 'project = "WEB" AND issuetype = Epic ORDER BY created DESC',
-            maxResults: 50,
-            fields: ['summary', 'status', 'created', 'duedate', 'subtasks'],
-          }),
         }
       );
 
