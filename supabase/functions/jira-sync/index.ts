@@ -68,12 +68,12 @@ serve(async (req) => {
       // Build JQL query based on filters
       const jqlParts = ['project = "CM"'];
       
-      // Date filter - default to last 6 months if not specified
+      // Date filter - default to last 7 days if not specified (reduced to avoid rate limits)
       let dateFilter = dateFrom;
       if (!dateFilter) {
-        const sixMonthsAgo = new Date();
-        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-        dateFilter = sixMonthsAgo.toISOString().split('T')[0];
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        dateFilter = oneWeekAgo.toISOString().split('T')[0];
       }
       jqlParts.push(`created >= "${dateFilter}"`);
       
@@ -112,7 +112,7 @@ serve(async (req) => {
       
       do {
         let retries = 0;
-        const maxRetries = 3;
+        const maxRetries = 5;
         let cmResponse: Response | null = null;
         
         while (retries < maxRetries) {
@@ -131,7 +131,7 @@ serve(async (req) => {
           
           if (cmResponse.status === 429) {
             retries++;
-            const waitTime = Math.pow(2, retries) * 1000; // Exponential backoff: 2s, 4s, 8s
+            const waitTime = Math.pow(2, retries) * 5000; // Longer backoff: 10s, 20s, 40s, 80s, 160s
             console.log(`Rate limited (429), waiting ${waitTime}ms before retry ${retries}/${maxRetries}`);
             await new Promise(resolve => setTimeout(resolve, waitTime));
             continue;
