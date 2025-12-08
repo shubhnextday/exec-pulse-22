@@ -167,6 +167,72 @@ export default function Dashboard() {
       .slice(0, 12); // Show next 12 dates for readability
   }, [filteredOrders]);
 
+  // Calculate commissions from real order data
+  const realCommissions = useMemo(() => {
+    // Group by agent and aggregate commission data
+    const agentMap = new Map<string, { 
+      orders: { customer: string; orderTotal: number; commissionDue: number }[];
+      totalCommission: number;
+    }>();
+    
+    filteredOrders.forEach(order => {
+      const agent = order.agent || 'Unassigned';
+      if (!agentMap.has(agent)) {
+        agentMap.set(agent, { orders: [], totalCommission: 0 });
+      }
+      const data = agentMap.get(agent)!;
+      data.orders.push({
+        customer: order.customer,
+        orderTotal: order.orderTotal || 0,
+        commissionDue: order.commissionDue || 0,
+      });
+      data.totalCommission += order.commissionDue || 0;
+    });
+
+    // Convert to commission records
+    return Array.from(agentMap.entries())
+      .filter(([agent]) => agent !== 'Unassigned')
+      .flatMap(([agent, data]) => 
+        data.orders.map((order, idx) => ({
+          id: `${agent}-${idx}`,
+          agent,
+          customer: order.customer,
+          orderTotal: order.orderTotal,
+          commissionPercent: order.orderTotal > 0 ? (order.commissionDue / order.orderTotal) * 100 : 0,
+          commissionDue: order.commissionDue,
+          commissionPaid: 0,
+        }))
+      )
+      .filter(c => c.commissionDue > 0)
+      .slice(0, 10);
+  }, [filteredOrders]);
+
+  // Calculate top customers from real order data
+  const realTopCustomers = useMemo(() => {
+    const customerMap = new Map<string, { totalOrders: number; orderCount: number }>();
+    
+    displayOrders.forEach(order => {
+      const customer = order.customer;
+      if (!customer || customer === 'Unknown') return;
+      
+      if (!customerMap.has(customer)) {
+        customerMap.set(customer, { totalOrders: 0, orderCount: 0 });
+      }
+      const data = customerMap.get(customer)!;
+      data.totalOrders += order.orderTotal || 0;
+      data.orderCount += 1;
+    });
+
+    return Array.from(customerMap.entries())
+      .map(([name, data]) => ({
+        name,
+        totalOrders: data.totalOrders,
+        orderCount: data.orderCount,
+      }))
+      .sort((a, b) => b.totalOrders - a.totalOrders)
+      .slice(0, 5);
+  }, [displayOrders]);
+
   // Metric explanations for tooltips
   const metricExplanations = {
     activeCustomers: `Unique customers with active orders matching current filters.\n\nSource: JIRA CM Project → Customer field (customfield_10038)\n\nCalculation: COUNT(DISTINCT customer) from filtered active orders\n\nExcludes: Cancelled, Done, Shipped, Complete statuses`,
@@ -396,8 +462,8 @@ export default function Dashboard() {
           {/* Bottom Section: Team, Commissions, Top Customers */}
           <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <TeamWorkload members={mockTeamMembers} />
-            <CommissionsTable commissions={mockCommissions} />
-            <TopCustomers customers={mockTopCustomers} />
+            <CommissionsTable commissions={realCommissions.length > 0 ? realCommissions : mockCommissions} />
+            <TopCustomers customers={realTopCustomers.length > 0 ? realTopCustomers : mockTopCustomers} />
           </section>
         </main>
       </div>
