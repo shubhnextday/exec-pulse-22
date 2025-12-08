@@ -87,7 +87,7 @@ export default function Dashboard() {
     });
   }, [displayOrders, selectedCustomer, selectedAgent, selectedAccountManager]);
 
-  // REACTIVE METRICS - All calculated from filtered orders
+  // REACTIVE METRICS - Revenue/Commissions from ALL orders, active counts from filtered
   const reactiveMetrics = useMemo(() => {
     // Active Customers: Count of unique customer names in filtered orders
     const uniqueCustomers = new Set(
@@ -99,14 +99,14 @@ export default function Dashboard() {
     // Active Orders: Total count of filtered orders (excludes cancelled/completed)
     const activeOrders = filteredOrders.length;
     
-    // Monthly Revenue: Sum of orderTotal from filtered orders
-    const monthlyRevenue = filteredOrders.reduce((sum, order) => sum + (order.orderTotal || 0), 0);
+    // Monthly Revenue: Sum of orderTotal from ALL orders (not just active)
+    const monthlyRevenue = displayOrders.reduce((sum, order) => sum + (order.orderTotal || 0), 0);
     
     // Outstanding Payments: Sum of remainingDue from filtered orders
     const outstandingPayments = filteredOrders.reduce((sum, order) => sum + (order.remainingDue || 0), 0);
     
-    // Commissions Due: Sum of commissionDue field from all filtered orders
-    const commissionsDue = filteredOrders.reduce((sum, order) => sum + (order.commissionDue || 0), 0);
+    // Commissions Due: Sum of commissionDue field from ALL orders (not just active)
+    const commissionsDue = displayOrders.reduce((sum, order) => sum + (order.commissionDue || 0), 0);
     
     // Active Projects: Count from web projects (not filtered by order filters)
     const activeProjects = displayWebProjects.filter(p => p.status === 'active').length;
