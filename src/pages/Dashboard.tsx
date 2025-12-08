@@ -55,8 +55,8 @@ function getDateFromRange(range: string): string {
       date.setMonth(date.getMonth() - 6);
       return date.toISOString().split('T')[0];
     }
-    case 'last-90-days':
-      return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    case 'last-60-days':
+      return new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     case 'last-30-days':
       return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     case 'this-month':
