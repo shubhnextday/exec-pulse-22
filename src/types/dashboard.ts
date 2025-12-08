@@ -26,7 +26,6 @@ export interface Order {
   agent?: string;
   accountManager?: string;
   orderNotes?: string;
-  createdAt?: string; // JIRA created date for filtering
 }
 
 export interface LabelOrder {

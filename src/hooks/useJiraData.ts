@@ -7,13 +7,6 @@ import {
 } from '@/types/dashboard';
 import { toast } from '@/hooks/use-toast';
 
-export interface JiraFilters {
-  customer?: string;
-  agent?: string;
-  accountManager?: string;
-  dateFrom?: string;
-}
-
 interface JiraDataState {
   summary: ExecutiveSummary | null;
   orders: Order[];
@@ -41,14 +34,14 @@ const initialState: JiraDataState = {
 export function useJiraData() {
   const [state, setState] = useState<JiraDataState>(initialState);
 
-  const fetchDashboardData = useCallback(async (filters?: JiraFilters) => {
+  const fetchDashboardData = useCallback(async () => {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      console.log('Fetching JIRA data with filters:', filters);
+      console.log('Fetching JIRA data...');
       
       const { data, error } = await supabase.functions.invoke('jira-sync', {
-        body: { action: 'dashboard', filters: filters || {} },
+        body: { action: 'dashboard' },
       });
 
       if (error) {
@@ -87,22 +80,15 @@ export function useJiraData() {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       console.error('Error fetching JIRA data:', errorMessage);
       
-      // Check if it's a rate limit error
-      const isRateLimited = errorMessage.includes('429') || errorMessage.includes('rate limit');
-      
       setState(prev => ({
         ...prev,
         isLoading: false,
-        error: isRateLimited 
-          ? 'JIRA rate limit reached. Showing demo data. Try again in a few minutes.'
-          : errorMessage,
+        error: errorMessage,
       }));
 
       toast({
-        title: isRateLimited ? "Rate limited" : "Sync failed",
-        description: isRateLimited 
-          ? "JIRA rate limit reached. Showing demo data for now."
-          : errorMessage,
+        title: "Sync failed",
+        description: errorMessage,
         variant: "destructive",
       });
     }

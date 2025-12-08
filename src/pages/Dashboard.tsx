@@ -39,7 +39,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { startOfMonth, format, isWithinInterval, parseISO } from 'date-fns';
 
 export default function Dashboard() {
   const [activeSection, setActiveSection] = useState('overview');
@@ -49,10 +48,7 @@ export default function Dashboard() {
   const [selectedCustomer, setSelectedCustomer] = useState('All Customers');
   const [selectedAgent, setSelectedAgent] = useState('All Agents');
   const [selectedAccountManager, setSelectedAccountManager] = useState('All Account Managers');
-  
-  // Date range filter - default to current month
-  const [dateFrom, setDateFrom] = useState(() => startOfMonth(new Date()));
-  const [dateTo, setDateTo] = useState(() => new Date());
+  const [dateRange, setDateRange] = useState('nov-2025');
 
   // JIRA data hook
   const {
@@ -69,11 +65,10 @@ export default function Dashboard() {
     refresh,
   } = useJiraData();
 
-  // Fetch data on mount with current month date range
+  // Fetch data on mount
   useEffect(() => {
-    const dateFromStr = format(dateFrom, 'yyyy-MM-dd');
-    fetchDashboardData({ dateFrom: dateFromStr });
-  }, [fetchDashboardData, dateFrom]);
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   // Use JIRA data if available, otherwise fall back to mock data
   const displayOrders = orders.length > 0 ? orders : mockOrders;
@@ -82,29 +77,17 @@ export default function Dashboard() {
   const displayAgents = agents.length > 1 ? agents : ['All Agents'];
   const displayAccountManagers = accountManagers.length > 1 ? accountManagers : ['All Account Managers'];
 
-  // Filter orders client-side based on selections (avoids JIRA rate limits)
+  // Filter orders based on selections - ALL STATS ARE DERIVED FROM THIS
   const filteredOrders = useMemo(() => {
     return displayOrders.filter(order => {
-      // Date filter - check if order created date is within range
-      if (order.createdAt) {
-        try {
-          const orderDate = parseISO(order.createdAt);
-          if (!isWithinInterval(orderDate, { start: dateFrom, end: dateTo })) {
-            return false;
-          }
-        } catch {
-          // If date parsing fails, include the order
-        }
-      }
-      
       if (selectedCustomer !== 'All Customers' && order.customer !== selectedCustomer) return false;
       if (selectedAgent !== 'All Agents' && order.agent !== selectedAgent) return false;
       if (selectedAccountManager !== 'All Account Managers' && order.accountManager !== selectedAccountManager) return false;
       return true;
     });
-  }, [displayOrders, selectedCustomer, selectedAgent, selectedAccountManager, dateFrom, dateTo]);
+  }, [displayOrders, selectedCustomer, selectedAgent, selectedAccountManager]);
 
-  // REACTIVE METRICS - All stats derived from filteredOrders
+  // REACTIVE METRICS - Revenue/Commissions from ALL orders, active counts from filtered
   const reactiveMetrics = useMemo(() => {
     // Active Customers: Count of unique customer names in filtered orders
     const uniqueCustomers = new Set(
@@ -113,17 +96,17 @@ export default function Dashboard() {
         .filter(c => c && c !== 'Unknown')
     );
     
-    // Active Orders: Total count of filtered orders (ALL orders are active per user requirement)
+    // Active Orders: Total count of filtered orders (excludes cancelled/completed)
     const activeOrders = filteredOrders.length;
     
-    // Monthly Revenue: Sum of orderTotal from filtered orders
-    const monthlyRevenue = filteredOrders.reduce((sum, order) => sum + (order.orderTotal || 0), 0);
+    // Monthly Revenue: Sum of orderTotal from ALL orders (not just active)
+    const monthlyRevenue = displayOrders.reduce((sum, order) => sum + (order.orderTotal || 0), 0);
     
-    // Outstanding Payments: Sum of remainingDue from filtered orders (only outstanding amounts)
+    // Outstanding Payments: Sum of remainingDue from filtered orders
     const outstandingPayments = filteredOrders.reduce((sum, order) => sum + (order.remainingDue || 0), 0);
     
-    // Commissions Due: Sum of commissionDue field from filtered orders
-    const commissionsDue = filteredOrders.reduce((sum, order) => sum + (order.commissionDue || 0), 0);
+    // Commissions Due: Sum of commissionDue field from ALL orders (not just active)
+    const commissionsDue = displayOrders.reduce((sum, order) => sum + (order.commissionDue || 0), 0);
     
     // Active Projects: Count from web projects (not filtered by order filters)
     const activeProjects = displayWebProjects.filter(p => p.status === 'active').length;
@@ -144,7 +127,7 @@ export default function Dashboard() {
       totalActiveProjects: activeProjects,
       orderHealthBreakdown,
     };
-  }, [filteredOrders, displayWebProjects]);
+  }, [filteredOrders, displayWebProjects, displayOrders]);
 
   // Calculate cash flow projections from filtered orders
   const cashFlowProjections = useMemo(() => {
@@ -224,75 +207,30 @@ export default function Dashboard() {
       .slice(0, 10);
   }, [filteredOrders]);
 
-  // Calculate ALL customers from real order data (sorted by revenue, show all)
-  // Uses filteredOrders to respect date range, but includes ALL customers even if no active orders
+  // Calculate top customers from real order data
   const realTopCustomers = useMemo(() => {
-    const customerMap = new Map<string, { totalOrders: number; orderCount: number; hasActiveOrders: boolean }>();
+    const customerMap = new Map<string, { totalOrders: number; orderCount: number }>();
     
-    // First, add all customers from ALL orders (so none are missed)
     displayOrders.forEach(order => {
       const customer = order.customer;
       if (!customer || customer === 'Unknown') return;
       
       if (!customerMap.has(customer)) {
-        customerMap.set(customer, { totalOrders: 0, orderCount: 0, hasActiveOrders: false });
-      }
-    });
-    
-    // Then calculate revenue from date-filtered orders (includes completed/shipped orders)
-    filteredOrders.forEach(order => {
-      const customer = order.customer;
-      if (!customer || customer === 'Unknown') return;
-      
-      if (!customerMap.has(customer)) {
-        customerMap.set(customer, { totalOrders: 0, orderCount: 0, hasActiveOrders: false });
+        customerMap.set(customer, { totalOrders: 0, orderCount: 0 });
       }
       const data = customerMap.get(customer)!;
       data.totalOrders += order.orderTotal || 0;
       data.orderCount += 1;
-      data.hasActiveOrders = true;
     });
 
-    // Return ALL customers sorted by revenue (not limited to 5)
     return Array.from(customerMap.entries())
       .map(([name, data]) => ({
         name,
         totalOrders: data.totalOrders,
         orderCount: data.orderCount,
-        hasActiveOrders: data.hasActiveOrders,
       }))
-      .sort((a, b) => b.totalOrders - a.totalOrders);
-  }, [displayOrders, filteredOrders]);
-
-  // Calculate team workload from WEB projects (real data from assignees)
-  const realTeamMembers = useMemo(() => {
-    // Group by account manager from orders (since we don't have WEB assignees yet)
-    const memberMap = new Map<string, { openTasks: number; completedThisMonth: number }>();
-    
-    displayOrders.forEach(order => {
-      const manager = order.accountManager;
-      if (!manager) return;
-      
-      if (!memberMap.has(manager)) {
-        memberMap.set(manager, { openTasks: 0, completedThisMonth: 0 });
-      }
-      const data = memberMap.get(manager)!;
-      data.openTasks += 1;
-      // Count completed if status indicates completion
-      const status = order.currentStatus?.toLowerCase() || '';
-      if (status.includes('complete') || status.includes('shipped') || status.includes('done')) {
-        data.completedThisMonth += 1;
-      }
-    });
-
-    return Array.from(memberMap.entries())
-      .map(([name, data], idx) => ({
-        id: `member-${idx}`,
-        name,
-        openTasks: data.openTasks,
-        completedThisMonth: data.completedThisMonth,
-      }))
-      .sort((a, b) => b.openTasks - a.openTasks);
+      .sort((a, b) => b.totalOrders - a.totalOrders)
+      .slice(0, 5);
   }, [displayOrders]);
 
   // Metric explanations for tooltips
@@ -323,32 +261,15 @@ export default function Dashboard() {
             isLoading={isLoading} 
           />
           
-          {/* Error Banner - shows warning for rate limit, error for other issues */}
+          {/* Error Banner */}
           {error && (
-            <div className={cn(
-              "mb-6 p-4 rounded-2xl flex items-center gap-3",
-              error.includes('rate limit') 
-                ? "bg-warning/10 border border-warning/30" 
-                : "bg-danger/10 border border-danger/30"
-            )}>
-              <AlertCircle className={cn(
-                "h-5 w-5",
-                error.includes('rate limit') ? "text-warning" : "text-danger"
-              )} />
+            <div className="mb-6 p-4 rounded-2xl bg-danger/10 border border-danger/30 flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-danger" />
               <div className="flex-1">
-                <p className={cn(
-                  "font-medium",
-                  error.includes('rate limit') ? "text-warning" : "text-danger"
-                )}>
-                  {error.includes('rate limit') ? 'JIRA Rate Limited' : 'Failed to sync with JIRA'}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {error.includes('rate limit') 
-                    ? 'Showing demo data. Wait 5-10 minutes before retrying.'
-                    : error}
-                </p>
+                <p className="font-medium text-danger">Failed to sync with JIRA</p>
+                <p className="text-sm text-muted-foreground">{error}</p>
               </div>
-              <Button variant="outline" size="sm" onClick={() => refresh()} disabled={isLoading}>
+              <Button variant="outline" size="sm" onClick={refresh} disabled={isLoading}>
                 {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Retry'}
               </Button>
             </div>
@@ -375,13 +296,11 @@ export default function Dashboard() {
             selectedCustomer={selectedCustomer}
             selectedAgent={selectedAgent}
             selectedAccountManager={selectedAccountManager}
-            dateFrom={dateFrom}
-            dateTo={dateTo}
+            dateRange={dateRange}
             onCustomerChange={setSelectedCustomer}
             onAgentChange={setSelectedAgent}
             onAccountManagerChange={setSelectedAccountManager}
-            onDateFromChange={setDateFrom}
-            onDateToChange={setDateTo}
+            onDateRangeChange={setDateRange}
           />
 
           {/* Data Source Indicator */}
@@ -542,7 +461,7 @@ export default function Dashboard() {
 
           {/* Bottom Section: Team, Commissions, Top Customers */}
           <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <TeamWorkload members={realTeamMembers.length > 0 ? realTeamMembers : mockTeamMembers} />
+            <TeamWorkload members={mockTeamMembers} />
             <CommissionsTable commissions={realCommissions.length > 0 ? realCommissions : mockCommissions} />
             <TopCustomers customers={realTopCustomers.length > 0 ? realTopCustomers : mockTopCustomers} />
           </section>
