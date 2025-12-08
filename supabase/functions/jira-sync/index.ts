@@ -68,12 +68,10 @@ serve(async (req) => {
       // Build JQL query based on filters
       const jqlParts = ['project = "CM"'];
       
-      // Date filter - default to last 7 days if not specified (reduced to avoid rate limits)
+      // Date filter - fetch all data from 2024 onwards (full history)
       let dateFilter = dateFrom;
       if (!dateFilter) {
-        const oneWeekAgo = new Date();
-        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-        dateFilter = oneWeekAgo.toISOString().split('T')[0];
+        dateFilter = '2024-01-01'; // Fetch all historical data
       }
       jqlParts.push(`created >= "${dateFilter}"`);
       
@@ -107,7 +105,7 @@ serve(async (req) => {
       
       let allCmIssues: any[] = [];
       let startAt = 0;
-      const maxPerPage = 100;
+      const maxPerPage = 50; // Reduced batch size to avoid rate limits
       let fetchedCount = 0;
       
       do {
