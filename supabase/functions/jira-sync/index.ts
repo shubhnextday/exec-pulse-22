@@ -73,9 +73,9 @@ serve(async (req) => {
         { 
           method: 'POST',
           headers,
-          body: JSON.stringify({
+        body: JSON.stringify({
             jql: cmJql,
-            maxResults: 100,
+            maxResults: 500,
             fields: ['*all'],
           }),
         }
