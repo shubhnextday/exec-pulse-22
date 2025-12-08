@@ -8,37 +8,42 @@ const corsHeaders = {
 
 // JIRA custom field mappings - VERIFIED from API
 const FIELD_MAPPINGS = {
-  // Core fields
-  customer: 'customfield_10038',           // Customer (Dropdown) - use .value
-  agent: 'customfield_11573',              // Agent (Dropdown) - use .value
-  accountManager: 'customfield_11393',     // Account Manager (User Picker) - use .displayName
-  
-  // Financial fields
-  orderTotal: 'customfield_11567',         // Order Total (Number)
-  depositAmount: 'customfield_10074',      // Deposit Amount (Number)
-  remainingAmount: 'customfield_11569',    // Remaining Amount (Number)
-  commissionDue: 'customfield_11577',      // Commission Due (Number)
-  
-  // Order fields
-  quantityOrdered: 'customfield_10073',    // Quantity Ordered (Number)
-  salesOrderNumber: 'customfield_10113',   // Sales Order # (Text)
-  productName: 'customfield_10115',        // Product Name (Text)
-  productId: 'customfield_10732',          // Product_ID (Text)
-  
-  // Date fields
-  dateOrdered: 'customfield_10040',        // Date Ordered
-  actualShipDate: 'customfield_11161',     // Actual Ship Date
-  commissionPaidDate: 'customfield_11578', // Commission Paid (Date)
-  
-  // Production fields
-  daysInProduction: 'customfield_10930',   // Days In Production (Number)
+  customer: 'customfield_10038',
+  agent: 'customfield_11573',
+  accountManager: 'customfield_11393',
+  orderTotal: 'customfield_11567',
+  depositAmount: 'customfield_10074',
+  remainingAmount: 'customfield_11569',
+  commissionDue: 'customfield_11577',
+  quantityOrdered: 'customfield_10073',
+  salesOrderNumber: 'customfield_10113',
+  productName: 'customfield_10115',
+  productId: 'customfield_10732',
+  dateOrdered: 'customfield_10040',
+  actualShipDate: 'customfield_11161',
+  commissionPaidDate: 'customfield_11578',
+  daysInProduction: 'customfield_10930',
 };
 
-// Statuses that indicate an order is cancelled (NOT active) - completed/shipped orders ARE still counted
 const CANCELLED_STATUSES = ['cancelled', 'canceled'];
+const MAX_ORDERS = 500; // Limit to prevent rate limiting
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 2000;
+
+// Helper to fetch with retry on rate limit
+async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_RETRIES): Promise<Response> {
+  const response = await fetch(url, options);
+  
+  if (response.status === 429 && retries > 0) {
+    console.log(`Rate limited, waiting ${RETRY_DELAY_MS}ms before retry (${retries} left)`);
+    await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+    return fetchWithRetry(url, options, retries - 1);
+  }
+  
+  return response;
+}
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -49,13 +54,9 @@ serve(async (req) => {
     const jiraApiToken = Deno.env.get('JIRA_API_TOKEN');
 
     if (!jiraDomain || !jiraEmail || !jiraApiToken) {
-      console.error('Missing JIRA credentials');
       throw new Error('JIRA credentials not configured');
     }
 
-    console.log(`Connecting to JIRA at ${jiraDomain}...`);
-
-    // Create Basic Auth header
     const auth = btoa(`${jiraEmail}:${jiraApiToken}`);
     const headers = {
       'Authorization': `Basic ${auth}`,
@@ -66,119 +67,78 @@ serve(async (req) => {
     const { action = 'dashboard', filters = {} } = await req.json().catch(() => ({}));
 
     if (action === 'dashboard') {
-      // Use dateFrom from filters, default to start of current month
       const dateFrom = filters.dateFrom || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
-      
-      // Fetch CM issues using date filter
       const cmJql = `project = "CM" AND created >= "${dateFrom}" ORDER BY created DESC`;
       console.log('JQL Query:', cmJql);
       
-      let allCmIssues: any[] = [];
-      let startAt = 0;
-      const maxPerPage = 100;
-      let fetchedCount = 0;
-      
-      // Only fetch essential fields to speed up requests
+      // Fetch only essential fields
       const requiredFields = [
-        'summary', 'status', 'created', 'duedate', 'description', 'subtasks',
+        'summary', 'status', 'created', 'duedate',
         FIELD_MAPPINGS.customer, FIELD_MAPPINGS.agent, FIELD_MAPPINGS.accountManager,
         FIELD_MAPPINGS.orderTotal, FIELD_MAPPINGS.depositAmount, FIELD_MAPPINGS.remainingAmount,
         FIELD_MAPPINGS.commissionDue, FIELD_MAPPINGS.quantityOrdered, FIELD_MAPPINGS.salesOrderNumber,
-        FIELD_MAPPINGS.productName, FIELD_MAPPINGS.productId, FIELD_MAPPINGS.dateOrdered,
-        FIELD_MAPPINGS.actualShipDate, FIELD_MAPPINGS.commissionPaidDate, FIELD_MAPPINGS.daysInProduction,
-        'customfield_10083' // order health field
+        FIELD_MAPPINGS.productName, FIELD_MAPPINGS.dateOrdered, FIELD_MAPPINGS.actualShipDate,
+        FIELD_MAPPINGS.daysInProduction, 'customfield_10083'
       ];
       
-      do {
-        const cmResponse = await fetch(
-          `https://${jiraDomain}/rest/api/3/search/jql?startAt=${startAt}`,
-          { 
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-              jql: cmJql,
-              maxResults: maxPerPage,
-              fields: requiredFields,
-            }),
-          }
-        );
-
-        if (!cmResponse.ok) {
-          const errorText = await cmResponse.text();
-          console.error('JIRA CM API error:', cmResponse.status, errorText);
-          throw new Error(`JIRA API error: ${cmResponse.status}`);
-        }
-
-        const cmData = await cmResponse.json();
-        const issues = cmData.issues || [];
-        fetchedCount = issues.length;
-        allCmIssues = [...allCmIssues, ...issues];
-        startAt += maxPerPage;
-        console.log(`Fetched batch of ${fetchedCount}, total so far: ${allCmIssues.length}`);
-      } while (fetchedCount === maxPerPage); // Keep fetching while we get full pages
-      
-      console.log(`Total CM issues fetched: ${allCmIssues.length}`);
-
-      // Fetch Web Development issues (Epics) using new JQL search API
-      const webJql = 'project = "WEB" AND issuetype = Epic ORDER BY created DESC';
-      const webResponse = await fetch(
+      // Single request with limit to avoid rate limiting
+      const cmResponse = await fetchWithRetry(
         `https://${jiraDomain}/rest/api/3/search/jql`,
         { 
           method: 'POST',
           headers,
           body: JSON.stringify({
-            jql: webJql,
-            maxResults: 50,
-            fields: ['*all'],
+            jql: cmJql,
+            maxResults: MAX_ORDERS,
+            fields: requiredFields,
           }),
         }
       );
 
-      if (!webResponse.ok) {
-        const errorText = await webResponse.text();
-        console.error('JIRA WEB API error:', webResponse.status, errorText);
-        throw new Error(`JIRA API error: ${webResponse.status}`);
+      if (!cmResponse.ok) {
+        const errorText = await cmResponse.text();
+        console.error('JIRA CM API error:', cmResponse.status, errorText);
+        throw new Error(`JIRA API error: ${cmResponse.status}`);
       }
 
-      const webData = await webResponse.json();
+      const cmData = await cmResponse.json();
+      const allCmIssues = cmData.issues || [];
+      console.log(`Fetched ${allCmIssues.length} CM issues (limit: ${MAX_ORDERS})`);
+
+      // Fetch WEB epics (small dataset)
+      const webResponse = await fetchWithRetry(
+        `https://${jiraDomain}/rest/api/3/search/jql`,
+        { 
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            jql: 'project = "WEB" AND issuetype = Epic ORDER BY created DESC',
+            maxResults: 50,
+            fields: ['summary', 'status', 'created', 'duedate', 'subtasks'],
+          }),
+        }
+      );
+
+      const webData = webResponse.ok ? await webResponse.json() : { issues: [] };
       console.log(`Fetched ${webData.issues?.length || 0} WEB epics`);
 
       // Transform CM issues to orders
       const orders = allCmIssues.map((issue: any) => {
         const fields = issue.fields;
-        
-        // Extract customer name from dropdown field
-        const customerValue = fields[FIELD_MAPPINGS.customer]?.value || 'Unknown';
-        
-        // Extract agent from dropdown field  
-        const agentValue = fields[FIELD_MAPPINGS.agent]?.value || null;
-        
-        // Extract account manager from user picker field
-        const accountManagerValue = fields[FIELD_MAPPINGS.accountManager]?.displayName || null;
-        
-        // Extract financial values
         const orderTotal = fields[FIELD_MAPPINGS.orderTotal] || 0;
         const depositAmount = fields[FIELD_MAPPINGS.depositAmount] || 0;
-        const remainingAmount = fields[FIELD_MAPPINGS.remainingAmount] || (orderTotal - depositAmount);
-        
-        // Extract other fields
-        const productName = fields[FIELD_MAPPINGS.productName] || fields.summary || 'Unknown Product';
-        const salesOrderNumber = fields[FIELD_MAPPINGS.salesOrderNumber] || issue.key;
-        
-        // Extract commission due
-        const commissionDue = fields[FIELD_MAPPINGS.commissionDue] || 0;
         
         return {
           id: issue.key,
-          salesOrderNumber: salesOrderNumber,
-          customer: customerValue,
-          productName: productName,
+          salesOrderNumber: fields[FIELD_MAPPINGS.salesOrderNumber] || issue.key,
+          customer: fields[FIELD_MAPPINGS.customer]?.value || 'Unknown',
+          productName: fields[FIELD_MAPPINGS.productName] || fields.summary || 'Unknown Product',
           quantityOrdered: fields[FIELD_MAPPINGS.quantityOrdered] || 0,
-          orderTotal: orderTotal,
-          depositAmount: depositAmount,
+          orderTotal,
+          depositAmount,
           finalPayment: orderTotal - depositAmount,
-          remainingDue: remainingAmount,
-          commissionDue: commissionDue,
+          remainingDue: fields[FIELD_MAPPINGS.remainingAmount] || (orderTotal - depositAmount),
+          commissionDue: fields[FIELD_MAPPINGS.commissionDue] || 0,
           startDate: fields[FIELD_MAPPINGS.dateOrdered] || fields.created?.substring(0, 10),
           dueDate: fields.duedate,
           estShipDate: fields.duedate,
@@ -188,46 +148,36 @@ serve(async (req) => {
           orderHealth: getOrderHealth(fields),
           daysBehindSchedule: calculateDaysBehind(fields),
           daysInProduction: fields[FIELD_MAPPINGS.daysInProduction] || calculateDaysInProduction(fields),
-          agent: agentValue,
-          accountManager: accountManagerValue,
-          orderNotes: fields.description?.content?.[0]?.content?.[0]?.text || '',
+          agent: fields[FIELD_MAPPINGS.agent]?.value || null,
+          accountManager: fields[FIELD_MAPPINGS.accountManager]?.displayName || null,
+          orderNotes: '',
         };
       });
 
-      // Transform WEB epics to projects
-      const webProjects = (webData.issues || []).map((issue: any) => {
-        const fields = issue.fields;
-        return {
-          id: issue.key,
-          epicName: fields.summary || 'Unknown Epic',
-          epicKey: issue.key,
-          status: mapEpicStatus(fields.status?.name),
-          totalTasks: fields.subtasks?.length || 0,
-          notStarted: 0,
-          inProgress: 0,
-          completed: 0,
-          percentComplete: 0,
-          startDate: fields.created?.substring(0, 10),
-          dueDate: fields.duedate,
-          isOffTrack: false,
-        };
-      });
+      // Transform WEB epics
+      const webProjects = (webData.issues || []).map((issue: any) => ({
+        id: issue.key,
+        epicName: issue.fields.summary || 'Unknown Epic',
+        epicKey: issue.key,
+        status: mapEpicStatus(issue.fields.status?.name),
+        totalTasks: issue.fields.subtasks?.length || 0,
+        notStarted: 0, inProgress: 0, completed: 0, percentComplete: 0,
+        startDate: issue.fields.created?.substring(0, 10),
+        dueDate: issue.fields.duedate,
+        isOffTrack: false,
+      }));
 
-      // Filter active orders (exclude cancelled/completed statuses)
-      const activeOrders = orders.filter((o: any) => {
-        const status = o.currentStatus?.toLowerCase() || '';
-        return !CANCELLED_STATUSES.some(s => status.includes(s));
-      });
+      // Calculate metrics
+      const activeOrders = orders.filter((o: any) => 
+        !CANCELLED_STATUSES.some(s => o.currentStatus?.toLowerCase().includes(s))
+      );
 
-      // Calculate summary metrics
-      const totalCommissionsDue = orders.reduce((sum: number, o: any) => sum + (o.commissionDue || 0), 0);
-      
       const summary = {
         totalActiveCustomers: new Set(activeOrders.map((o: any) => o.customer).filter((c: string) => c && c !== 'Unknown')).size,
         totalActiveOrders: activeOrders.length,
         totalMonthlyRevenue: orders.reduce((sum: number, o: any) => sum + (o.orderTotal || 0), 0),
         totalOutstandingPayments: orders.reduce((sum: number, o: any) => sum + (o.remainingDue || 0), 0),
-        totalCommissionsDue: totalCommissionsDue,
+        totalCommissionsDue: orders.reduce((sum: number, o: any) => sum + (o.commissionDue || 0), 0),
         totalActiveProjects: webProjects.filter((p: any) => p.status === 'active').length,
         orderHealthBreakdown: {
           onTrack: activeOrders.filter((o: any) => o.orderHealth === 'on-track').length,
@@ -235,16 +185,8 @@ serve(async (req) => {
           offTrack: activeOrders.filter((o: any) => o.orderHealth === 'off-track').length,
         },
       };
-      
-      console.log(`Total orders: ${orders.length}, Active orders: ${activeOrders.length}, Commission Due: $${totalCommissionsDue}`);
 
-      // Get unique customers and agents for filters (excluding empty/Unknown values)
-      const customers = ['All Customers', ...new Set(orders.map((o: any) => o.customer).filter((c: string) => c && c !== 'Unknown'))];
-      const agents = ['All Agents', ...new Set(orders.map((o: any) => o.agent).filter(Boolean))];
-      const accountManagers = ['All Account Managers', ...new Set(orders.map((o: any) => o.accountManager).filter(Boolean))];
-
-      console.log('Dashboard data compiled successfully');
-      console.log(`Unique customers: ${customers.length - 1}, Agents: ${agents.length - 1}, Account Managers: ${accountManagers.length - 1}`);
+      console.log(`Orders: ${orders.length}, Active: ${activeOrders.length}`);
 
       return new Response(JSON.stringify({
         success: true,
@@ -252,9 +194,9 @@ serve(async (req) => {
           summary,
           orders,
           webProjects,
-          customers,
-          agents,
-          accountManagers,
+          customers: ['All Customers', ...new Set(orders.map((o: any) => o.customer).filter((c: string) => c && c !== 'Unknown'))],
+          agents: ['All Agents', ...new Set(orders.map((o: any) => o.agent).filter(Boolean))],
+          accountManagers: ['All Account Managers', ...new Set(orders.map((o: any) => o.accountManager).filter(Boolean))],
           lastSynced: new Date().toISOString(),
         }
       }), {
@@ -262,64 +204,37 @@ serve(async (req) => {
       });
     }
 
-    // Fetch fields endpoint for debugging
     if (action === 'fields') {
-      const fieldsResponse = await fetch(
-        `https://${jiraDomain}/rest/api/3/field`,
-        { headers }
-      );
-
-      if (!fieldsResponse.ok) {
-        throw new Error(`JIRA API error: ${fieldsResponse.status}`);
-      }
-
-      const fieldsData = await fieldsResponse.json();
-      console.log(`Fetched ${fieldsData.length} JIRA fields`);
-
-      return new Response(JSON.stringify({
-        success: true,
-        fields: fieldsData,
-      }), {
+      const fieldsResponse = await fetch(`https://${jiraDomain}/rest/api/3/field`, { headers });
+      if (!fieldsResponse.ok) throw new Error(`JIRA API error: ${fieldsResponse.status}`);
+      return new Response(JSON.stringify({ success: true, fields: await fieldsResponse.json() }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     return new Response(JSON.stringify({ error: 'Invalid action' }), {
-      status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Error in jira-sync function:', errorMessage);
-    return new Response(JSON.stringify({ 
-      success: false,
-      error: errorMessage 
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    console.error('Error:', errorMessage);
+    return new Response(JSON.stringify({ success: false, error: errorMessage }), {
+      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
 
-// Helper functions
 function getOrderHealth(fields: any): 'on-track' | 'at-risk' | 'off-track' {
-  // Check custom field for order health if available
   const healthField = fields.customfield_10083?.value?.toLowerCase();
   if (healthField) {
     if (healthField.includes('off') || healthField.includes('behind')) return 'off-track';
     if (healthField.includes('risk') || healthField.includes('warning')) return 'at-risk';
     return 'on-track';
   }
-
-  // Fallback: calculate based on due date and status
   const dueDate = fields.duedate ? new Date(fields.duedate) : null;
-  const now = new Date();
-  
   if (!dueDate) return 'on-track';
-  
-  const daysUntilDue = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  
+  const daysUntilDue = Math.ceil((dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
   if (daysUntilDue < 0) return 'off-track';
   if (daysUntilDue < 7) return 'at-risk';
   return 'on-track';
@@ -328,21 +243,14 @@ function getOrderHealth(fields: any): 'on-track' | 'at-risk' | 'off-track' {
 function calculateDaysBehind(fields: any): number {
   const dueDate = fields.duedate ? new Date(fields.duedate) : null;
   if (!dueDate) return 0;
-  
-  const now = new Date();
-  const daysDiff = Math.ceil((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
-  
+  const daysDiff = Math.ceil((Date.now() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
   return daysDiff > 0 ? daysDiff : 0;
 }
 
 function calculateDaysInProduction(fields: any): number {
   const startDate = fields.customfield_10040 || fields.created?.substring(0, 10);
   if (!startDate) return 0;
-  
-  const start = new Date(startDate);
-  const now = new Date();
-  
-  return Math.ceil((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.ceil((Date.now() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24));
 }
 
 function mapEpicStatus(status: string): 'active' | 'on-hold' | 'complete' {
