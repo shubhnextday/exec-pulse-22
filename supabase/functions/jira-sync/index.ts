@@ -71,7 +71,7 @@ serve(async (req) => {
       let allCmIssues: any[] = [];
       let startAt = 0;
       const maxPerPage = 100;
-      let totalIssues = 0;
+      let fetchedCount = 0;
       
       do {
         const cmResponse = await fetch(
@@ -93,11 +93,12 @@ serve(async (req) => {
         }
 
         const cmData = await cmResponse.json();
-        totalIssues = cmData.total || 0;
-        allCmIssues = [...allCmIssues, ...(cmData.issues || [])];
+        const issues = cmData.issues || [];
+        fetchedCount = issues.length;
+        allCmIssues = [...allCmIssues, ...issues];
         startAt += maxPerPage;
-        console.log(`Fetched ${allCmIssues.length}/${totalIssues} CM issues...`);
-      } while (startAt < totalIssues);
+        console.log(`Fetched batch of ${fetchedCount}, total so far: ${allCmIssues.length}`);
+      } while (fetchedCount === maxPerPage); // Keep fetching while we get full pages
       
       console.log(`Total CM issues fetched: ${allCmIssues.length}`);
 
