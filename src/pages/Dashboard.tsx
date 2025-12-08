@@ -10,6 +10,7 @@ import { WebProjectsTable } from '@/components/dashboard/WebProjectsTable';
 import { TeamWorkload } from '@/components/dashboard/TeamWorkload';
 import { CommissionsTable } from '@/components/dashboard/CommissionsTable';
 import { TopCustomers } from '@/components/dashboard/TopCustomers';
+import { OutstandingDetailsDialog } from '@/components/dashboard/OutstandingDetailsDialog';
 import { cn } from '@/lib/utils';
 import {
   Users,
@@ -76,6 +77,7 @@ export default function Dashboard() {
   const [selectedAgent, setSelectedAgent] = useState('All Agents');
   const [selectedAccountManager, setSelectedAccountManager] = useState('All Account Managers');
   const [dateRange, setDateRange] = useState('this-month'); // Default to current month for fast load
+  const [outstandingDialogOpen, setOutstandingDialogOpen] = useState(false);
 
   // JIRA data hook
   const {
@@ -413,7 +415,7 @@ export default function Dashboard() {
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div>
+                  <div onClick={() => setOutstandingDialogOpen(true)}>
                     <MetricCard
                       title="Outstanding"
                       value={`$${reactiveMetrics.totalOutstandingPayments > 0 ? (reactiveMetrics.totalOutstandingPayments / 1000).toFixed(0) + 'k' : '0'}`}
@@ -426,6 +428,8 @@ export default function Dashboard() {
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs whitespace-pre-line">
                   {metricExplanations.outstanding}
+                  <br /><br />
+                  <span className="text-primary">Click to view details</span>
                 </TooltipContent>
               </Tooltip>
 
@@ -494,6 +498,13 @@ export default function Dashboard() {
             <TopCustomers customers={realTopCustomers.length > 0 ? realTopCustomers : mockTopCustomers} />
           </section>
         </main>
+        
+        {/* Outstanding Details Dialog */}
+        <OutstandingDetailsDialog
+          open={outstandingDialogOpen}
+          onOpenChange={setOutstandingDialogOpen}
+          orders={filteredOrders}
+        />
       </div>
     </TooltipProvider>
   );
