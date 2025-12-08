@@ -67,8 +67,8 @@ serve(async (req) => {
     const { action = 'dashboard' } = await req.json().catch(() => ({}));
 
     if (action === 'dashboard') {
-      // Fetch ALL Contract Manufacturing issues from Nov 1, 2025+ using pagination
-      const cmJql = 'project = "CM" AND created >= "2025-11-01" ORDER BY created DESC';
+      // Fetch ALL Contract Manufacturing issues (no date restriction to get all customers)
+      const cmJql = 'project = "CM" ORDER BY created DESC';
       let allCmIssues: any[] = [];
       let startAt = 0;
       const maxPerPage = 100;
