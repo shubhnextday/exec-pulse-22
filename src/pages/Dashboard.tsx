@@ -554,7 +554,7 @@ export default function Dashboard() {
         <OutstandingDetailsDialog
           open={outstandingDialogOpen}
           onOpenChange={setOutstandingDialogOpen}
-          orders={filteredOrders}
+          orders={displayOrders}
         />
         
         <ActiveOrdersDialog
