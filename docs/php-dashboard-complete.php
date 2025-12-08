@@ -1,549 +1,439 @@
 <?php
 /**
- * NextDay Nutra Executive Dashboard - Complete PHP Backend
- * =========================================================
- * This is an EXACT replica of the Lovable edge function (jira-sync/index.ts)
+ * NextDay Nutra Executive Dashboard - WordPress Code Snippet
+ * ===========================================================
  * 
- * USAGE:
- * 1. Upload this file to your PHP server
- * 2. Update the credentials below
- * 3. Call via POST request with JSON body: {"action": "dashboard"}
+ * INSTALLATION:
+ * 1. Install "Code Snippets" plugin in WordPress (or use theme's functions.php)
+ * 2. Go to Snippets → Add New
+ * 3. Paste this entire code
+ * 4. Save and Activate
+ * 5. Use shortcode [ndn_executive_dashboard] on any page
  * 
- * API Response: JSON with summary, orders, webProjects, customers, agents, accountManagers
+ * UPDATE YOUR CREDENTIALS ON LINES 18-19 BELOW
  */
 
-// ============================================================================
-// 1. CONFIGURATION - UPDATE THESE VALUES
-// ============================================================================
+// ============================================
+// CONFIGURATION - UPDATE THESE VALUES
+// ============================================
+define('NDN_JIRA_DOMAIN', 'nextdaynutra.atlassian.net');
+define('NDN_JIRA_EMAIL', 'your-email@nextdaynutra.com');      // ← CHANGE THIS
+define('NDN_JIRA_API_TOKEN', 'your-api-token-here');          // ← CHANGE THIS
 
-define('JIRA_DOMAIN', 'nextdaynutra.atlassian.net');
-define('JIRA_EMAIL', 'your-email@nextdaynutra.com');  // ← CHANGE THIS
-define('JIRA_API_TOKEN', 'your-api-token-here');       // ← CHANGE THIS
-
-// ============================================================================
-// 2. JIRA CUSTOM FIELD MAPPINGS (Verified from JIRA API)
-// ============================================================================
-
-$FIELD_MAPPINGS = [
-    // Core fields
-    'customer'          => 'customfield_10038',    // Customer (Dropdown) - use .value
-    'agent'             => 'customfield_11573',    // Agent (Dropdown) - use .value
-    'accountManager'    => 'customfield_11393',    // Account Manager (User Picker) - use .displayName
-    
-    // Financial fields
-    'orderTotal'        => 'customfield_11567',    // Order Total (Number)
-    'depositAmount'     => 'customfield_10074',    // Deposit Amount (Number)
-    'remainingAmount'   => 'customfield_11569',    // Remaining Amount (Number)
-    'commissionDue'     => 'customfield_11577',    // Commission Due (Number)
-    
-    // Order fields
-    'quantityOrdered'   => 'customfield_10073',    // Quantity Ordered (Number)
-    'salesOrderNumber'  => 'customfield_10113',    // Sales Order # (Text)
-    'productName'       => 'customfield_10115',    // Product Name (Text)
-    'productId'         => 'customfield_10732',    // Product_ID (Text)
-    
-    // Date fields
-    'dateOrdered'       => 'customfield_10040',    // Date Ordered
-    'actualShipDate'    => 'customfield_11161',    // Actual Ship Date
-    'commissionPaidDate'=> 'customfield_11578',    // Commission Paid (Date)
-    
-    // Production fields
-    'daysInProduction'  => 'customfield_10930',    // Days In Production (Number)
-];
-
-// ============================================================================
-// 3. CANCELLED/INACTIVE STATUSES
-// ============================================================================
-
-$CANCELLED_STATUSES = ['cancelled', 'canceled', 'done', 'shipped', 'complete', 'completed', 'closed'];
-
-// ============================================================================
-// 4. CORS HEADERS (for browser requests)
-// ============================================================================
-
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Headers: authorization, x-client-info, apikey, content-type');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Content-Type: application/json');
-
-// Handle CORS preflight
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
+// ============================================
+// JIRA FIELD MAPPINGS
+// ============================================
+function ndn_get_field_map() {
+    return [
+        'customer'           => 'customfield_10038',
+        'agent'              => 'customfield_11573',
+        'accountManager'     => 'customfield_11393',
+        'orderTotal'         => 'customfield_11567',
+        'depositAmount'      => 'customfield_10074',
+        'remainingAmount'    => 'customfield_11569',
+        'commissionDue'      => 'customfield_11577',
+        'quantityOrdered'    => 'customfield_10073',
+        'salesOrderNumber'   => 'customfield_10113',
+        'productName'        => 'customfield_10115',
+        'productId'          => 'customfield_10732',
+        'dateOrdered'        => 'customfield_10040',
+        'actualShipDate'     => 'customfield_11161',
+        'commissionPaidDate' => 'customfield_11578',
+        'daysInProduction'   => 'customfield_10930',
+        'healthField'        => 'customfield_10083',
+    ];
 }
 
-// ============================================================================
-// 5. JIRA API REQUEST FUNCTION
-// ============================================================================
+function ndn_get_cancelled_statuses() {
+    return ['cancelled', 'canceled', 'done', 'shipped', 'complete', 'completed', 'closed'];
+}
 
-function jiraRequest($method, $endpoint, $body = null) {
-    $url = 'https://' . JIRA_DOMAIN . $endpoint;
+// ============================================
+// JIRA API REQUEST (NEW /search/jql ENDPOINT)
+// ============================================
+function ndn_jira_api_request($jql, $max_results = 100) {
+    $url = 'https://' . NDN_JIRA_DOMAIN . '/rest/api/3/search/jql';
     
-    $auth = base64_encode(JIRA_EMAIL . ':' . JIRA_API_TOKEN);
+    $response = wp_remote_post($url, [
+        'headers' => [
+            'Authorization' => 'Basic ' . base64_encode(NDN_JIRA_EMAIL . ':' . NDN_JIRA_API_TOKEN),
+            'Content-Type'  => 'application/json',
+            'Accept'        => 'application/json',
+        ],
+        'body' => json_encode([
+            'jql'        => $jql,
+            'maxResults' => $max_results,
+            'fields'     => ['*all'],
+        ]),
+        'timeout' => 30,
+    ]);
     
-    $headers = [
-        'Authorization: Basic ' . $auth,
-        'Content-Type: application/json',
-        'Accept: application/json',
-    ];
+    if (is_wp_error($response)) {
+        return ['error' => $response->get_error_message()];
+    }
     
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    $code = wp_remote_retrieve_response_code($response);
+    $body = json_decode(wp_remote_retrieve_body($response), true);
     
-    if (strtoupper($method) === 'POST') {
-        curl_setopt($ch, CURLOPT_POST, true);
-        if ($body !== null) {
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
+    if ($code < 200 || $code >= 300) {
+        $msg = $body['errorMessages'][0] ?? $body['message'] ?? "HTTP $code";
+        return ['error' => $msg];
+    }
+    
+    return $body;
+}
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+function ndn_is_order_active($status) {
+    $status = strtolower(trim($status));
+    foreach (ndn_get_cancelled_statuses() as $cancelled) {
+        if (strpos($status, $cancelled) !== false) {
+            return false;
         }
     }
-    
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $error = curl_error($ch);
-    curl_close($ch);
-    
-    if ($error) {
-        return ['error' => 'cURL Error: ' . $error];
-    }
-    
-    $data = json_decode($response, true);
-    
-    if ($httpCode < 200 || $httpCode >= 300) {
-        $errorMsg = isset($data['errorMessages'][0]) ? $data['errorMessages'][0] : 'HTTP ' . $httpCode;
-        return ['error' => $errorMsg];
-    }
-    
-    return $data;
+    return true;
 }
 
-// ============================================================================
-// 6. HELPER FUNCTIONS (Exact replicas from edge function)
-// ============================================================================
-
-/**
- * Determine order health based on custom field or due date
- */
-function getOrderHealth($fields) {
-    // Check custom field for order health if available
-    $healthField = isset($fields['customfield_10083']['value']) 
-        ? strtolower($fields['customfield_10083']['value']) 
-        : '';
+function ndn_get_order_health($fields) {
+    $map = ndn_get_field_map();
+    $healthValue = $fields[$map['healthField']]['value'] ?? '';
+    $healthLower = strtolower($healthValue);
     
-    if ($healthField) {
-        if (strpos($healthField, 'off') !== false || strpos($healthField, 'behind') !== false) {
+    if ($healthValue) {
+        if (strpos($healthLower, 'off') !== false || strpos($healthLower, 'behind') !== false) {
             return 'off-track';
         }
-        if (strpos($healthField, 'risk') !== false || strpos($healthField, 'warning') !== false) {
+        if (strpos($healthLower, 'risk') !== false || strpos($healthLower, 'warning') !== false) {
             return 'at-risk';
         }
         return 'on-track';
     }
     
-    // Fallback: calculate based on due date
-    $dueDate = isset($fields['duedate']) ? $fields['duedate'] : null;
-    if (!$dueDate) {
-        return 'on-track';
-    }
+    // Fallback to due date
+    $dueDate = $fields['duedate'] ?? null;
+    if (!$dueDate) return 'on-track';
     
-    $daysUntilDue = ceil((strtotime($dueDate) - time()) / 86400);
-    
+    $daysUntilDue = (strtotime($dueDate) - time()) / 86400;
     if ($daysUntilDue < 0) return 'off-track';
     if ($daysUntilDue < 7) return 'at-risk';
     return 'on-track';
 }
 
-/**
- * Calculate how many days behind schedule an order is
- */
-function calculateDaysBehind($fields) {
-    $dueDate = isset($fields['duedate']) ? $fields['duedate'] : null;
+function ndn_calculate_days_behind($fields) {
+    $dueDate = $fields['duedate'] ?? null;
     if (!$dueDate) return 0;
-    
-    $daysDiff = ceil((time() - strtotime($dueDate)) / 86400);
-    return $daysDiff > 0 ? $daysDiff : 0;
+    $diff = (time() - strtotime($dueDate)) / 86400;
+    return max(0, (int)$diff);
 }
 
-/**
- * Calculate days in production from start date
- */
-function calculateDaysInProduction($fields) {
-    global $FIELD_MAPPINGS;
-    
-    $startDate = isset($fields[$FIELD_MAPPINGS['dateOrdered']]) 
-        ? $fields[$FIELD_MAPPINGS['dateOrdered']] 
-        : null;
-    
+function ndn_calculate_days_in_production($fields) {
+    $map = ndn_get_field_map();
+    $startDate = $fields[$map['dateOrdered']] ?? null;
     if (!$startDate && isset($fields['created'])) {
         $startDate = substr($fields['created'], 0, 10);
     }
-    
     if (!$startDate) return 0;
-    
-    return ceil((time() - strtotime($startDate)) / 86400);
+    return (int)((time() - strtotime($startDate)) / 86400);
 }
 
-/**
- * Map JIRA epic status to simplified status
- */
-function mapEpicStatus($status) {
-    $lower = strtolower($status ?? '');
-    
-    if (strpos($lower, 'done') !== false || 
-        strpos($lower, 'complete') !== false || 
-        strpos($lower, 'closed') !== false) {
+function ndn_map_epic_status($status) {
+    $lower = strtolower($status);
+    if (strpos($lower, 'done') !== false || strpos($lower, 'complete') !== false || strpos($lower, 'closed') !== false) {
         return 'complete';
     }
-    
-    if (strpos($lower, 'hold') !== false || 
-        strpos($lower, 'blocked') !== false || 
-        strpos($lower, 'paused') !== false) {
+    if (strpos($lower, 'hold') !== false || strpos($lower, 'blocked') !== false || strpos($lower, 'paused') !== false) {
         return 'on-hold';
     }
-    
     return 'active';
 }
 
-/**
- * Check if an order is active (not cancelled/completed)
- */
-function isOrderActive($status) {
-    global $CANCELLED_STATUSES;
+// ============================================
+// DATA TRANSFORMERS
+// ============================================
+function ndn_transform_order($issue) {
+    $map = ndn_get_field_map();
+    $fields = $issue['fields'] ?? [];
     
-    $status = strtolower($status ?? '');
-    
-    foreach ($CANCELLED_STATUSES as $cancelled) {
-        if (strpos($status, $cancelled) !== false) {
-            return false;
-        }
-    }
-    
-    return true;
-}
-
-/**
- * Safely extract order notes from description field
- */
-function safeOrderNotes($fields) {
-    if (isset($fields['description']['content'][0]['content'][0]['text'])) {
-        return $fields['description']['content'][0]['content'][0]['text'];
-    }
-    return '';
-}
-
-// ============================================================================
-// 7. TRANSFORM FUNCTIONS
-// ============================================================================
-
-/**
- * Transform JIRA issue to Order object
- */
-function transformIssueToOrder($issue) {
-    global $FIELD_MAPPINGS;
-    
-    $fields = isset($issue['fields']) ? $issue['fields'] : [];
-    
-    // Extract customer name from dropdown field
-    $customerValue = isset($fields[$FIELD_MAPPINGS['customer']]['value']) 
-        ? $fields[$FIELD_MAPPINGS['customer']]['value'] 
-        : 'Unknown';
-    
-    // Extract agent from dropdown field
-    $agentValue = isset($fields[$FIELD_MAPPINGS['agent']]['value']) 
-        ? $fields[$FIELD_MAPPINGS['agent']]['value'] 
-        : null;
-    
-    // Extract account manager from user picker field
-    $accountManagerValue = isset($fields[$FIELD_MAPPINGS['accountManager']]['displayName']) 
-        ? $fields[$FIELD_MAPPINGS['accountManager']]['displayName'] 
-        : null;
-    
-    // Extract financial values
-    $orderTotal = isset($fields[$FIELD_MAPPINGS['orderTotal']]) 
-        ? (float)$fields[$FIELD_MAPPINGS['orderTotal']] 
-        : 0;
-    $depositAmount = isset($fields[$FIELD_MAPPINGS['depositAmount']]) 
-        ? (float)$fields[$FIELD_MAPPINGS['depositAmount']] 
-        : 0;
-    $remainingAmount = isset($fields[$FIELD_MAPPINGS['remainingAmount']]) 
-        ? (float)$fields[$FIELD_MAPPINGS['remainingAmount']] 
-        : ($orderTotal - $depositAmount);
-    
-    // Extract other fields
-    $productName = isset($fields[$FIELD_MAPPINGS['productName']]) 
-        ? $fields[$FIELD_MAPPINGS['productName']] 
-        : (isset($fields['summary']) ? $fields['summary'] : 'Unknown Product');
-    $salesOrderNumber = isset($fields[$FIELD_MAPPINGS['salesOrderNumber']]) 
-        ? $fields[$FIELD_MAPPINGS['salesOrderNumber']] 
-        : $issue['key'];
-    
-    // Extract commission due
-    $commissionDue = isset($fields[$FIELD_MAPPINGS['commissionDue']]) 
-        ? (float)$fields[$FIELD_MAPPINGS['commissionDue']] 
-        : 0;
-    
-    // Extract dates
-    $startDate = isset($fields[$FIELD_MAPPINGS['dateOrdered']]) 
-        ? $fields[$FIELD_MAPPINGS['dateOrdered']] 
-        : (isset($fields['created']) ? substr($fields['created'], 0, 10) : null);
-    
-    // Extract days in production
-    $daysInProduction = isset($fields[$FIELD_MAPPINGS['daysInProduction']]) 
-        ? (int)$fields[$FIELD_MAPPINGS['daysInProduction']] 
-        : calculateDaysInProduction($fields);
+    $orderTotal = (float)($fields[$map['orderTotal']] ?? 0);
+    $depositAmount = (float)($fields[$map['depositAmount']] ?? 0);
+    $remainingDue = (float)($fields[$map['remainingAmount']] ?? ($orderTotal - $depositAmount));
     
     return [
         'id'                 => $issue['key'],
-        'salesOrderNumber'   => $salesOrderNumber,
-        'customer'           => $customerValue,
-        'productName'        => $productName,
-        'quantityOrdered'    => isset($fields[$FIELD_MAPPINGS['quantityOrdered']]) 
-            ? (int)$fields[$FIELD_MAPPINGS['quantityOrdered']] 
-            : 0,
+        'salesOrderNumber'   => $fields[$map['salesOrderNumber']] ?? $issue['key'],
+        'customer'           => $fields[$map['customer']]['value'] ?? 'Unknown',
+        'productName'        => $fields[$map['productName']] ?? ($fields['summary'] ?? 'Unknown'),
+        'quantityOrdered'    => (int)($fields[$map['quantityOrdered']] ?? 0),
         'orderTotal'         => $orderTotal,
         'depositAmount'      => $depositAmount,
-        'finalPayment'       => $orderTotal - $depositAmount,
-        'remainingDue'       => $remainingAmount,
-        'commissionDue'      => $commissionDue,
-        'startDate'          => $startDate,
-        'dueDate'            => isset($fields['duedate']) ? $fields['duedate'] : null,
-        'estShipDate'        => isset($fields['duedate']) ? $fields['duedate'] : null,
-        'actualShipDate'     => isset($fields[$FIELD_MAPPINGS['actualShipDate']]) 
-            ? $fields[$FIELD_MAPPINGS['actualShipDate']] 
-            : null,
-        'currentStatus'      => isset($fields['status']['name']) 
-            ? $fields['status']['name'] 
-            : 'Unknown',
-        'expectedStatus'     => isset($fields['status']['name']) 
-            ? $fields['status']['name'] 
-            : 'Unknown',
-        'orderHealth'        => getOrderHealth($fields),
-        'daysBehindSchedule' => calculateDaysBehind($fields),
-        'daysInProduction'   => $daysInProduction,
-        'agent'              => $agentValue,
-        'accountManager'     => $accountManagerValue,
-        'orderNotes'         => safeOrderNotes($fields),
+        'remainingDue'       => $remainingDue,
+        'commissionDue'      => (float)($fields[$map['commissionDue']] ?? 0),
+        'startDate'          => $fields[$map['dateOrdered']] ?? (isset($fields['created']) ? substr($fields['created'], 0, 10) : null),
+        'dueDate'            => $fields['duedate'] ?? null,
+        'actualShipDate'     => $fields[$map['actualShipDate']] ?? null,
+        'currentStatus'      => $fields['status']['name'] ?? 'Unknown',
+        'orderHealth'        => ndn_get_order_health($fields),
+        'daysBehindSchedule' => ndn_calculate_days_behind($fields),
+        'daysInProduction'   => (int)($fields[$map['daysInProduction']] ?? ndn_calculate_days_in_production($fields)),
+        'agent'              => $fields[$map['agent']]['value'] ?? null,
+        'accountManager'     => $fields[$map['accountManager']]['displayName'] ?? null,
     ];
 }
 
-/**
- * Transform JIRA epic to Web Project object
- */
-function transformEpicToWebProject($issue) {
-    $fields = isset($issue['fields']) ? $issue['fields'] : [];
-    
+function ndn_transform_web_project($issue) {
+    $fields = $issue['fields'] ?? [];
     return [
-        'id'              => $issue['key'],
-        'epicName'        => isset($fields['summary']) ? $fields['summary'] : 'Unknown Epic',
-        'epicKey'         => $issue['key'],
-        'status'          => mapEpicStatus(isset($fields['status']['name']) ? $fields['status']['name'] : ''),
-        'totalTasks'      => isset($fields['subtasks']) ? count($fields['subtasks']) : 0,
-        'notStarted'      => 0,
-        'inProgress'      => 0,
-        'completed'       => 0,
-        'percentComplete' => 0,
-        'startDate'       => isset($fields['created']) ? substr($fields['created'], 0, 10) : null,
-        'dueDate'         => isset($fields['duedate']) ? $fields['duedate'] : null,
-        'isOffTrack'      => false,
+        'id'        => $issue['key'],
+        'epicName'  => $fields['summary'] ?? 'Unknown',
+        'status'    => ndn_map_epic_status($fields['status']['name'] ?? ''),
+        'startDate' => isset($fields['created']) ? substr($fields['created'], 0, 10) : null,
+        'dueDate'   => $fields['duedate'] ?? null,
     ];
 }
 
-// ============================================================================
-// 8. MAIN API HANDLER
-// ============================================================================
-
-function handleDashboardRequest() {
-    global $CANCELLED_STATUSES;
-    
-    // -------------------------------------------------------------------------
-    // STEP 1: Fetch Contract Manufacturing (CM) issues
-    // IMPORTANT: Using NEW API endpoint /rest/api/3/search/jql
-    // -------------------------------------------------------------------------
-    
-    $cmResult = jiraRequest('POST', '/rest/api/3/search/jql', [
-        'jql'        => 'project = "CM" ORDER BY created DESC',
-        'maxResults' => 100,
-        'fields'     => ['*all'],
-    ]);
-    
-    if (isset($cmResult['error'])) {
-        return ['success' => false, 'error' => 'JIRA CM Error: ' . $cmResult['error']];
+// ============================================
+// FETCH ALL DASHBOARD DATA
+// ============================================
+function ndn_fetch_all_data() {
+    // Fetch CM Orders using NEW API endpoint
+    $cm = ndn_jira_api_request('project = "CM" ORDER BY created DESC', 100);
+    if (isset($cm['error'])) {
+        return ['error' => 'CM Error: ' . $cm['error']];
     }
     
-    // -------------------------------------------------------------------------
-    // STEP 2: Fetch Web Development (WEB) epics
-    // IMPORTANT: Using NEW API endpoint /rest/api/3/search/jql
-    // -------------------------------------------------------------------------
-    
-    $webResult = jiraRequest('POST', '/rest/api/3/search/jql', [
-        'jql'        => 'project = "WEB" AND issuetype = Epic ORDER BY created DESC',
-        'maxResults' => 50,
-        'fields'     => ['*all'],
-    ]);
-    
-    if (isset($webResult['error'])) {
-        return ['success' => false, 'error' => 'JIRA WEB Error: ' . $webResult['error']];
+    // Fetch WEB Epics using NEW API endpoint
+    $web = ndn_jira_api_request('project = "WEB" AND issuetype = Epic ORDER BY created DESC', 50);
+    if (isset($web['error'])) {
+        return ['error' => 'WEB Error: ' . $web['error']];
     }
     
-    // -------------------------------------------------------------------------
-    // STEP 3: Transform issues to orders and projects
-    // -------------------------------------------------------------------------
+    $orders = array_map('ndn_transform_order', $cm['issues'] ?? []);
+    $webProjects = array_map('ndn_transform_web_project', $web['issues'] ?? []);
     
-    $cmIssues = isset($cmResult['issues']) ? $cmResult['issues'] : [];
-    $webIssues = isset($webResult['issues']) ? $webResult['issues'] : [];
-    
-    $orders = array_map('transformIssueToOrder', $cmIssues);
-    $webProjects = array_map('transformEpicToWebProject', $webIssues);
-    
-    // -------------------------------------------------------------------------
-    // STEP 4: Filter active orders (exclude cancelled/completed)
-    // -------------------------------------------------------------------------
-    
-    $activeOrders = array_filter($orders, function($order) {
-        return isOrderActive($order['currentStatus']);
+    // Filter active orders
+    $activeOrders = array_filter($orders, function($o) {
+        return ndn_is_order_active($o['currentStatus']);
     });
-    $activeOrders = array_values($activeOrders); // Re-index array
     
-    // -------------------------------------------------------------------------
-    // STEP 5: Calculate summary metrics
-    // -------------------------------------------------------------------------
-    
-    // Get unique active customers
-    $uniqueCustomers = [];
-    foreach ($activeOrders as $order) {
-        if (!empty($order['customer']) && $order['customer'] !== 'Unknown') {
-            $uniqueCustomers[$order['customer']] = true;
+    // Get unique customers
+    $customers = [];
+    foreach ($activeOrders as $o) {
+        if (!empty($o['customer']) && $o['customer'] !== 'Unknown') {
+            $customers[$o['customer']] = true;
         }
     }
-    
-    // Calculate totals
-    $totalMonthlyRevenue = array_sum(array_column($orders, 'orderTotal'));
-    $totalOutstandingPayments = array_sum(array_column($orders, 'remainingDue'));
-    $totalCommissionsDue = array_sum(array_column($orders, 'commissionDue'));
     
     // Count active web projects
-    $activeWebProjects = array_filter($webProjects, function($project) {
-        return $project['status'] === 'active';
+    $activeWebProjects = array_filter($webProjects, function($p) {
+        return $p['status'] === 'active';
     });
     
-    // Calculate order health breakdown
-    $onTrackCount = count(array_filter($activeOrders, function($o) { 
-        return $o['orderHealth'] === 'on-track'; 
-    }));
-    $atRiskCount = count(array_filter($activeOrders, function($o) { 
-        return $o['orderHealth'] === 'at-risk'; 
-    }));
-    $offTrackCount = count(array_filter($activeOrders, function($o) { 
-        return $o['orderHealth'] === 'off-track'; 
-    }));
-    
-    $summary = [
-        'totalActiveCustomers'     => count($uniqueCustomers),
-        'totalActiveOrders'        => count($activeOrders),
-        'totalMonthlyRevenue'      => $totalMonthlyRevenue,
-        'totalOutstandingPayments' => $totalOutstandingPayments,
-        'totalCommissionsDue'      => $totalCommissionsDue,
-        'totalActiveProjects'      => count($activeWebProjects),
-        'orderHealthBreakdown'     => [
-            'onTrack'  => $onTrackCount,
-            'atRisk'   => $atRiskCount,
-            'offTrack' => $offTrackCount,
-        ],
-    ];
-    
-    // -------------------------------------------------------------------------
-    // STEP 6: Extract unique filter values
-    // -------------------------------------------------------------------------
-    
-    // Customers (excluding empty/Unknown)
-    $customerList = ['All Customers'];
-    foreach ($orders as $order) {
-        if (!empty($order['customer']) && $order['customer'] !== 'Unknown') {
-            if (!in_array($order['customer'], $customerList)) {
-                $customerList[] = $order['customer'];
-            }
-        }
-    }
-    
-    // Agents (excluding empty)
-    $agentList = ['All Agents'];
-    foreach ($orders as $order) {
-        if (!empty($order['agent'])) {
-            if (!in_array($order['agent'], $agentList)) {
-                $agentList[] = $order['agent'];
-            }
-        }
-    }
-    
-    // Account Managers (excluding empty)
-    $accountManagerList = ['All Account Managers'];
-    foreach ($orders as $order) {
-        if (!empty($order['accountManager'])) {
-            if (!in_array($order['accountManager'], $accountManagerList)) {
-                $accountManagerList[] = $order['accountManager'];
-            }
-        }
-    }
-    
-    // -------------------------------------------------------------------------
-    // STEP 7: Return complete response
-    // -------------------------------------------------------------------------
+    // Health breakdown
+    $onTrack = count(array_filter($activeOrders, fn($o) => $o['orderHealth'] === 'on-track'));
+    $atRisk = count(array_filter($activeOrders, fn($o) => $o['orderHealth'] === 'at-risk'));
+    $offTrack = count(array_filter($activeOrders, fn($o) => $o['orderHealth'] === 'off-track'));
     
     return [
-        'success' => true,
-        'data'    => [
-            'summary'         => $summary,
-            'orders'          => $orders,
-            'webProjects'     => $webProjects,
-            'customers'       => $customerList,
-            'agents'          => $agentList,
-            'accountManagers' => $accountManagerList,
-            'lastSynced'      => date('c'), // ISO 8601 format
+        'summary' => [
+            'totalActiveCustomers'     => count($customers),
+            'totalActiveOrders'        => count($activeOrders),
+            'totalMonthlyRevenue'      => array_sum(array_column($orders, 'orderTotal')),
+            'totalOutstandingPayments' => array_sum(array_column($orders, 'remainingDue')),
+            'totalCommissionsDue'      => array_sum(array_column($orders, 'commissionDue')),
+            'totalActiveProjects'      => count($activeWebProjects),
+            'orderHealth' => [
+                'onTrack'  => $onTrack,
+                'atRisk'   => $atRisk,
+                'offTrack' => $offTrack,
+            ],
         ],
+        'orders'      => array_values($activeOrders),
+        'webProjects' => $webProjects,
     ];
 }
 
-/**
- * Fetch JIRA fields (for debugging)
- */
-function handleFieldsRequest() {
-    $result = jiraRequest('GET', '/rest/api/3/field', null);
+// ============================================
+// SHORTCODE RENDER
+// ============================================
+function ndn_executive_dashboard_shortcode() {
+    $data = ndn_fetch_all_data();
     
-    if (isset($result['error'])) {
-        return ['success' => false, 'error' => $result['error']];
+    if (isset($data['error'])) {
+        return '<div style="padding:20px;background:#fee2e2;color:#991b1b;border-radius:12px;font-family:system-ui;">
+            <strong>JIRA Error:</strong> ' . esc_html($data['error']) . '
+        </div>';
     }
     
-    return [
-        'success' => true,
-        'fields'  => $result,
-    ];
+    $s = $data['summary'];
+    $orders = $data['orders'];
+    $webProjects = $data['webProjects'];
+    
+    ob_start();
+    ?>
+    <style>
+        .ndn-dash{font-family:'Inter',system-ui,-apple-system,sans-serif;max-width:1400px;margin:0 auto;padding:24px;background:#f8fafc;}
+        .ndn-header{margin-bottom:32px;}
+        .ndn-header h1{font-size:28px;font-weight:700;color:#0f172a;margin:0 0 8px;}
+        .ndn-header p{color:#64748b;margin:0;font-size:14px;}
+        .ndn-metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:16px;margin-bottom:32px;}
+        .ndn-metric{background:#fff;border-radius:16px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.08);border:1px solid #e2e8f0;}
+        .ndn-metric-label{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#64748b;margin-bottom:8px;}
+        .ndn-metric-value{font-size:28px;font-weight:700;color:#0f172a;}
+        .ndn-metric-value.orange{color:#F05323;}
+        .ndn-section{background:#fff;border-radius:16px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.08);border:1px solid #e2e8f0;margin-bottom:24px;}
+        .ndn-section-title{font-size:16px;font-weight:600;color:#0f172a;margin:0 0 16px;display:flex;align-items:center;gap:8px;}
+        .ndn-table{width:100%;border-collapse:collapse;font-size:13px;}
+        .ndn-table th{text-align:left;padding:12px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#64748b;background:#f8fafc;border-bottom:1px solid #e2e8f0;}
+        .ndn-table td{padding:12px;border-bottom:1px solid #f1f5f9;color:#334155;}
+        .ndn-table tr:hover{background:#f8fafc;}
+        .ndn-badge{display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:500;}
+        .ndn-badge.on-track{background:#dcfce7;color:#166534;}
+        .ndn-badge.at-risk{background:#fef3c7;color:#92400e;}
+        .ndn-badge.off-track{background:#fee2e2;color:#b91c1c;}
+        .ndn-badge.status{background:#e2e8f0;color:#475569;}
+        .ndn-badge.active{background:#dbeafe;color:#1e40af;}
+        .ndn-badge.complete{background:#dcfce7;color:#166534;}
+        .ndn-badge.on-hold{background:#fef3c7;color:#92400e;}
+        .ndn-grid{display:grid;grid-template-columns:2fr 1fr;gap:24px;}
+        .ndn-health-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f1f5f9;}
+        .ndn-health-item:last-child{border-bottom:none;}
+        .ndn-health-count{font-size:20px;font-weight:600;color:#0f172a;}
+        @media(max-width:1200px){.ndn-metrics{grid-template-columns:repeat(3,1fr);}}
+        @media(max-width:768px){.ndn-metrics{grid-template-columns:repeat(2,1fr);}.ndn-grid{grid-template-columns:1fr;}}
+    </style>
+    
+    <div class="ndn-dash">
+        <!-- Header -->
+        <div class="ndn-header">
+            <h1>Executive Dashboard</h1>
+            <p>NextDay Nutra Operations Overview • Last updated: <?php echo date('M j, Y g:i A'); ?></p>
+        </div>
+        
+        <!-- Metrics -->
+        <div class="ndn-metrics">
+            <div class="ndn-metric">
+                <div class="ndn-metric-label">Active Customers</div>
+                <div class="ndn-metric-value"><?php echo number_format($s['totalActiveCustomers']); ?></div>
+            </div>
+            <div class="ndn-metric">
+                <div class="ndn-metric-label">Active Orders</div>
+                <div class="ndn-metric-value"><?php echo number_format($s['totalActiveOrders']); ?></div>
+            </div>
+            <div class="ndn-metric">
+                <div class="ndn-metric-label">Monthly Revenue</div>
+                <div class="ndn-metric-value orange">$<?php echo number_format($s['totalMonthlyRevenue']); ?></div>
+            </div>
+            <div class="ndn-metric">
+                <div class="ndn-metric-label">Outstanding</div>
+                <div class="ndn-metric-value">$<?php echo number_format($s['totalOutstandingPayments']); ?></div>
+            </div>
+            <div class="ndn-metric">
+                <div class="ndn-metric-label">Commissions Due</div>
+                <div class="ndn-metric-value orange">$<?php echo number_format($s['totalCommissionsDue']); ?></div>
+            </div>
+            <div class="ndn-metric">
+                <div class="ndn-metric-label">Web Projects</div>
+                <div class="ndn-metric-value"><?php echo number_format($s['totalActiveProjects']); ?></div>
+            </div>
+        </div>
+        
+        <!-- Orders Table -->
+        <div class="ndn-section">
+            <h2 class="ndn-section-title">📦 Active Orders</h2>
+            <div style="overflow-x:auto;">
+                <table class="ndn-table">
+                    <thead>
+                        <tr>
+                            <th>Order</th>
+                            <th>Customer</th>
+                            <th>Product</th>
+                            <th>Agent</th>
+                            <th>Status</th>
+                            <th>Health</th>
+                            <th>Days Behind</th>
+                            <th>Order Total</th>
+                            <th>Outstanding</th>
+                            <th>Due Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($orders)): ?>
+                            <tr><td colspan="10" style="text-align:center;color:#64748b;padding:40px;">No active orders found</td></tr>
+                        <?php else: ?>
+                            <?php foreach ($orders as $o): ?>
+                                <tr>
+                                    <td><strong><?php echo esc_html($o['id']); ?></strong></td>
+                                    <td><?php echo esc_html($o['customer']); ?></td>
+                                    <td><?php echo esc_html(substr($o['productName'], 0, 30)); ?></td>
+                                    <td><?php echo esc_html($o['agent'] ?? '-'); ?></td>
+                                    <td><span class="ndn-badge status"><?php echo esc_html($o['currentStatus']); ?></span></td>
+                                    <td><span class="ndn-badge <?php echo esc_attr($o['orderHealth']); ?>"><?php echo ucwords(str_replace('-', ' ', $o['orderHealth'])); ?></span></td>
+                                    <td><?php echo $o['daysBehindSchedule']; ?></td>
+                                    <td>$<?php echo number_format($o['orderTotal']); ?></td>
+                                    <td>$<?php echo number_format($o['remainingDue']); ?></td>
+                                    <td><?php echo esc_html($o['dueDate'] ?? '-'); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Bottom Grid -->
+        <div class="ndn-grid">
+            <!-- Web Projects -->
+            <div class="ndn-section">
+                <h2 class="ndn-section-title">🌐 Web Projects</h2>
+                <table class="ndn-table">
+                    <thead>
+                        <tr>
+                            <th>Epic</th>
+                            <th>Status</th>
+                            <th>Start Date</th>
+                            <th>Due Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($webProjects)): ?>
+                            <tr><td colspan="4" style="text-align:center;color:#64748b;">No web projects found</td></tr>
+                        <?php else: ?>
+                            <?php foreach ($webProjects as $p): ?>
+                                <tr>
+                                    <td><strong><?php echo esc_html($p['epicName']); ?></strong></td>
+                                    <td><span class="ndn-badge <?php echo esc_attr($p['status']); ?>"><?php echo ucfirst($p['status']); ?></span></td>
+                                    <td><?php echo esc_html($p['startDate'] ?? '-'); ?></td>
+                                    <td><?php echo esc_html($p['dueDate'] ?? '-'); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Order Health Summary -->
+            <div class="ndn-section">
+                <h2 class="ndn-section-title">📊 Order Health</h2>
+                <div class="ndn-health-item">
+                    <span class="ndn-badge on-track">On Track</span>
+                    <span class="ndn-health-count"><?php echo $s['orderHealth']['onTrack']; ?></span>
+                </div>
+                <div class="ndn-health-item">
+                    <span class="ndn-badge at-risk">At Risk</span>
+                    <span class="ndn-health-count"><?php echo $s['orderHealth']['atRisk']; ?></span>
+                </div>
+                <div class="ndn-health-item">
+                    <span class="ndn-badge off-track">Off Track</span>
+                    <span class="ndn-health-count"><?php echo $s['orderHealth']['offTrack']; ?></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php
+    return ob_get_clean();
 }
 
-// ============================================================================
-// 9. MAIN EXECUTION
-// ============================================================================
-
-// Get request body
-$input = file_get_contents('php://input');
-$requestData = json_decode($input, true) ?? [];
-$action = isset($requestData['action']) ? $requestData['action'] : 'dashboard';
-
-// Route to appropriate handler
-switch ($action) {
-    case 'dashboard':
-        $response = handleDashboardRequest();
-        break;
-    
-    case 'fields':
-        $response = handleFieldsRequest();
-        break;
-    
-    default:
-        $response = ['success' => false, 'error' => 'Invalid action: ' . $action];
-        http_response_code(400);
-}
-
-// Output JSON response
-echo json_encode($response, JSON_PRETTY_PRINT);
+// Register the shortcode
+add_shortcode('ndn_executive_dashboard', 'ndn_executive_dashboard_shortcode');
