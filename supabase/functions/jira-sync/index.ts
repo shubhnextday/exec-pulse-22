@@ -67,12 +67,36 @@ serve(async (req) => {
     const { action = 'dashboard' } = await req.json().catch(() => ({}));
 
     if (action === 'dashboard') {
-      // Fetch ALL Contract Manufacturing issues (no date restriction to get all customers)
-      const cmJql = 'project = "CM" ORDER BY created DESC';
+      // Fetch CM issues - limit to last 6 months for performance, but get ALL customers first
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      const dateFilter = sixMonthsAgo.toISOString().split('T')[0];
+      
+      const cmJql = `project = "CM" AND created >= "${dateFilter}" ORDER BY created DESC`;
       let allCmIssues: any[] = [];
       let startAt = 0;
       const maxPerPage = 100;
       let fetchedCount = 0;
+      
+      // Only fetch the fields we actually need (not *all) to reduce memory
+      const requiredFields = [
+        'summary', 'status', 'created', 'duedate', 'description',
+        FIELD_MAPPINGS.customer,
+        FIELD_MAPPINGS.agent,
+        FIELD_MAPPINGS.accountManager,
+        FIELD_MAPPINGS.orderTotal,
+        FIELD_MAPPINGS.depositAmount,
+        FIELD_MAPPINGS.remainingAmount,
+        FIELD_MAPPINGS.commissionDue,
+        FIELD_MAPPINGS.quantityOrdered,
+        FIELD_MAPPINGS.salesOrderNumber,
+        FIELD_MAPPINGS.productName,
+        FIELD_MAPPINGS.productId,
+        FIELD_MAPPINGS.dateOrdered,
+        FIELD_MAPPINGS.actualShipDate,
+        FIELD_MAPPINGS.commissionPaidDate,
+        FIELD_MAPPINGS.daysInProduction,
+      ];
       
       do {
         const cmResponse = await fetch(
@@ -83,7 +107,7 @@ serve(async (req) => {
             body: JSON.stringify({
               jql: cmJql,
               maxResults: maxPerPage,
-              fields: ['*all'],
+              fields: requiredFields,
             }),
           }
         );
@@ -100,7 +124,7 @@ serve(async (req) => {
         allCmIssues = [...allCmIssues, ...issues];
         startAt += maxPerPage;
         console.log(`Fetched batch of ${fetchedCount}, total so far: ${allCmIssues.length}`);
-      } while (fetchedCount === maxPerPage); // Keep fetching while we get full pages
+      } while (fetchedCount === maxPerPage);
       
       console.log(`Total CM issues fetched: ${allCmIssues.length}`);
 
