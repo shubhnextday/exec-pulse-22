@@ -545,7 +545,7 @@ export default function Dashboard() {
           {/* Agent Commissions Section */}
           <section id="section-commissions" className="mb-8 scroll-mt-8">
             <h2 className="text-lg font-semibold mb-4 text-foreground">Agent Commissions</h2>
-            <CommissionsTable commissions={realCommissions.length > 0 ? realCommissions : mockCommissions} />
+            <CommissionsTable commissions={realCommissions} />
           </section>
         </main>
         
