@@ -106,6 +106,7 @@ export default function Dashboard() {
   const {
     summary,
     orders,
+    allTimeOutstandingOrders,
     webProjects,
     customers,
     agents,
@@ -554,7 +555,7 @@ export default function Dashboard() {
         <OutstandingDetailsDialog
           open={outstandingDialogOpen}
           onOpenChange={setOutstandingDialogOpen}
-          orders={displayOrders}
+          orders={allTimeOutstandingOrders}
         />
         
         <ActiveOrdersDialog

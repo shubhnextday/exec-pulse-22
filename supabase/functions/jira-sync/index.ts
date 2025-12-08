@@ -87,11 +87,16 @@ serve(async (req) => {
         fields: requiredFields.join(','),
       });
       
-      // Also fetch ALL orders for all-time outstanding (just financial fields)
+      // Also fetch ALL orders for all-time outstanding (with display fields for popup)
+      const allTimeFields = [
+        'key', 'status', 'summary',
+        FIELD_MAPPINGS.customer, FIELD_MAPPINGS.salesOrderNumber, FIELD_MAPPINGS.productName,
+        FIELD_MAPPINGS.orderTotal, FIELD_MAPPINGS.depositAmount, FIELD_MAPPINGS.remainingAmount
+      ];
       const allTimeParams = new URLSearchParams({
         jql: 'project = "CM" ORDER BY created DESC',
         maxResults: MAX_ORDERS.toString(),
-        fields: [FIELD_MAPPINGS.remainingAmount, FIELD_MAPPINGS.commissionDue, 'status'].join(','),
+        fields: allTimeFields.join(','),
       });
       
       // Fetch both in parallel
@@ -116,15 +121,35 @@ serve(async (req) => {
       const allCmIssues = cmData.issues || [];
       console.log(`Fetched ${allCmIssues.length} CM issues (limit: ${MAX_ORDERS})`);
       
-      // Calculate all-time outstanding
+      // Process all-time outstanding orders
       let allTimeOutstanding = 0;
+      let allTimeOutstandingOrders: any[] = [];
       if (allTimeResponse.ok) {
         const allTimeData = await allTimeResponse.json();
         const allTimeIssues = allTimeData.issues || [];
-        allTimeOutstanding = allTimeIssues.reduce((sum: number, issue: any) => {
-          return sum + (issue.fields?.[FIELD_MAPPINGS.remainingAmount] || 0);
-        }, 0);
-        console.log(`All-time outstanding from ${allTimeIssues.length} orders: $${allTimeOutstanding}`);
+        
+        // Map all-time orders with outstanding amounts
+        allTimeOutstandingOrders = allTimeIssues
+          .map((issue: any) => {
+            const remainingDue = issue.fields?.[FIELD_MAPPINGS.remainingAmount] || 0;
+            if (remainingDue <= 0) return null;
+            
+            const customerField = issue.fields?.[FIELD_MAPPINGS.customer];
+            return {
+              id: issue.key,
+              salesOrderNumber: issue.fields?.[FIELD_MAPPINGS.salesOrderNumber] || issue.key,
+              customer: customerField?.value || customerField || 'Unknown',
+              productName: issue.fields?.[FIELD_MAPPINGS.productName] || issue.fields?.summary || 'Unknown',
+              currentStatus: issue.fields?.status?.name || 'Unknown',
+              orderTotal: issue.fields?.[FIELD_MAPPINGS.orderTotal] || 0,
+              depositAmount: issue.fields?.[FIELD_MAPPINGS.depositAmount] || 0,
+              remainingDue: remainingDue,
+            };
+          })
+          .filter(Boolean);
+        
+        allTimeOutstanding = allTimeOutstandingOrders.reduce((sum: number, o: any) => sum + o.remainingDue, 0);
+        console.log(`All-time outstanding from ${allTimeOutstandingOrders.length} orders: $${allTimeOutstanding}`);
       }
       
 
@@ -229,6 +254,7 @@ serve(async (req) => {
         data: {
           summary,
           orders,
+          allTimeOutstandingOrders, // Orders with outstanding payments (all-time, no date filter)
           webProjects,
           customers: ['All Customers', ...new Set(orders.map((o: any) => o.customer).filter((c: string) => c && c !== 'Unknown'))],
           agents: ['All Agents', ...new Set(orders.map((o: any) => o.agent).filter(Boolean))],
