@@ -26,7 +26,7 @@ const FIELD_MAPPINGS = {
 };
 
 const CANCELLED_STATUSES = ['cancelled', 'canceled'];
-const PAGE_SIZE = 100;
+const MAX_ORDERS = 500;
 const MAX_RETRIES = 5;
 const INITIAL_RETRY_DELAY_MS = 2000;
 
@@ -41,85 +41,6 @@ async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_R
   }
   
   return response;
-}
-
-// Paginate through all JIRA results using the new /search/jql endpoint
-async function fetchAllPages(
-  jiraDomain: string,
-  headers: Record<string, string>,
-  jql: string,
-  fields: string[]
-): Promise<{ issues: any[]; total: number }> {
-  const allIssues: any[] = [];
-  let startAt = 0;
-  let total = 0;
-  const MAX_TOTAL_ISSUES = 5000; // Safety limit
-  
-  while (true) {
-    console.log(`Fetching CM orders: startAt=${startAt}, pageSize=${PAGE_SIZE}`);
-    
-    // Build URL with query parameters for the new /search/jql endpoint
-    const params = new URLSearchParams({
-      jql: jql,
-      startAt: startAt.toString(),
-      maxResults: PAGE_SIZE.toString(),
-      fields: fields.join(','),
-    });
-    
-    const response = await fetchWithRetry(
-      `https://${jiraDomain}/rest/api/3/search/jql?${params.toString()}`,
-      {
-        method: 'GET',
-        headers,
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('JIRA API error:', response.status, errorText);
-      throw new Error(`JIRA API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const issues = data.issues || [];
-    
-    // Log the raw response structure on first page
-    if (startAt === 0) {
-      console.log('First page response keys:', Object.keys(data));
-      console.log('First page total:', data.total, 'maxResults:', data.maxResults);
-    }
-    
-    // Get total from response - may be at different paths
-    if (data.total !== undefined && data.total > 0) {
-      total = data.total;
-    }
-    
-    allIssues.push(...issues);
-    console.log(`Fetched ${issues.length} issues (${allIssues.length}/${total || 'unknown'} total)`);
-    
-    // Stop if we got fewer results than page size (last page)
-    if (issues.length < PAGE_SIZE) {
-      console.log(`Stopping: got ${issues.length} issues, less than page size ${PAGE_SIZE}`);
-      break;
-    }
-    
-    // Safety limit to prevent infinite loops
-    if (allIssues.length >= MAX_TOTAL_ISSUES) {
-      console.log(`Stopping: reached safety limit of ${MAX_TOTAL_ISSUES} issues`);
-      break;
-    }
-    
-    // Also stop if we've fetched all based on total
-    if (total > 0 && allIssues.length >= total) {
-      console.log(`Stopping: fetched all ${total} issues`);
-      break;
-    }
-    
-    startAt += PAGE_SIZE;
-    await new Promise(resolve => setTimeout(resolve, 200));
-  }
-  
-  return { issues: allIssues, total: total || allIssues.length };
 }
 
 serve(async (req) => {
@@ -159,15 +80,28 @@ serve(async (req) => {
         FIELD_MAPPINGS.daysInProduction, 'customfield_10083'
       ];
       
-      // Fetch ALL CM orders with pagination
-      const { issues: allCmIssues, total: totalOrders } = await fetchAllPages(
-        jiraDomain,
-        headers,
-        cmJql,
-        requiredFields
-      );
+      // Single request with 500 limit
+      const params = new URLSearchParams({
+        jql: cmJql,
+        maxResults: MAX_ORDERS.toString(),
+        fields: requiredFields.join(','),
+      });
       
-      console.log(`Fetched ALL ${allCmIssues.length} of ${totalOrders} CM orders`);
+      const cmResponse = await fetchWithRetry(
+        `https://${jiraDomain}/rest/api/3/search/jql?${params.toString()}`,
+        { method: 'GET', headers }
+      );
+
+      if (!cmResponse.ok) {
+        const errorText = await cmResponse.text();
+        console.error('JIRA CM API error:', cmResponse.status, errorText);
+        throw new Error(`JIRA API error: ${cmResponse.status}`);
+      }
+
+      const cmData = await cmResponse.json();
+      const allCmIssues = cmData.issues || [];
+      console.log(`Fetched ${allCmIssues.length} CM issues (limit: ${MAX_ORDERS})`);
+      
 
       // Fetch WEB epics (small dataset) using GET with query params
       const webParams = new URLSearchParams({
@@ -274,7 +208,7 @@ serve(async (req) => {
           agents: ['All Agents', ...new Set(orders.map((o: any) => o.agent).filter(Boolean))],
           accountManagers: ['All Account Managers', ...new Set(orders.map((o: any) => o.accountManager).filter(Boolean))],
           lastSynced: new Date().toISOString(),
-          totalOrdersInJira: totalOrders,
+          totalOrdersInJira: allCmIssues.length,
         }
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
