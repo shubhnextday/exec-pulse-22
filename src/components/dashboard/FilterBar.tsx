@@ -64,7 +64,7 @@ export function FilterBar({
           <SelectContent className="bg-popover border-border/50">
             <SelectItem value="this-month">This Month</SelectItem>
             <SelectItem value="last-30-days">Last 30 Days</SelectItem>
-            <SelectItem value="last-90-days">Last 90 Days</SelectItem>
+            <SelectItem value="last-60-days">Last 60 Days</SelectItem>
             <SelectItem value="last-6-months">Last 6 Months</SelectItem>
             <SelectItem value="nov-2025">November 2025</SelectItem>
             <SelectItem value="dec-2025">December 2025</SelectItem>
