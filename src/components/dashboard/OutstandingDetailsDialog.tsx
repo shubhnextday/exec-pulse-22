@@ -105,7 +105,7 @@ export function OutstandingDetailsDialog({
           <div className="flex justify-between text-sm text-muted-foreground">
             <span>{outstandingOrders.length} orders with outstanding payments</span>
             <span>
-              Showing orders from current filter selection
+              Showing all-time outstanding (all orders)
             </span>
           </div>
         </div>
