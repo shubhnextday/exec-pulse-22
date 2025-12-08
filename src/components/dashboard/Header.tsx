@@ -1,4 +1,4 @@
-import { Bell, Download, RefreshCw, User, Loader2 } from 'lucide-react';
+import { Download, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format, parseISO } from 'date-fns';
 
@@ -42,13 +42,6 @@ export function Header({ lastSynced, onRefresh, isLoading }: HeaderProps) {
           <Download className="h-4 w-4" />
           Export
         </Button>
-        <Button variant="ghost" size="icon" className="relative h-9 w-9">
-          <Bell className="h-5 w-5 text-muted-foreground" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ backgroundColor: '#F05323' }} />
-        </Button>
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center border border-border/30" style={{ backgroundColor: 'rgba(93, 121, 150, 0.1)' }}>
-          <User className="h-4 w-4" style={{ color: '#5d7996' }} />
-        </div>
       </div>
     </header>
   );
