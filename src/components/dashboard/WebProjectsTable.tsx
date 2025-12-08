@@ -119,7 +119,7 @@ export function WebProjectsTable({ projects }: WebProjectsTableProps) {
           <p className="text-sm text-muted-foreground">No projects found</p>
         </div>
       ) : (
-        <ScrollArea className="max-h-[400px]">
+        <ScrollArea className="h-[500px]">
           <div className="overflow-x-auto">
             <table className="data-table">
               <thead>

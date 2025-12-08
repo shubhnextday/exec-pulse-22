@@ -120,7 +120,7 @@ export function NeedsAttentionTable({ orders }: NeedsAttentionTableProps) {
           <p className="text-xs text-muted-foreground">No orders need attention</p>
         </div>
       ) : (
-        <ScrollArea className="max-h-[400px]">
+        <ScrollArea className="h-[500px]">
           <div className="overflow-x-auto">
             <table className="data-table">
               <thead>

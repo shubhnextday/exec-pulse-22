@@ -510,17 +510,17 @@ export default function Dashboard() {
           {/* Charts Section - Financial Overview */}
           <section id="section-financial" className="mb-8 scroll-mt-8">
             <h2 className="text-lg font-semibold mb-4 text-foreground">Financial Overview</h2>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div onClick={() => setCashFlowDialogOpen(true)} className="cursor-pointer">
-              <CashFlowChart data={cashFlowProjections.length > 0 ? cashFlowProjections : mockCashFlowProjections} />
-            </div>
-            <div onClick={() => setOrderHealthDialogOpen(true)} className="cursor-pointer">
-              <OrderHealthChart
-                onTrack={reactiveMetrics.orderHealthBreakdown.onTrack}
-                atRisk={reactiveMetrics.orderHealthBreakdown.atRisk}
-                offTrack={reactiveMetrics.orderHealthBreakdown.offTrack}
-              />
-            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div onClick={() => setCashFlowDialogOpen(true)} className="cursor-pointer h-full">
+                <CashFlowChart data={cashFlowProjections.length > 0 ? cashFlowProjections : mockCashFlowProjections} />
+              </div>
+              <div onClick={() => setOrderHealthDialogOpen(true)} className="cursor-pointer h-full">
+                <OrderHealthChart
+                  onTrack={reactiveMetrics.orderHealthBreakdown.onTrack}
+                  atRisk={reactiveMetrics.orderHealthBreakdown.atRisk}
+                  offTrack={reactiveMetrics.orderHealthBreakdown.offTrack}
+                />
+              </div>
             </div>
           </section>
 

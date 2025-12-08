@@ -1,5 +1,6 @@
 import { TrendingUp } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface TopCustomersProps {
   customers: Array<{
@@ -10,9 +11,22 @@ interface TopCustomersProps {
 }
 
 export function TopCustomers({ customers }: TopCustomersProps) {
-  const maxTotal = Math.max(...customers.map(c => c.totalOrders), 1);
   const totalRevenue = customers.reduce((sum, c) => sum + c.totalOrders, 0);
   const totalOrderCount = customers.reduce((sum, c) => sum + c.orderCount, 0);
+  
+  // Take top 10 for chart display
+  const chartData = customers.slice(0, 10).map(c => ({
+    name: c.name.length > 12 ? c.name.slice(0, 12) + '...' : c.name,
+    fullName: c.name,
+    revenue: c.totalOrders,
+    orders: c.orderCount,
+  }));
+
+  const formatCurrency = (value: number) => {
+    if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+    if (value >= 1000) return `$${(value / 1000).toFixed(0)}k`;
+    return `$${value}`;
+  };
 
   return (
     <div className="metric-card opacity-0 animate-slide-up" style={{ animationDelay: '900ms' }}>
@@ -22,7 +36,7 @@ export function TopCustomers({ customers }: TopCustomersProps) {
         </div>
         <div>
           <h3 className="text-base font-semibold text-foreground">Customer Orders</h3>
-          <p className="text-xs text-muted-foreground">By total order value</p>
+          <p className="text-xs text-muted-foreground">Top customers by order value</p>
         </div>
       </div>
 
@@ -30,7 +44,7 @@ export function TopCustomers({ customers }: TopCustomersProps) {
       <div className="grid grid-cols-2 gap-3 mb-5">
         <div className="p-3 rounded-xl bg-muted/40 border border-border/50">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Total Revenue</p>
-          <p className="text-xl font-bold mono text-foreground">${(totalRevenue / 1000).toFixed(0)}k</p>
+          <p className="text-xl font-bold mono text-foreground">{formatCurrency(totalRevenue)}</p>
         </div>
         <div className="p-3 rounded-xl bg-muted/40 border border-border/50">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Total Orders</p>
@@ -38,39 +52,82 @@ export function TopCustomers({ customers }: TopCustomersProps) {
         </div>
       </div>
 
-      <ScrollArea className="h-[240px] pr-2">
-        <div className="space-y-3">
-          {customers.map((customer, index) => (
-            <div key={customer.name} className="group">
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-2.5">
-                  <span className="w-6 h-6 rounded-full bg-primary/15 text-primary text-xs font-bold flex items-center justify-center">
+      {/* Bar Chart */}
+      {chartData.length > 0 ? (
+        <div className="h-[280px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={chartData}
+              layout="vertical"
+              margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
+            >
+              <XAxis 
+                type="number" 
+                tickFormatter={formatCurrency}
+                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                axisLine={{ stroke: 'hsl(var(--border))' }}
+                tickLine={{ stroke: 'hsl(var(--border))' }}
+              />
+              <YAxis 
+                type="category" 
+                dataKey="name" 
+                width={100}
+                tick={{ fontSize: 11, fill: 'hsl(var(--foreground))' }}
+                axisLine={{ stroke: 'hsl(var(--border))' }}
+                tickLine={false}
+              />
+              <Tooltip
+                formatter={(value: number, name: string, props: { payload: { fullName: string; orders: number } }) => [
+                  formatCurrency(value),
+                  `${props.payload.fullName} (${props.payload.orders} orders)`
+                ]}
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                }}
+                labelStyle={{ display: 'none' }}
+              />
+              <Bar 
+                dataKey="revenue" 
+                radius={[0, 4, 4, 0]}
+                maxBarSize={24}
+              >
+                {chartData.map((_, index) => (
+                  <Cell 
+                    key={`cell-${index}`} 
+                    fill={index === 0 ? 'hsl(var(--primary))' : `hsl(var(--primary) / ${1 - (index * 0.08)})`}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <div className="h-[280px] flex items-center justify-center">
+          <p className="text-sm text-muted-foreground">No customer data available</p>
+        </div>
+      )}
+
+      {/* Full customer list */}
+      <div className="mt-4 pt-3 border-t border-border/40">
+        <p className="text-[11px] text-muted-foreground mb-2">All {customers.length} customers</p>
+        <ScrollArea className="h-[150px]">
+          <div className="space-y-1.5 pr-2">
+            {customers.map((customer, index) => (
+              <div key={customer.name} className="flex items-center justify-between py-1 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center">
                     {index + 1}
                   </span>
-                  <p className="text-sm font-medium truncate max-w-[140px]" title={customer.name}>
-                    {customer.name}
-                  </p>
+                  <span className="truncate max-w-[180px]" title={customer.name}>{customer.name}</span>
                 </div>
-                <span className="text-sm mono font-semibold text-foreground">
-                  ${customer.totalOrders >= 1000 ? (customer.totalOrders / 1000).toFixed(0) + 'k' : customer.totalOrders.toLocaleString()}
-                </span>
+                <span className="mono text-xs font-medium text-muted-foreground">{formatCurrency(customer.totalOrders)}</span>
               </div>
-              <div className="ml-8 h-1.5 rounded-full bg-muted/60 overflow-hidden">
-                <div 
-                  className="h-full rounded-full bg-gradient-to-r from-primary/80 to-primary transition-all duration-500 group-hover:from-primary group-hover:to-primary/80"
-                  style={{ width: `${(customer.totalOrders / maxTotal) * 100}%` }}
-                />
-              </div>
-              <div className="ml-8 mt-1">
-                <span className="text-[11px] text-muted-foreground">{customer.orderCount} orders</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </ScrollArea>
-      
-      <div className="mt-4 pt-3 border-t border-border/40 text-[11px] text-muted-foreground text-center">
-        {customers.length} customers from filtered orders
+            ))}
+          </div>
+        </ScrollArea>
       </div>
     </div>
   );
