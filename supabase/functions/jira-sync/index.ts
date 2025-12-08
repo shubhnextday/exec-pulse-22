@@ -75,14 +75,12 @@ serve(async (req) => {
       
       do {
         const cmResponse = await fetch(
-          `https://${jiraDomain}/rest/api/3/search/jql`,
+          `https://${jiraDomain}/rest/api/3/search/jql?startAt=${startAt}&maxResults=${maxPerPage}`,
           { 
             method: 'POST',
             headers,
             body: JSON.stringify({
               jql: cmJql,
-              maxResults: maxPerPage,
-              startAt: startAt,
               fields: ['*all'],
             }),
           }
