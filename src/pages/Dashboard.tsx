@@ -65,10 +65,15 @@ export default function Dashboard() {
     refresh,
   } = useJiraData();
 
-  // Fetch data on mount
+  // Fetch data on mount and when filters change
   useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+    const filters = {
+      customer: selectedCustomer !== 'All Customers' ? selectedCustomer : undefined,
+      agent: selectedAgent !== 'All Agents' ? selectedAgent : undefined,
+      accountManager: selectedAccountManager !== 'All Account Managers' ? selectedAccountManager : undefined,
+    };
+    fetchDashboardData(filters);
+  }, [fetchDashboardData, selectedCustomer, selectedAgent, selectedAccountManager]);
 
   // Use JIRA data if available, otherwise fall back to mock data
   const displayOrders = orders.length > 0 ? orders : mockOrders;
@@ -77,15 +82,8 @@ export default function Dashboard() {
   const displayAgents = agents.length > 1 ? agents : ['All Agents'];
   const displayAccountManagers = accountManagers.length > 1 ? accountManagers : ['All Account Managers'];
 
-  // Filter orders based on selections - ALL STATS ARE DERIVED FROM THIS
-  const filteredOrders = useMemo(() => {
-    return displayOrders.filter(order => {
-      if (selectedCustomer !== 'All Customers' && order.customer !== selectedCustomer) return false;
-      if (selectedAgent !== 'All Agents' && order.agent !== selectedAgent) return false;
-      if (selectedAccountManager !== 'All Account Managers' && order.accountManager !== selectedAccountManager) return false;
-      return true;
-    });
-  }, [displayOrders, selectedCustomer, selectedAgent, selectedAccountManager]);
+  // Orders are already filtered by edge function, use directly
+  const filteredOrders = displayOrders;
 
   // REACTIVE METRICS - All stats derived from filteredOrders
   const reactiveMetrics = useMemo(() => {
@@ -301,7 +299,7 @@ export default function Dashboard() {
                 <p className="font-medium text-danger">Failed to sync with JIRA</p>
                 <p className="text-sm text-muted-foreground">{error}</p>
               </div>
-              <Button variant="outline" size="sm" onClick={refresh} disabled={isLoading}>
+              <Button variant="outline" size="sm" onClick={() => refresh()} disabled={isLoading}>
                 {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Retry'}
               </Button>
             </div>

@@ -34,10 +34,6 @@ const FIELD_MAPPINGS = {
   daysInProduction: 'customfield_10930',   // Days In Production (Number)
 };
 
-// Statuses that indicate an order is cancelled (NOT active)
-// Per user requirement: ALL orders are active orders - we don't exclude any status
-const CANCELLED_STATUSES: string[] = [];
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -64,19 +60,30 @@ serve(async (req) => {
       'Accept': 'application/json',
     };
 
-    const { action = 'dashboard' } = await req.json().catch(() => ({}));
+    const { action = 'dashboard', filters = {} } = await req.json().catch(() => ({}));
 
     if (action === 'dashboard') {
-      // Fetch CM issues - limit to last 6 months for performance, but get ALL customers first
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-      const dateFilter = sixMonthsAgo.toISOString().split('T')[0];
+      const { customer, agent, accountManager, dateFrom } = filters;
       
-      const cmJql = `project = "CM" AND created >= "${dateFilter}" ORDER BY created DESC`;
-      let allCmIssues: any[] = [];
-      let startAt = 0;
-      const maxPerPage = 100;
-      let fetchedCount = 0;
+      // Build JQL query based on filters
+      const jqlParts = ['project = "CM"'];
+      
+      // Date filter - default to last 6 months if not specified
+      let dateFilter = dateFrom;
+      if (!dateFilter) {
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+        dateFilter = sixMonthsAgo.toISOString().split('T')[0];
+      }
+      jqlParts.push(`created >= "${dateFilter}"`);
+      
+      // Customer filter via JQL if specified
+      if (customer && customer !== 'All Customers') {
+        jqlParts.push(`"Customer" = "${customer}"`);
+      }
+      
+      const cmJql = jqlParts.join(' AND ') + ' ORDER BY created DESC';
+      console.log('JQL Query:', cmJql);
       
       // Only fetch the fields we actually need (not *all) to reduce memory
       const requiredFields = [
@@ -97,6 +104,11 @@ serve(async (req) => {
         FIELD_MAPPINGS.commissionPaidDate,
         FIELD_MAPPINGS.daysInProduction,
       ];
+      
+      let allCmIssues: any[] = [];
+      let startAt = 0;
+      const maxPerPage = 100;
+      let fetchedCount = 0;
       
       do {
         const cmResponse = await fetch(
@@ -128,7 +140,7 @@ serve(async (req) => {
       
       console.log(`Total CM issues fetched: ${allCmIssues.length}`);
 
-      // Fetch Web Development issues (Epics) using new JQL search API
+      // Fetch Web Development issues (Epics)
       const webJql = 'project = "WEB" AND issuetype = Epic ORDER BY created DESC';
       const webResponse = await fetch(
         `https://${jiraDomain}/rest/api/3/search/jql`,
@@ -138,7 +150,7 @@ serve(async (req) => {
           body: JSON.stringify({
             jql: webJql,
             maxResults: 50,
-            fields: ['*all'],
+            fields: ['summary', 'status', 'created', 'duedate', 'subtasks'],
           }),
         }
       );
@@ -156,25 +168,15 @@ serve(async (req) => {
       const orders = allCmIssues.map((issue: any) => {
         const fields = issue.fields;
         
-        // Extract customer name from dropdown field
         const customerValue = fields[FIELD_MAPPINGS.customer]?.value || 'Unknown';
-        
-        // Extract agent from dropdown field  
         const agentValue = fields[FIELD_MAPPINGS.agent]?.value || null;
-        
-        // Extract account manager from user picker field
         const accountManagerValue = fields[FIELD_MAPPINGS.accountManager]?.displayName || null;
         
-        // Extract financial values
         const orderTotal = fields[FIELD_MAPPINGS.orderTotal] || 0;
         const depositAmount = fields[FIELD_MAPPINGS.depositAmount] || 0;
         const remainingAmount = fields[FIELD_MAPPINGS.remainingAmount] || (orderTotal - depositAmount);
-        
-        // Extract other fields
         const productName = fields[FIELD_MAPPINGS.productName] || fields.summary || 'Unknown Product';
         const salesOrderNumber = fields[FIELD_MAPPINGS.salesOrderNumber] || issue.key;
-        
-        // Extract commission due
         const commissionDue = fields[FIELD_MAPPINGS.commissionDue] || 0;
         
         return {
@@ -203,6 +205,15 @@ serve(async (req) => {
         };
       });
 
+      // Apply post-fetch filters for agent and account manager (JQL for these is complex)
+      let filteredOrders = orders;
+      if (agent && agent !== 'All Agents') {
+        filteredOrders = filteredOrders.filter((o: any) => o.agent === agent);
+      }
+      if (accountManager && accountManager !== 'All Account Managers') {
+        filteredOrders = filteredOrders.filter((o: any) => o.accountManager === accountManager);
+      }
+
       // Transform WEB epics to projects
       const webProjects = (webData.issues || []).map((issue: any) => {
         const fields = issue.fields;
@@ -222,35 +233,29 @@ serve(async (req) => {
         };
       });
 
-      // Filter active orders (exclude cancelled/completed statuses)
-      const activeOrders = orders.filter((o: any) => {
-        const status = o.currentStatus?.toLowerCase() || '';
-        return !CANCELLED_STATUSES.some(s => status.includes(s));
-      });
-
-      // Calculate summary metrics
-      const totalCommissionsDue = orders.reduce((sum: number, o: any) => sum + (o.commissionDue || 0), 0);
+      // Calculate summary metrics from filtered orders
+      const totalCommissionsDue = filteredOrders.reduce((sum: number, o: any) => sum + (o.commissionDue || 0), 0);
       
       const summary = {
-        totalActiveCustomers: new Set(activeOrders.map((o: any) => o.customer).filter((c: string) => c && c !== 'Unknown')).size,
-        totalActiveOrders: activeOrders.length,
-        totalMonthlyRevenue: orders.reduce((sum: number, o: any) => sum + (o.orderTotal || 0), 0),
-        totalOutstandingPayments: orders.reduce((sum: number, o: any) => sum + (o.remainingDue || 0), 0),
+        totalActiveCustomers: new Set(filteredOrders.map((o: any) => o.customer).filter((c: string) => c && c !== 'Unknown')).size,
+        totalActiveOrders: filteredOrders.length,
+        totalMonthlyRevenue: filteredOrders.reduce((sum: number, o: any) => sum + (o.orderTotal || 0), 0),
+        totalOutstandingPayments: filteredOrders.reduce((sum: number, o: any) => sum + (o.remainingDue || 0), 0),
         totalCommissionsDue: totalCommissionsDue,
         totalActiveProjects: webProjects.filter((p: any) => p.status === 'active').length,
         orderHealthBreakdown: {
-          onTrack: activeOrders.filter((o: any) => o.orderHealth === 'on-track').length,
-          atRisk: activeOrders.filter((o: any) => o.orderHealth === 'at-risk').length,
-          offTrack: activeOrders.filter((o: any) => o.orderHealth === 'off-track').length,
+          onTrack: filteredOrders.filter((o: any) => o.orderHealth === 'on-track').length,
+          atRisk: filteredOrders.filter((o: any) => o.orderHealth === 'at-risk').length,
+          offTrack: filteredOrders.filter((o: any) => o.orderHealth === 'off-track').length,
         },
       };
       
-      console.log(`Total orders: ${orders.length}, Active orders: ${activeOrders.length}, Commission Due: $${totalCommissionsDue}`);
+      console.log(`Total orders: ${orders.length}, Filtered: ${filteredOrders.length}, Commission Due: $${totalCommissionsDue}`);
 
-      // Get unique customers and agents for filters (excluding empty/Unknown values)
-      const customers = ['All Customers', ...new Set(orders.map((o: any) => o.customer).filter((c: string) => c && c !== 'Unknown'))];
-      const agents = ['All Agents', ...new Set(orders.map((o: any) => o.agent).filter(Boolean))];
-      const accountManagers = ['All Account Managers', ...new Set(orders.map((o: any) => o.accountManager).filter(Boolean))];
+      // Get ALL unique customers, agents, managers for filter dropdowns (from unfiltered orders)
+      const customers = ['All Customers', ...Array.from(new Set(orders.map((o: any) => o.customer).filter((c: string) => c && c !== 'Unknown'))).sort()];
+      const agents = ['All Agents', ...Array.from(new Set(orders.map((o: any) => o.agent).filter(Boolean))).sort()];
+      const accountManagers = ['All Account Managers', ...Array.from(new Set(orders.map((o: any) => o.accountManager).filter(Boolean))).sort()];
 
       console.log('Dashboard data compiled successfully');
       console.log(`Unique customers: ${customers.length - 1}, Agents: ${agents.length - 1}, Account Managers: ${accountManagers.length - 1}`);
@@ -259,7 +264,7 @@ serve(async (req) => {
         success: true,
         data: {
           summary,
-          orders,
+          orders: filteredOrders,
           webProjects,
           customers,
           agents,
@@ -313,7 +318,6 @@ serve(async (req) => {
 
 // Helper functions
 function getOrderHealth(fields: any): 'on-track' | 'at-risk' | 'off-track' {
-  // Check custom field for order health if available
   const healthField = fields.customfield_10083?.value?.toLowerCase();
   if (healthField) {
     if (healthField.includes('off') || healthField.includes('behind')) return 'off-track';
@@ -321,7 +325,6 @@ function getOrderHealth(fields: any): 'on-track' | 'at-risk' | 'off-track' {
     return 'on-track';
   }
 
-  // Fallback: calculate based on due date and status
   const dueDate = fields.duedate ? new Date(fields.duedate) : null;
   const now = new Date();
   
