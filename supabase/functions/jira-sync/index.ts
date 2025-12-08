@@ -67,8 +67,8 @@ serve(async (req) => {
     const { action = 'dashboard', filters = {} } = await req.json().catch(() => ({}));
 
     if (action === 'dashboard') {
-      const dateFrom = filters.dateFrom || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
-      const cmJql = `project = "CM" AND created >= "${dateFrom}" ORDER BY created DESC`;
+      // Fetch ALL CM orders (no date filter) - matching PHP implementation
+      const cmJql = `project = "CM" ORDER BY created DESC`;
       console.log('JQL Query:', cmJql);
       
       const requiredFields = [
