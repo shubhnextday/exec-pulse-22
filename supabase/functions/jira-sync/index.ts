@@ -148,7 +148,7 @@ serve(async (req) => {
           orderHealth: getOrderHealth(fields),
           daysBehindSchedule: calculateDaysBehind(fields),
           daysInProduction: fields[FIELD_MAPPINGS.daysInProduction] || calculateDaysInProduction(fields),
-          agent: fields[FIELD_MAPPINGS.agent]?.value || null,
+          agent: fields[FIELD_MAPPINGS.agent]?.displayName || fields[FIELD_MAPPINGS.agent]?.value || null,
           accountManager: fields[FIELD_MAPPINGS.accountManager]?.displayName || null,
           orderNotes: '',
         };
