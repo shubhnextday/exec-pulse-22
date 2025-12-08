@@ -514,7 +514,7 @@ export default function Dashboard() {
             <h2 className="text-lg font-semibold mb-4 text-foreground">Financial Overview</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div onClick={() => setCashFlowDialogOpen(true)} className="cursor-pointer h-full">
-                <CashFlowChart data={cashFlowProjections.length > 0 ? cashFlowProjections : mockCashFlowProjections} />
+                <CashFlowChart data={cashFlowProjections} />
               </div>
               <div onClick={() => setOrderHealthDialogOpen(true)} className="cursor-pointer h-full">
                 <OrderHealthChart
