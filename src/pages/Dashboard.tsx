@@ -127,7 +127,45 @@ export default function Dashboard() {
       totalActiveProjects: activeProjects,
       orderHealthBreakdown,
     };
-  }, [filteredOrders, displayWebProjects]);
+  }, [filteredOrders, displayWebProjects, displayOrders]);
+
+  // Calculate cash flow projections from filtered orders
+  const cashFlowProjections = useMemo(() => {
+    // Group orders by EST Ship Date and sum remainingDue
+    const projectionMap = new Map<string, { amount: number; customers: Set<string>; orderCount: number }>();
+    
+    filteredOrders.forEach(order => {
+      // Use estShipDate, fallback to dueDate if not available
+      const shipDate = order.estShipDate || order.dueDate;
+      if (!shipDate || !order.remainingDue || order.remainingDue <= 0) return;
+      
+      const dateKey = shipDate.substring(0, 10); // Get YYYY-MM-DD
+      
+      if (projectionMap.has(dateKey)) {
+        const existing = projectionMap.get(dateKey)!;
+        existing.amount += order.remainingDue;
+        existing.customers.add(order.customer);
+        existing.orderCount += 1;
+      } else {
+        projectionMap.set(dateKey, {
+          amount: order.remainingDue,
+          customers: new Set([order.customer]),
+          orderCount: 1,
+        });
+      }
+    });
+
+    // Convert to array and sort by date
+    return Array.from(projectionMap.entries())
+      .map(([date, data]) => ({
+        date,
+        expectedAmount: data.amount,
+        customer: data.customers.size === 1 ? Array.from(data.customers)[0] : `${data.customers.size} customers`,
+        orderCount: data.orderCount,
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(0, 12); // Show next 12 dates for readability
+  }, [filteredOrders]);
 
   // Metric explanations for tooltips
   const metricExplanations = {
@@ -337,7 +375,7 @@ export default function Dashboard() {
 
           {/* Charts Section */}
           <section className="mb-8 grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <CashFlowChart data={mockCashFlowProjections} />
+            <CashFlowChart data={cashFlowProjections.length > 0 ? cashFlowProjections : mockCashFlowProjections} />
             <OrderHealthChart
               onTrack={reactiveMetrics.orderHealthBreakdown.onTrack}
               atRisk={reactiveMetrics.orderHealthBreakdown.atRisk}
