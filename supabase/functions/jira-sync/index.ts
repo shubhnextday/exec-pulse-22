@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// JIRA custom field mappings - VERIFIED from API
+// JIRA custom field mappings - VERIFIED from PHP implementation
 const FIELD_MAPPINGS = {
   customer: 'customfield_10038',
   agent: 'customfield_11573',
@@ -20,15 +20,35 @@ const FIELD_MAPPINGS = {
   productName: 'customfield_10115',
   productId: 'customfield_10732',
   dateOrdered: 'customfield_10040',
+  startDate: 'customfield_10015', // Start Date from PHP
+  estShipDate: 'customfield_10536', // EST Ship Date from PHP  
   actualShipDate: 'customfield_11161',
   commissionPaidDate: 'customfield_11578',
   daysInProduction: 'customfield_10930',
+  orderHealth: 'customfield_10897', // Order Health field from PHP
+  healthField: 'customfield_10083',
 };
 
-const CANCELLED_STATUSES = ['cancelled', 'canceled'];
-const MAX_ORDERS = 500;
+const CANCELLED_STATUSES = ['cancelled', 'canceled', 'done', 'shipped', 'complete', 'completed', 'closed', 'final product shipped'];
 const MAX_RETRIES = 5;
 const INITIAL_RETRY_DELAY_MS = 2000;
+
+// Helper to extract customer name from various field formats
+function extractCustomerName(customerField: any): string {
+  if (!customerField) return 'Unknown';
+  
+  if (typeof customerField === 'string') return customerField;
+  
+  if (typeof customerField === 'object') {
+    // Check various possible keys for customer name
+    if (customerField.displayName) return customerField.displayName;
+    if (customerField.name) return customerField.name;
+    if (customerField.value) return customerField.value;
+    if (customerField.key) return customerField.key;
+  }
+  
+  return 'Unknown';
+}
 
 // Helper to fetch with retry on rate limit with exponential backoff
 async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_RETRIES, delay = INITIAL_RETRY_DELAY_MS): Promise<Response> {
@@ -41,6 +61,57 @@ async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_R
   }
   
   return response;
+}
+
+// Fetch ALL issues with pagination using nextPageToken (like PHP implementation)
+async function fetchAllIssues(jiraDomain: string, headers: Record<string, string>, jql: string, fields: string[]): Promise<any[]> {
+  const endpoint = `https://${jiraDomain}/rest/api/3/search/jql`;
+  const allIssues: any[] = [];
+  let nextPageToken: string | null = null;
+  const maxResults = 100;
+  
+  console.log(`Fetching issues with JQL: ${jql}`);
+  
+  while (true) {
+    const payload: any = {
+      jql,
+      maxResults,
+      fields,
+    };
+    
+    if (nextPageToken) {
+      payload.nextPageToken = nextPageToken;
+    }
+    
+    const response = await fetchWithRetry(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`JIRA API error: ${response.status}`, errorText);
+      throw new Error(`JIRA API error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.issues && Array.isArray(data.issues)) {
+      allIssues.push(...data.issues);
+      console.log(`Fetched ${data.issues.length} issues, total: ${allIssues.length}`);
+    }
+    
+    // Check for next page
+    if (data.nextPageToken) {
+      nextPageToken = data.nextPageToken;
+    } else {
+      break;
+    }
+  }
+  
+  console.log(`Total issues fetched: ${allIssues.length}`);
+  return allIssues;
 }
 
 serve(async (req) => {
@@ -64,181 +135,170 @@ serve(async (req) => {
       'Accept': 'application/json',
     };
 
-    const { action = 'dashboard', filters = {} } = await req.json().catch(() => ({}));
+    const { action = 'dashboard' } = await req.json().catch(() => ({}));
 
     if (action === 'dashboard') {
-      // Fetch ALL CM orders (no date filter) - matching PHP implementation
-      const cmJql = `project = "CM" ORDER BY created DESC`;
-      console.log('JQL Query:', cmJql);
+      // Use full project name like PHP: "Contract Manufacturing"
+      const cmJql = 'project = "Contract Manufacturing"';
       
+      // Fields to fetch - matching PHP implementation
       const requiredFields = [
-        'summary', 'status', 'created', 'duedate',
-        FIELD_MAPPINGS.customer, FIELD_MAPPINGS.agent, FIELD_MAPPINGS.accountManager,
-        FIELD_MAPPINGS.orderTotal, FIELD_MAPPINGS.depositAmount, FIELD_MAPPINGS.remainingAmount,
-        FIELD_MAPPINGS.commissionDue, FIELD_MAPPINGS.quantityOrdered, FIELD_MAPPINGS.salesOrderNumber,
-        FIELD_MAPPINGS.productName, FIELD_MAPPINGS.dateOrdered, FIELD_MAPPINGS.actualShipDate,
-        FIELD_MAPPINGS.daysInProduction, 'customfield_10083'
+        'summary', 'status', 'created', 'duedate', 'parent', 'issuetype', 'subtasks',
+        FIELD_MAPPINGS.customer,
+        FIELD_MAPPINGS.agent,
+        FIELD_MAPPINGS.accountManager,
+        FIELD_MAPPINGS.orderTotal,
+        FIELD_MAPPINGS.depositAmount,
+        FIELD_MAPPINGS.remainingAmount,
+        FIELD_MAPPINGS.commissionDue,
+        FIELD_MAPPINGS.quantityOrdered,
+        FIELD_MAPPINGS.salesOrderNumber,
+        FIELD_MAPPINGS.productName,
+        FIELD_MAPPINGS.dateOrdered,
+        FIELD_MAPPINGS.startDate,
+        FIELD_MAPPINGS.estShipDate,
+        FIELD_MAPPINGS.actualShipDate,
+        FIELD_MAPPINGS.daysInProduction,
+        FIELD_MAPPINGS.orderHealth,
+        FIELD_MAPPINGS.healthField,
       ];
       
-      // Fetch filtered orders (by date range)
-      const params = new URLSearchParams({
-        jql: cmJql,
-        maxResults: MAX_ORDERS.toString(),
-        fields: requiredFields.join(','),
-      });
+      // Fetch ALL CM orders with pagination
+      const allCmIssues = await fetchAllIssues(jiraDomain, headers, cmJql, requiredFields);
       
-      // Also fetch ALL orders for all-time outstanding (with display fields for popup)
-      const allTimeFields = [
-        'key', 'status', 'summary',
-        FIELD_MAPPINGS.customer, FIELD_MAPPINGS.salesOrderNumber, FIELD_MAPPINGS.productName,
-        FIELD_MAPPINGS.orderTotal, FIELD_MAPPINGS.depositAmount, FIELD_MAPPINGS.remainingAmount
-      ];
-      const allTimeParams = new URLSearchParams({
-        jql: 'project = "CM" ORDER BY created DESC',
-        maxResults: MAX_ORDERS.toString(),
-        fields: allTimeFields.join(','),
-      });
+      // Fetch WEB epics
+      const webJql = 'project = "WEB" AND issuetype = Epic ORDER BY created DESC';
+      const webFields = ['summary', 'status', 'created', 'duedate', 'subtasks'];
       
-      // Fetch both in parallel
-      const [cmResponse, allTimeResponse] = await Promise.all([
-        fetchWithRetry(
-          `https://${jiraDomain}/rest/api/3/search/jql?${params.toString()}`,
-          { method: 'GET', headers }
-        ),
-        fetchWithRetry(
-          `https://${jiraDomain}/rest/api/3/search/jql?${allTimeParams.toString()}`,
-          { method: 'GET', headers }
-        )
-      ]);
-
-      if (!cmResponse.ok) {
-        const errorText = await cmResponse.text();
-        console.error('JIRA CM API error:', cmResponse.status, errorText);
-        throw new Error(`JIRA API error: ${cmResponse.status}`);
+      let webIssues: any[] = [];
+      try {
+        webIssues = await fetchAllIssues(jiraDomain, headers, webJql, webFields);
+      } catch (e) {
+        console.log('WEB project fetch failed, continuing with empty:', e);
       }
-
-      const cmData = await cmResponse.json();
-      const allCmIssues = cmData.issues || [];
-      console.log(`Fetched ${allCmIssues.length} CM issues (limit: ${MAX_ORDERS})`);
-      
-      // Process all-time outstanding orders
-      let allTimeOutstanding = 0;
-      let allTimeOutstandingOrders: any[] = [];
-      if (allTimeResponse.ok) {
-        const allTimeData = await allTimeResponse.json();
-        const allTimeIssues = allTimeData.issues || [];
-        
-        // Map all-time orders with outstanding amounts
-        allTimeOutstandingOrders = allTimeIssues
-          .map((issue: any) => {
-            const remainingDue = issue.fields?.[FIELD_MAPPINGS.remainingAmount] || 0;
-            if (remainingDue <= 0) return null;
-            
-            const customerField = issue.fields?.[FIELD_MAPPINGS.customer];
-            return {
-              id: issue.key,
-              salesOrderNumber: issue.fields?.[FIELD_MAPPINGS.salesOrderNumber] || issue.key,
-              customer: customerField?.value || customerField || 'Unknown',
-              productName: issue.fields?.[FIELD_MAPPINGS.productName] || issue.fields?.summary || 'Unknown',
-              currentStatus: issue.fields?.status?.name || 'Unknown',
-              orderTotal: issue.fields?.[FIELD_MAPPINGS.orderTotal] || 0,
-              depositAmount: issue.fields?.[FIELD_MAPPINGS.depositAmount] || 0,
-              remainingDue: remainingDue,
-            };
-          })
-          .filter(Boolean);
-        
-        allTimeOutstanding = allTimeOutstandingOrders.reduce((sum: number, o: any) => sum + o.remainingDue, 0);
-        console.log(`All-time outstanding from ${allTimeOutstandingOrders.length} orders: $${allTimeOutstanding}`);
-      }
-      
-
-      // Fetch WEB epics (small dataset) using GET with query params
-      const webParams = new URLSearchParams({
-        jql: 'project = "WEB" AND issuetype = Epic ORDER BY created DESC',
-        maxResults: '50',
-        fields: 'summary,status,created,duedate,subtasks',
-      });
-      
-      const webResponse = await fetchWithRetry(
-        `https://${jiraDomain}/rest/api/3/search/jql?${webParams.toString()}`,
-        { 
-          method: 'GET',
-          headers,
-        }
-      );
-
-      const webData = webResponse.ok ? await webResponse.json() : { issues: [] };
-      console.log(`Fetched ${webData.issues?.length || 0} WEB epics`);
+      console.log(`Fetched ${webIssues.length} WEB epics`);
 
       // Transform CM issues to orders
       const orders = allCmIssues.map((issue: any) => {
-        const fields = issue.fields;
-        const orderTotal = fields[FIELD_MAPPINGS.orderTotal] || 0;
-        const depositAmount = fields[FIELD_MAPPINGS.depositAmount] || 0;
+        const fields = issue.fields || {};
+        const issueType = fields.issuetype?.name || '';
         
+        // Skip non-Order issue types for main order list
+        // (Design Order and Packaging are child items)
+        
+        const orderTotal = parseFloat(fields[FIELD_MAPPINGS.orderTotal]) || 0;
+        const depositAmount = parseFloat(fields[FIELD_MAPPINGS.depositAmount]) || 0;
+        const remainingDue = parseFloat(fields[FIELD_MAPPINGS.remainingAmount]) || (orderTotal - depositAmount);
+        
+        // Extract customer name from various formats
+        const customerName = extractCustomerName(fields[FIELD_MAPPINGS.customer]);
+        
+        // Extract agent name
         const rawAgent = fields[FIELD_MAPPINGS.agent];
-        if (rawAgent) {
-          console.log(`Order ${issue.key} agent field:`, JSON.stringify(rawAgent));
-        }
-        
         let agentName = null;
         if (rawAgent) {
           agentName = rawAgent.displayName || rawAgent.value || rawAgent.name || 
                       (typeof rawAgent === 'string' ? rawAgent : null);
         }
         
+        // Get order health from dedicated field (customfield_10897)
+        const healthFieldValue = fields[FIELD_MAPPINGS.orderHealth];
+        let orderHealth = 'on-track';
+        if (healthFieldValue) {
+          const healthValue = (healthFieldValue.value || healthFieldValue || '').toLowerCase();
+          if (healthValue.includes('off') || healthValue.includes('behind')) {
+            orderHealth = 'off-track';
+          } else if (healthValue.includes('risk') || healthValue.includes('warning')) {
+            orderHealth = 'at-risk';
+          } else if (healthValue.includes('white label') || healthValue.includes('on hold') || healthValue.includes('pending')) {
+            orderHealth = 'on-track'; // Neutral
+          }
+        }
+        
+        // Parse dates
+        const startDate = fields[FIELD_MAPPINGS.startDate] || fields[FIELD_MAPPINGS.dateOrdered] || fields.created?.substring(0, 10);
+        const estShipDate = fields[FIELD_MAPPINGS.estShipDate] || fields.duedate;
+        
         return {
           id: issue.key,
+          issueType,
           salesOrderNumber: fields[FIELD_MAPPINGS.salesOrderNumber] || issue.key,
-          customer: fields[FIELD_MAPPINGS.customer]?.value || 'Unknown',
+          customer: customerName,
           productName: fields[FIELD_MAPPINGS.productName] || fields.summary || 'Unknown Product',
-          quantityOrdered: fields[FIELD_MAPPINGS.quantityOrdered] || 0,
+          quantityOrdered: parseFloat(fields[FIELD_MAPPINGS.quantityOrdered]) || 0,
           orderTotal,
           depositAmount,
           finalPayment: orderTotal - depositAmount,
-          remainingDue: fields[FIELD_MAPPINGS.remainingAmount] || (orderTotal - depositAmount),
-          commissionDue: fields[FIELD_MAPPINGS.commissionDue] || 0,
-          startDate: fields[FIELD_MAPPINGS.dateOrdered] || fields.created?.substring(0, 10),
+          remainingDue,
+          commissionDue: parseFloat(fields[FIELD_MAPPINGS.commissionDue]) || 0,
+          startDate,
           dueDate: fields.duedate,
-          estShipDate: fields.duedate,
+          estShipDate,
           actualShipDate: fields[FIELD_MAPPINGS.actualShipDate],
           currentStatus: fields.status?.name || 'Unknown',
           expectedStatus: fields.status?.name || 'Unknown',
-          orderHealth: getOrderHealth(fields),
+          orderHealth,
           daysBehindSchedule: calculateDaysBehind(fields),
-          daysInProduction: fields[FIELD_MAPPINGS.daysInProduction] || calculateDaysInProduction(fields),
+          daysInProduction: parseFloat(fields[FIELD_MAPPINGS.daysInProduction]) || calculateDaysInProduction(fields, startDate),
           agent: agentName,
           accountManager: fields[FIELD_MAPPINGS.accountManager]?.displayName || null,
           orderNotes: '',
         };
       });
 
+      // Filter to only Order type issues (not Design Order or Packaging)
+      const orderTypeOrders = orders.filter((o: any) => 
+        o.issueType === 'Order' || o.issueType === '' || !o.issueType
+      );
+      
+      console.log(`Total orders: ${orders.length}, Order type: ${orderTypeOrders.length}`);
+
+      // Filter active orders (exclude cancelled/completed)
+      const activeOrders = orderTypeOrders.filter((o: any) => {
+        const status = (o.currentStatus || '').toLowerCase();
+        return !CANCELLED_STATUSES.some(s => status.includes(s));
+      });
+
+      // Calculate all-time outstanding (from all orders with remaining due > 0)
+      const allTimeOutstandingOrders = orders
+        .filter((o: any) => o.remainingDue > 0)
+        .map((o: any) => ({
+          id: o.id,
+          salesOrderNumber: o.salesOrderNumber,
+          customer: o.customer,
+          productName: o.productName,
+          currentStatus: o.currentStatus,
+          orderTotal: o.orderTotal,
+          depositAmount: o.depositAmount,
+          remainingDue: o.remainingDue,
+        }));
+      
+      const allTimeOutstanding = allTimeOutstandingOrders.reduce((sum: number, o: any) => sum + o.remainingDue, 0);
+      console.log(`All-time outstanding from ${allTimeOutstandingOrders.length} orders: $${allTimeOutstanding}`);
+
       // Transform WEB epics
-      const webProjects = (webData.issues || []).map((issue: any) => ({
+      const webProjects = webIssues.map((issue: any) => ({
         id: issue.key,
-        epicName: issue.fields.summary || 'Unknown Epic',
+        epicName: issue.fields?.summary || 'Unknown Epic',
         epicKey: issue.key,
-        status: mapEpicStatus(issue.fields.status?.name),
-        totalTasks: issue.fields.subtasks?.length || 0,
+        status: mapEpicStatus(issue.fields?.status?.name),
+        totalTasks: issue.fields?.subtasks?.length || 0,
         notStarted: 0, inProgress: 0, completed: 0, percentComplete: 0,
-        startDate: issue.fields.created?.substring(0, 10),
-        dueDate: issue.fields.duedate,
+        startDate: issue.fields?.created?.substring(0, 10),
+        dueDate: issue.fields?.duedate,
         isOffTrack: false,
       }));
 
-      // Calculate metrics
-      const activeOrders = orders.filter((o: any) => 
-        !CANCELLED_STATUSES.some(s => o.currentStatus?.toLowerCase().includes(s))
-      );
-
+      // Get unique customers from all orders (not just active)
+      const uniqueCustomers = [...new Set(orderTypeOrders.map((o: any) => o.customer).filter((c: string) => c && c !== 'Unknown'))];
+      
       const summary = {
         totalActiveCustomers: new Set(activeOrders.map((o: any) => o.customer).filter((c: string) => c && c !== 'Unknown')).size,
         totalActiveOrders: activeOrders.length,
-        totalMonthlyRevenue: orders.reduce((sum: number, o: any) => sum + (o.orderTotal || 0), 0),
-        totalOutstandingPayments: orders.reduce((sum: number, o: any) => sum + (o.remainingDue || 0), 0),
-        allTimeOutstandingPayments: allTimeOutstanding, // All-time outstanding from all orders
-        totalCommissionsDue: orders.reduce((sum: number, o: any) => sum + (o.commissionDue || 0), 0),
+        totalMonthlyRevenue: orderTypeOrders.reduce((sum: number, o: any) => sum + (o.orderTotal || 0), 0),
+        totalOutstandingPayments: orderTypeOrders.reduce((sum: number, o: any) => sum + (o.remainingDue || 0), 0),
+        allTimeOutstandingPayments: allTimeOutstanding,
+        totalCommissionsDue: orderTypeOrders.reduce((sum: number, o: any) => sum + (o.commissionDue || 0), 0),
         totalActiveProjects: webProjects.filter((p: any) => p.status === 'active').length,
         orderHealthBreakdown: {
           onTrack: activeOrders.filter((o: any) => o.orderHealth === 'on-track').length,
@@ -247,18 +307,18 @@ serve(async (req) => {
         },
       };
 
-      console.log(`Orders: ${orders.length}, Active: ${activeOrders.length}`);
+      console.log(`Summary: ${activeOrders.length} active orders, ${uniqueCustomers.length} unique customers, $${summary.totalMonthlyRevenue} revenue`);
 
       return new Response(JSON.stringify({
         success: true,
         data: {
           summary,
-          orders,
-          allTimeOutstandingOrders, // Orders with outstanding payments (all-time, no date filter)
+          orders: orderTypeOrders,
+          allTimeOutstandingOrders,
           webProjects,
-          customers: ['All Customers', ...new Set(orders.map((o: any) => o.customer).filter((c: string) => c && c !== 'Unknown'))],
-          agents: ['All Agents', ...new Set(orders.map((o: any) => o.agent).filter(Boolean))],
-          accountManagers: ['All Account Managers', ...new Set(orders.map((o: any) => o.accountManager).filter(Boolean))],
+          customers: ['All Customers', ...uniqueCustomers.sort()],
+          agents: ['All Agents', ...new Set(orderTypeOrders.map((o: any) => o.agent).filter(Boolean))],
+          accountManagers: ['All Account Managers', ...new Set(orderTypeOrders.map((o: any) => o.accountManager).filter(Boolean))],
           lastSynced: new Date().toISOString(),
           totalOrdersInJira: allCmIssues.length,
         }
@@ -288,21 +348,6 @@ serve(async (req) => {
   }
 });
 
-function getOrderHealth(fields: any): 'on-track' | 'at-risk' | 'off-track' {
-  const healthField = fields.customfield_10083?.value?.toLowerCase();
-  if (healthField) {
-    if (healthField.includes('off') || healthField.includes('behind')) return 'off-track';
-    if (healthField.includes('risk') || healthField.includes('warning')) return 'at-risk';
-    return 'on-track';
-  }
-  const dueDate = fields.duedate ? new Date(fields.duedate) : null;
-  if (!dueDate) return 'on-track';
-  const daysUntilDue = Math.ceil((dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-  if (daysUntilDue < 0) return 'off-track';
-  if (daysUntilDue < 7) return 'at-risk';
-  return 'on-track';
-}
-
 function calculateDaysBehind(fields: any): number {
   const dueDate = fields.duedate ? new Date(fields.duedate) : null;
   if (!dueDate) return 0;
@@ -310,10 +355,10 @@ function calculateDaysBehind(fields: any): number {
   return daysDiff > 0 ? daysDiff : 0;
 }
 
-function calculateDaysInProduction(fields: any): number {
-  const startDate = fields.customfield_10040 || fields.created?.substring(0, 10);
-  if (!startDate) return 0;
-  return Math.ceil((Date.now() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24));
+function calculateDaysInProduction(fields: any, startDate: string | null): number {
+  const start = startDate || fields.customfield_10040 || fields.created?.substring(0, 10);
+  if (!start) return 0;
+  return Math.ceil((Date.now() - new Date(start).getTime()) / (1000 * 60 * 60 * 24));
 }
 
 function mapEpicStatus(status: string): 'active' | 'on-hold' | 'complete' {
