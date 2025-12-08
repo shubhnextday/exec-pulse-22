@@ -53,6 +53,7 @@ async function fetchAllPages(
   const allIssues: any[] = [];
   let startAt = 0;
   let total = 0;
+  const MAX_TOTAL_ISSUES = 5000; // Safety limit
   
   while (true) {
     console.log(`Fetching CM orders: startAt=${startAt}, pageSize=${PAGE_SIZE}`);
@@ -81,12 +82,36 @@ async function fetchAllPages(
 
     const data = await response.json();
     const issues = data.issues || [];
-    total = data.total || 0;
+    
+    // Log the raw response structure on first page
+    if (startAt === 0) {
+      console.log('First page response keys:', Object.keys(data));
+      console.log('First page total:', data.total, 'maxResults:', data.maxResults);
+    }
+    
+    // Get total from response - may be at different paths
+    if (data.total !== undefined && data.total > 0) {
+      total = data.total;
+    }
     
     allIssues.push(...issues);
-    console.log(`Fetched ${issues.length} issues (${allIssues.length}/${total} total)`);
+    console.log(`Fetched ${issues.length} issues (${allIssues.length}/${total || 'unknown'} total)`);
     
+    // Stop if we got fewer results than page size (last page)
     if (issues.length < PAGE_SIZE) {
+      console.log(`Stopping: got ${issues.length} issues, less than page size ${PAGE_SIZE}`);
+      break;
+    }
+    
+    // Safety limit to prevent infinite loops
+    if (allIssues.length >= MAX_TOTAL_ISSUES) {
+      console.log(`Stopping: reached safety limit of ${MAX_TOTAL_ISSUES} issues`);
+      break;
+    }
+    
+    // Also stop if we've fetched all based on total
+    if (total > 0 && allIssues.length >= total) {
+      console.log(`Stopping: fetched all ${total} issues`);
       break;
     }
     
@@ -94,7 +119,7 @@ async function fetchAllPages(
     await new Promise(resolve => setTimeout(resolve, 200));
   }
   
-  return { issues: allIssues, total };
+  return { issues: allIssues, total: total || allIssues.length };
 }
 
 serve(async (req) => {
