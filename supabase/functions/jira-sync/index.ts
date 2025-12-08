@@ -80,17 +80,31 @@ serve(async (req) => {
         FIELD_MAPPINGS.daysInProduction, 'customfield_10083'
       ];
       
-      // Single request with 500 limit
+      // Fetch filtered orders (by date range)
       const params = new URLSearchParams({
         jql: cmJql,
         maxResults: MAX_ORDERS.toString(),
         fields: requiredFields.join(','),
       });
       
-      const cmResponse = await fetchWithRetry(
-        `https://${jiraDomain}/rest/api/3/search/jql?${params.toString()}`,
-        { method: 'GET', headers }
-      );
+      // Also fetch ALL orders for all-time outstanding (just financial fields)
+      const allTimeParams = new URLSearchParams({
+        jql: 'project = "CM" ORDER BY created DESC',
+        maxResults: MAX_ORDERS.toString(),
+        fields: [FIELD_MAPPINGS.remainingAmount, FIELD_MAPPINGS.commissionDue, 'status'].join(','),
+      });
+      
+      // Fetch both in parallel
+      const [cmResponse, allTimeResponse] = await Promise.all([
+        fetchWithRetry(
+          `https://${jiraDomain}/rest/api/3/search/jql?${params.toString()}`,
+          { method: 'GET', headers }
+        ),
+        fetchWithRetry(
+          `https://${jiraDomain}/rest/api/3/search/jql?${allTimeParams.toString()}`,
+          { method: 'GET', headers }
+        )
+      ]);
 
       if (!cmResponse.ok) {
         const errorText = await cmResponse.text();
@@ -101,6 +115,17 @@ serve(async (req) => {
       const cmData = await cmResponse.json();
       const allCmIssues = cmData.issues || [];
       console.log(`Fetched ${allCmIssues.length} CM issues (limit: ${MAX_ORDERS})`);
+      
+      // Calculate all-time outstanding
+      let allTimeOutstanding = 0;
+      if (allTimeResponse.ok) {
+        const allTimeData = await allTimeResponse.json();
+        const allTimeIssues = allTimeData.issues || [];
+        allTimeOutstanding = allTimeIssues.reduce((sum: number, issue: any) => {
+          return sum + (issue.fields?.[FIELD_MAPPINGS.remainingAmount] || 0);
+        }, 0);
+        console.log(`All-time outstanding from ${allTimeIssues.length} orders: $${allTimeOutstanding}`);
+      }
       
 
       // Fetch WEB epics (small dataset) using GET with query params
@@ -187,6 +212,7 @@ serve(async (req) => {
         totalActiveOrders: activeOrders.length,
         totalMonthlyRevenue: orders.reduce((sum: number, o: any) => sum + (o.orderTotal || 0), 0),
         totalOutstandingPayments: orders.reduce((sum: number, o: any) => sum + (o.remainingDue || 0), 0),
+        allTimeOutstandingPayments: allTimeOutstanding, // All-time outstanding from all orders
         totalCommissionsDue: orders.reduce((sum: number, o: any) => sum + (o.commissionDue || 0), 0),
         totalActiveProjects: webProjects.filter((p: any) => p.status === 'active').length,
         orderHealthBreakdown: {
