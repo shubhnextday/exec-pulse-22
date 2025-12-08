@@ -87,7 +87,7 @@ export default function Dashboard() {
     });
   }, [displayOrders, selectedCustomer, selectedAgent, selectedAccountManager]);
 
-  // REACTIVE METRICS - Revenue/Commissions from ALL orders, active counts from filtered
+  // REACTIVE METRICS - All stats derived from filteredOrders
   const reactiveMetrics = useMemo(() => {
     // Active Customers: Count of unique customer names in filtered orders
     const uniqueCustomers = new Set(
@@ -96,17 +96,17 @@ export default function Dashboard() {
         .filter(c => c && c !== 'Unknown')
     );
     
-    // Active Orders: Total count of filtered orders (excludes cancelled/completed)
+    // Active Orders: Total count of filtered orders (ALL orders are active per user requirement)
     const activeOrders = filteredOrders.length;
     
-    // Monthly Revenue: Sum of orderTotal from ALL orders (not just active)
-    const monthlyRevenue = displayOrders.reduce((sum, order) => sum + (order.orderTotal || 0), 0);
+    // Monthly Revenue: Sum of orderTotal from filtered orders
+    const monthlyRevenue = filteredOrders.reduce((sum, order) => sum + (order.orderTotal || 0), 0);
     
-    // Outstanding Payments: Sum of remainingDue from filtered orders
+    // Outstanding Payments: Sum of remainingDue from filtered orders (only outstanding amounts)
     const outstandingPayments = filteredOrders.reduce((sum, order) => sum + (order.remainingDue || 0), 0);
     
-    // Commissions Due: Sum of commissionDue field from ALL orders (not just active)
-    const commissionsDue = displayOrders.reduce((sum, order) => sum + (order.commissionDue || 0), 0);
+    // Commissions Due: Sum of commissionDue field from filtered orders
+    const commissionsDue = filteredOrders.reduce((sum, order) => sum + (order.commissionDue || 0), 0);
     
     // Active Projects: Count from web projects (not filtered by order filters)
     const activeProjects = displayWebProjects.filter(p => p.status === 'active').length;
@@ -127,7 +127,7 @@ export default function Dashboard() {
       totalActiveProjects: activeProjects,
       orderHealthBreakdown,
     };
-  }, [filteredOrders, displayWebProjects, displayOrders]);
+  }, [filteredOrders, displayWebProjects]);
 
   // Calculate cash flow projections from filtered orders
   const cashFlowProjections = useMemo(() => {
@@ -207,10 +207,11 @@ export default function Dashboard() {
       .slice(0, 10);
   }, [filteredOrders]);
 
-  // Calculate top customers from real order data
+  // Calculate ALL customers from real order data (sorted by revenue, show all)
   const realTopCustomers = useMemo(() => {
     const customerMap = new Map<string, { totalOrders: number; orderCount: number }>();
     
+    // Use ALL orders to show every customer
     displayOrders.forEach(order => {
       const customer = order.customer;
       if (!customer || customer === 'Unknown') return;
@@ -223,14 +224,45 @@ export default function Dashboard() {
       data.orderCount += 1;
     });
 
+    // Return ALL customers sorted by revenue (not limited to 5)
     return Array.from(customerMap.entries())
       .map(([name, data]) => ({
         name,
         totalOrders: data.totalOrders,
         orderCount: data.orderCount,
       }))
-      .sort((a, b) => b.totalOrders - a.totalOrders)
-      .slice(0, 5);
+      .sort((a, b) => b.totalOrders - a.totalOrders);
+  }, [displayOrders]);
+
+  // Calculate team workload from WEB projects (real data from assignees)
+  const realTeamMembers = useMemo(() => {
+    // Group by account manager from orders (since we don't have WEB assignees yet)
+    const memberMap = new Map<string, { openTasks: number; completedThisMonth: number }>();
+    
+    displayOrders.forEach(order => {
+      const manager = order.accountManager;
+      if (!manager) return;
+      
+      if (!memberMap.has(manager)) {
+        memberMap.set(manager, { openTasks: 0, completedThisMonth: 0 });
+      }
+      const data = memberMap.get(manager)!;
+      data.openTasks += 1;
+      // Count completed if status indicates completion
+      const status = order.currentStatus?.toLowerCase() || '';
+      if (status.includes('complete') || status.includes('shipped') || status.includes('done')) {
+        data.completedThisMonth += 1;
+      }
+    });
+
+    return Array.from(memberMap.entries())
+      .map(([name, data], idx) => ({
+        id: `member-${idx}`,
+        name,
+        openTasks: data.openTasks,
+        completedThisMonth: data.completedThisMonth,
+      }))
+      .sort((a, b) => b.openTasks - a.openTasks);
   }, [displayOrders]);
 
   // Metric explanations for tooltips
@@ -461,7 +493,7 @@ export default function Dashboard() {
 
           {/* Bottom Section: Team, Commissions, Top Customers */}
           <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <TeamWorkload members={mockTeamMembers} />
+            <TeamWorkload members={realTeamMembers.length > 0 ? realTeamMembers : mockTeamMembers} />
             <CommissionsTable commissions={realCommissions.length > 0 ? realCommissions : mockCommissions} />
             <TopCustomers customers={realTopCustomers.length > 0 ? realTopCustomers : mockTopCustomers} />
           </section>
