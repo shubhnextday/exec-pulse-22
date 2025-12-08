@@ -39,6 +39,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { startOfMonth, format, isWithinInterval, parseISO } from 'date-fns';
 
 export default function Dashboard() {
   const [activeSection, setActiveSection] = useState('overview');
@@ -48,7 +49,10 @@ export default function Dashboard() {
   const [selectedCustomer, setSelectedCustomer] = useState('All Customers');
   const [selectedAgent, setSelectedAgent] = useState('All Agents');
   const [selectedAccountManager, setSelectedAccountManager] = useState('All Account Managers');
-  const [dateRange, setDateRange] = useState('nov-2025');
+  
+  // Date range filter - default to current month
+  const [dateFrom, setDateFrom] = useState(() => startOfMonth(new Date()));
+  const [dateTo, setDateTo] = useState(() => new Date());
 
   // JIRA data hook
   const {
@@ -65,10 +69,11 @@ export default function Dashboard() {
     refresh,
   } = useJiraData();
 
-  // Fetch data on mount only (filter client-side to avoid JIRA rate limits)
+  // Fetch data on mount with current month date range
   useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+    const dateFromStr = format(dateFrom, 'yyyy-MM-dd');
+    fetchDashboardData({ dateFrom: dateFromStr });
+  }, [fetchDashboardData, dateFrom]);
 
   // Use JIRA data if available, otherwise fall back to mock data
   const displayOrders = orders.length > 0 ? orders : mockOrders;
@@ -80,12 +85,24 @@ export default function Dashboard() {
   // Filter orders client-side based on selections (avoids JIRA rate limits)
   const filteredOrders = useMemo(() => {
     return displayOrders.filter(order => {
+      // Date filter - check if order created date is within range
+      if (order.createdAt) {
+        try {
+          const orderDate = parseISO(order.createdAt);
+          if (!isWithinInterval(orderDate, { start: dateFrom, end: dateTo })) {
+            return false;
+          }
+        } catch {
+          // If date parsing fails, include the order
+        }
+      }
+      
       if (selectedCustomer !== 'All Customers' && order.customer !== selectedCustomer) return false;
       if (selectedAgent !== 'All Agents' && order.agent !== selectedAgent) return false;
       if (selectedAccountManager !== 'All Account Managers' && order.accountManager !== selectedAccountManager) return false;
       return true;
     });
-  }, [displayOrders, selectedCustomer, selectedAgent, selectedAccountManager]);
+  }, [displayOrders, selectedCustomer, selectedAgent, selectedAccountManager, dateFrom, dateTo]);
 
   // REACTIVE METRICS - All stats derived from filteredOrders
   const reactiveMetrics = useMemo(() => {
@@ -345,11 +362,13 @@ export default function Dashboard() {
             selectedCustomer={selectedCustomer}
             selectedAgent={selectedAgent}
             selectedAccountManager={selectedAccountManager}
-            dateRange={dateRange}
+            dateFrom={dateFrom}
+            dateTo={dateTo}
             onCustomerChange={setSelectedCustomer}
             onAgentChange={setSelectedAgent}
             onAccountManagerChange={setSelectedAccountManager}
-            onDateRangeChange={setDateRange}
+            onDateFromChange={setDateFrom}
+            onDateToChange={setDateTo}
           />
 
           {/* Data Source Indicator */}

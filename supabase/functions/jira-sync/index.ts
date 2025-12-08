@@ -68,10 +68,12 @@ serve(async (req) => {
       // Build JQL query based on filters
       const jqlParts = ['project = "CM"'];
       
-      // Date filter - fetch all data from 2024 onwards (full history)
+      // Date filter - default to start of current month
       let dateFilter = dateFrom;
       if (!dateFilter) {
-        dateFilter = '2024-01-01'; // Fetch all historical data
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        dateFilter = startOfMonth.toISOString().split('T')[0];
       }
       jqlParts.push(`created >= "${dateFilter}"`);
       
@@ -219,6 +221,7 @@ serve(async (req) => {
           agent: agentValue,
           accountManager: accountManagerValue,
           orderNotes: fields.description?.content?.[0]?.content?.[0]?.text || '',
+          createdAt: fields.created, // Include created date for client-side date filtering
         };
       });
 
