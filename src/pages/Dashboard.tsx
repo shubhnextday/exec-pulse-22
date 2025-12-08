@@ -225,20 +225,32 @@ export default function Dashboard() {
   }, [filteredOrders]);
 
   // Calculate ALL customers from real order data (sorted by revenue, show all)
+  // Uses filteredOrders to respect date range, but includes ALL customers even if no active orders
   const realTopCustomers = useMemo(() => {
-    const customerMap = new Map<string, { totalOrders: number; orderCount: number }>();
+    const customerMap = new Map<string, { totalOrders: number; orderCount: number; hasActiveOrders: boolean }>();
     
-    // Use ALL orders to show every customer
+    // First, add all customers from ALL orders (so none are missed)
     displayOrders.forEach(order => {
       const customer = order.customer;
       if (!customer || customer === 'Unknown') return;
       
       if (!customerMap.has(customer)) {
-        customerMap.set(customer, { totalOrders: 0, orderCount: 0 });
+        customerMap.set(customer, { totalOrders: 0, orderCount: 0, hasActiveOrders: false });
+      }
+    });
+    
+    // Then calculate revenue from date-filtered orders (includes completed/shipped orders)
+    filteredOrders.forEach(order => {
+      const customer = order.customer;
+      if (!customer || customer === 'Unknown') return;
+      
+      if (!customerMap.has(customer)) {
+        customerMap.set(customer, { totalOrders: 0, orderCount: 0, hasActiveOrders: false });
       }
       const data = customerMap.get(customer)!;
       data.totalOrders += order.orderTotal || 0;
       data.orderCount += 1;
+      data.hasActiveOrders = true;
     });
 
     // Return ALL customers sorted by revenue (not limited to 5)
@@ -247,9 +259,10 @@ export default function Dashboard() {
         name,
         totalOrders: data.totalOrders,
         orderCount: data.orderCount,
+        hasActiveOrders: data.hasActiveOrders,
       }))
       .sort((a, b) => b.totalOrders - a.totalOrders);
-  }, [displayOrders]);
+  }, [displayOrders, filteredOrders]);
 
   // Calculate team workload from WEB projects (real data from assignees)
   const realTeamMembers = useMemo(() => {

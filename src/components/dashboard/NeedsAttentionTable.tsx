@@ -86,11 +86,17 @@ function OrderRow({ order }: { order: Order }) {
 }
 
 export function NeedsAttentionTable({ orders }: NeedsAttentionTableProps) {
-  const attentionOrders = orders.filter(
-    o => o.orderHealth === 'at-risk' || o.orderHealth === 'off-track'
-  ).sort((a, b) => {
+  // Include at-risk, off-track, and pending orders
+  const attentionOrders = orders.filter(o => {
+    const status = o.currentStatus?.toLowerCase() || '';
+    const isPending = status.includes('pending') || status.includes('waiting') || status.includes('blocked');
+    return o.orderHealth === 'at-risk' || o.orderHealth === 'off-track' || isPending;
+  }).sort((a, b) => {
+    // Priority: off-track > at-risk > pending
     if (a.orderHealth === 'off-track' && b.orderHealth !== 'off-track') return -1;
     if (a.orderHealth !== 'off-track' && b.orderHealth === 'off-track') return 1;
+    if (a.orderHealth === 'at-risk' && b.orderHealth !== 'at-risk') return -1;
+    if (a.orderHealth !== 'at-risk' && b.orderHealth === 'at-risk') return 1;
     return b.daysBehindSchedule - a.daysBehindSchedule;
   });
 
