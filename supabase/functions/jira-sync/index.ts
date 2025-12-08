@@ -128,6 +128,19 @@ serve(async (req) => {
         const orderTotal = fields[FIELD_MAPPINGS.orderTotal] || 0;
         const depositAmount = fields[FIELD_MAPPINGS.depositAmount] || 0;
         
+        // Debug: log raw agent field for first few orders
+        const rawAgent = fields[FIELD_MAPPINGS.agent];
+        if (rawAgent) {
+          console.log(`Order ${issue.key} agent field:`, JSON.stringify(rawAgent));
+        }
+        
+        // Extract agent name - handle different JIRA field formats
+        let agentName = null;
+        if (rawAgent) {
+          agentName = rawAgent.displayName || rawAgent.value || rawAgent.name || 
+                      (typeof rawAgent === 'string' ? rawAgent : null);
+        }
+        
         return {
           id: issue.key,
           salesOrderNumber: fields[FIELD_MAPPINGS.salesOrderNumber] || issue.key,
@@ -148,7 +161,7 @@ serve(async (req) => {
           orderHealth: getOrderHealth(fields),
           daysBehindSchedule: calculateDaysBehind(fields),
           daysInProduction: fields[FIELD_MAPPINGS.daysInProduction] || calculateDaysInProduction(fields),
-          agent: fields[FIELD_MAPPINGS.agent]?.displayName || fields[FIELD_MAPPINGS.agent]?.value || null,
+          agent: agentName,
           accountManager: fields[FIELD_MAPPINGS.accountManager]?.displayName || null,
           orderNotes: '',
         };
