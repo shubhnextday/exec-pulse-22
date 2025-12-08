@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Calendar, Filter, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -7,6 +8,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { format, subDays, startOfMonth, differenceInDays } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface FilterBarProps {
   customers: string[];
@@ -15,11 +24,13 @@ interface FilterBarProps {
   selectedCustomer: string;
   selectedAgent: string;
   selectedAccountManager: string;
-  dateRange: string;
+  dateFrom: Date;
+  dateTo: Date;
   onCustomerChange: (value: string) => void;
   onAgentChange: (value: string) => void;
   onAccountManagerChange: (value: string) => void;
-  onDateRangeChange: (value: string) => void;
+  onDateFromChange: (date: Date) => void;
+  onDateToChange: (date: Date) => void;
 }
 
 export function FilterBar({
@@ -29,11 +40,13 @@ export function FilterBar({
   selectedCustomer,
   selectedAgent,
   selectedAccountManager,
-  dateRange,
+  dateFrom,
+  dateTo,
   onCustomerChange,
   onAgentChange,
   onAccountManagerChange,
-  onDateRangeChange,
+  onDateFromChange,
+  onDateToChange,
 }: FilterBarProps) {
   const hasActiveFilters = 
     selectedCustomer !== 'All Customers' || 
@@ -46,6 +59,27 @@ export function FilterBar({
     onAccountManagerChange('All Account Managers');
   };
 
+  // Max 90 days range
+  const maxDaysRange = 90;
+  const daysDiff = differenceInDays(dateTo, dateFrom);
+  const isRangeValid = daysDiff >= 0 && daysDiff <= maxDaysRange;
+
+  // Quick presets
+  const setCurrentMonth = () => {
+    onDateFromChange(startOfMonth(new Date()));
+    onDateToChange(new Date());
+  };
+
+  const setLast30Days = () => {
+    onDateFromChange(subDays(new Date(), 30));
+    onDateToChange(new Date());
+  };
+
+  const setLast90Days = () => {
+    onDateFromChange(subDays(new Date(), 90));
+    onDateToChange(new Date());
+  };
+
   return (
     <div className="rounded-2xl border border-border/30 p-4 mb-6 opacity-0 animate-slide-up bg-card/50" style={{ animationDelay: '100ms' }}>
       <div className="flex flex-wrap items-center gap-3">
@@ -54,18 +88,64 @@ export function FilterBar({
           <span className="text-xs font-semibold uppercase tracking-wider">Filters</span>
         </div>
         
-        <Select value={dateRange} onValueChange={onDateRangeChange}>
-          <SelectTrigger className="w-[160px] h-9 text-sm bg-muted/30 border-border/30 hover:border-primary/30 transition-colors">
-            <Calendar className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
-            <SelectValue placeholder="Date Range" />
-          </SelectTrigger>
-          <SelectContent className="bg-popover border-border/50">
-            <SelectItem value="current-month">Current Month</SelectItem>
-            <SelectItem value="last-month">Last Month</SelectItem>
-            <SelectItem value="last-90-days">Last 90 Days</SelectItem>
-            <SelectItem value="nov-2025">Nov 2025+</SelectItem>
-          </SelectContent>
-        </Select>
+        {/* Date Range with Presets */}
+        <div className="flex items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "h-9 text-sm bg-muted/30 border-border/30 hover:border-primary/30 transition-colors justify-start text-left font-normal",
+                  !isRangeValid && "border-destructive/50"
+                )}
+              >
+                <Calendar className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                {format(dateFrom, "MMM d")} - {format(dateTo, "MMM d, yyyy")}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <div className="p-3 border-b border-border/30">
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={setCurrentMonth} className="text-xs">
+                    This Month
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={setLast30Days} className="text-xs">
+                    Last 30 Days
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={setLast90Days} className="text-xs">
+                    Last 90 Days
+                  </Button>
+                </div>
+                {!isRangeValid && (
+                  <p className="text-xs text-destructive mt-2">Max range is 90 days</p>
+                )}
+              </div>
+              <div className="flex">
+                <div className="border-r border-border/30">
+                  <p className="text-xs text-muted-foreground p-2 text-center">From</p>
+                  <CalendarComponent
+                    mode="single"
+                    selected={dateFrom}
+                    onSelect={(date) => date && onDateFromChange(date)}
+                    disabled={(date) => date > dateTo || date > new Date()}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground p-2 text-center">To</p>
+                  <CalendarComponent
+                    mode="single"
+                    selected={dateTo}
+                    onSelect={(date) => date && onDateToChange(date)}
+                    disabled={(date) => date < dateFrom || date > new Date() || differenceInDays(date, dateFrom) > maxDaysRange}
+                    className="p-3 pointer-events-auto"
+                  />
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
 
         <Select value={selectedCustomer} onValueChange={onCustomerChange}>
           <SelectTrigger className={`w-[180px] h-9 text-sm bg-muted/30 border-border/30 hover:border-primary/30 transition-colors ${selectedCustomer !== 'All Customers' ? 'border-primary/50 bg-primary/5' : ''}`}>
