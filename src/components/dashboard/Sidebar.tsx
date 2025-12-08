@@ -6,8 +6,6 @@ import {
   Users, 
   Code2, 
   AlertTriangle,
-  Settings,
-  LogOut,
   ChevronLeft
 } from 'lucide-react';
 import { useState } from 'react';
@@ -83,23 +81,6 @@ export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
         ))}
       </nav>
 
-      {/* Footer */}
-      <div className="p-3 border-t border-sidebar-border space-y-1">
-        <button className={cn(
-          "w-full nav-item",
-          collapsed && "justify-center px-0"
-        )}>
-          <Settings className="h-5 w-5 flex-shrink-0" />
-          {!collapsed && <span className="text-sm">Settings</span>}
-        </button>
-        <button className={cn(
-          "w-full nav-item text-danger hover:text-danger",
-          collapsed && "justify-center px-0"
-        )}>
-          <LogOut className="h-5 w-5 flex-shrink-0" />
-          {!collapsed && <span className="text-sm">Sign Out</span>}
-        </button>
-      </div>
     </aside>
   );
 }
