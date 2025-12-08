@@ -7,6 +7,13 @@ import {
 } from '@/types/dashboard';
 import { toast } from '@/hooks/use-toast';
 
+export interface JiraFilters {
+  customer?: string;
+  agent?: string;
+  accountManager?: string;
+  dateFrom?: string;
+}
+
 interface JiraDataState {
   summary: ExecutiveSummary | null;
   orders: Order[];
@@ -34,14 +41,14 @@ const initialState: JiraDataState = {
 export function useJiraData() {
   const [state, setState] = useState<JiraDataState>(initialState);
 
-  const fetchDashboardData = useCallback(async () => {
+  const fetchDashboardData = useCallback(async (filters?: JiraFilters) => {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      console.log('Fetching JIRA data...');
+      console.log('Fetching JIRA data with filters:', filters);
       
       const { data, error } = await supabase.functions.invoke('jira-sync', {
-        body: { action: 'dashboard' },
+        body: { action: 'dashboard', filters: filters || {} },
       });
 
       if (error) {
