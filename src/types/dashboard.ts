@@ -78,6 +78,7 @@ export interface ExecutiveSummary {
   totalActiveOrders: number;
   totalMonthlyRevenue: number;
   totalOutstandingPayments: number;
+  allTimeOutstandingPayments?: number; // All-time outstanding from all orders
   totalCommissionsDue: number;
   totalActiveProjects: number;
   orderHealthBreakdown: {
