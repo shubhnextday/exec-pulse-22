@@ -34,8 +34,9 @@ const FIELD_MAPPINGS = {
   daysInProduction: 'customfield_10930',   // Days In Production (Number)
 };
 
-// Statuses that indicate an order is cancelled (NOT active) - completed/shipped orders ARE still counted
-const CANCELLED_STATUSES = ['cancelled', 'canceled'];
+// Statuses that indicate an order is cancelled (NOT active)
+// Per user requirement: ALL orders are active orders - we don't exclude any status
+const CANCELLED_STATUSES: string[] = [];
 
 serve(async (req) => {
   // Handle CORS preflight requests
