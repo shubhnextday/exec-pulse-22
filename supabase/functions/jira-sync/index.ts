@@ -111,23 +111,42 @@ serve(async (req) => {
       let fetchedCount = 0;
       
       do {
-        const cmResponse = await fetch(
-          `https://${jiraDomain}/rest/api/3/search/jql?startAt=${startAt}`,
-          { 
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-              jql: cmJql,
-              maxResults: maxPerPage,
-              fields: requiredFields,
-            }),
+        let retries = 0;
+        const maxRetries = 3;
+        let cmResponse: Response | null = null;
+        
+        while (retries < maxRetries) {
+          cmResponse = await fetch(
+            `https://${jiraDomain}/rest/api/3/search/jql?startAt=${startAt}`,
+            { 
+              method: 'POST',
+              headers,
+              body: JSON.stringify({
+                jql: cmJql,
+                maxResults: maxPerPage,
+                fields: requiredFields,
+              }),
+            }
+          );
+          
+          if (cmResponse.status === 429) {
+            retries++;
+            const waitTime = Math.pow(2, retries) * 1000; // Exponential backoff: 2s, 4s, 8s
+            console.log(`Rate limited (429), waiting ${waitTime}ms before retry ${retries}/${maxRetries}`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            continue;
           }
-        );
+          break;
+        }
 
-        if (!cmResponse.ok) {
-          const errorText = await cmResponse.text();
-          console.error('JIRA CM API error:', cmResponse.status, errorText);
-          throw new Error(`JIRA API error: ${cmResponse.status}`);
+        if (!cmResponse || !cmResponse.ok) {
+          const errorText = cmResponse ? await cmResponse.text() : 'No response';
+          console.error('JIRA CM API error:', cmResponse?.status, errorText);
+          
+          if (cmResponse?.status === 429) {
+            throw new Error('JIRA rate limit exceeded. Please wait a few minutes and try again.');
+          }
+          throw new Error(`JIRA API error: ${cmResponse?.status}`);
         }
 
         const cmData = await cmResponse.json();
