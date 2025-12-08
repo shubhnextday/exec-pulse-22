@@ -66,8 +66,8 @@ serve(async (req) => {
     const { action = 'dashboard' } = await req.json().catch(() => ({}));
 
     if (action === 'dashboard') {
-      // Fetch ALL Contract Manufacturing issues using pagination
-      const cmJql = 'project = "CM" ORDER BY created DESC';
+      // Fetch ALL Contract Manufacturing issues from Nov 1, 2025+ using pagination
+      const cmJql = 'project = "CM" AND created >= "2025-11-01" ORDER BY created DESC';
       let allCmIssues: any[] = [];
       let startAt = 0;
       const maxPerPage = 100;
@@ -75,12 +75,13 @@ serve(async (req) => {
       
       do {
         const cmResponse = await fetch(
-          `https://${jiraDomain}/rest/api/3/search/jql?startAt=${startAt}&maxResults=${maxPerPage}`,
+          `https://${jiraDomain}/rest/api/3/search/jql?startAt=${startAt}`,
           { 
             method: 'POST',
             headers,
             body: JSON.stringify({
               jql: cmJql,
+              maxResults: maxPerPage,
               fields: ['*all'],
             }),
           }
