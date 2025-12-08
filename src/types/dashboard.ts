@@ -88,6 +88,17 @@ export interface ExecutiveSummary {
   };
 }
 
+export interface OutstandingOrder {
+  id: string;
+  salesOrderNumber: string;
+  customer: string;
+  productName: string;
+  currentStatus: string;
+  orderTotal: number;
+  depositAmount: number;
+  remainingDue: number;
+}
+
 export interface CashFlowProjection {
   date: string;
   expectedAmount: number;

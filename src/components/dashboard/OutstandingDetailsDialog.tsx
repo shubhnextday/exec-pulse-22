@@ -13,13 +13,13 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Order } from '@/types/dashboard';
+import { OutstandingOrder } from '@/types/dashboard';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface OutstandingDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  orders: Order[];
+  orders: OutstandingOrder[];
 }
 
 export function OutstandingDetailsDialog({ 
@@ -27,9 +27,7 @@ export function OutstandingDetailsDialog({
   onOpenChange, 
   orders 
 }: OutstandingDetailsDialogProps) {
-  // Filter orders with outstanding payments
-  const outstandingOrders = orders.filter(o => (o.remainingDue || 0) > 0);
-  const totalOutstanding = outstandingOrders.reduce((sum, o) => sum + (o.remainingDue || 0), 0);
+  const totalOutstanding = orders.reduce((sum, o) => sum + (o.remainingDue || 0), 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -57,14 +55,14 @@ export function OutstandingDetailsDialog({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {outstandingOrders.length === 0 ? (
+              {orders.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                     No outstanding payments found
                   </TableCell>
                 </TableRow>
               ) : (
-                outstandingOrders.map((order) => (
+                orders.map((order) => (
                   <TableRow key={order.id}>
                     <TableCell className="font-mono text-sm font-medium">
                       {order.salesOrderNumber || order.id}
@@ -103,7 +101,7 @@ export function OutstandingDetailsDialog({
         
         <div className="border-t pt-4 mt-2">
           <div className="flex justify-between text-sm text-muted-foreground">
-            <span>{outstandingOrders.length} orders with outstanding payments</span>
+            <span>{orders.length} orders with outstanding payments</span>
             <span>
               Showing all-time outstanding (all orders)
             </span>

@@ -3,13 +3,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { 
   ExecutiveSummary, 
   Order, 
-  WebProject 
+  WebProject,
+  OutstandingOrder
 } from '@/types/dashboard';
 import { toast } from '@/hooks/use-toast';
 
 interface JiraDataState {
   summary: ExecutiveSummary | null;
   orders: Order[];
+  allTimeOutstandingOrders: OutstandingOrder[];
   webProjects: WebProject[];
   customers: string[];
   agents: string[];
@@ -22,6 +24,7 @@ interface JiraDataState {
 const initialState: JiraDataState = {
   summary: null,
   orders: [],
+  allTimeOutstandingOrders: [],
   webProjects: [],
   customers: ['All Customers'],
   agents: ['All Agents'],
@@ -69,6 +72,7 @@ export function useJiraData() {
       setState({
         summary: data.data.summary,
         orders: data.data.orders || [],
+        allTimeOutstandingOrders: data.data.allTimeOutstandingOrders || [],
         webProjects: data.data.webProjects || [],
         customers: data.data.customers || ['All Customers'],
         agents: data.data.agents || ['All Agents'],
