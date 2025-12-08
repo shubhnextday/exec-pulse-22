@@ -10,6 +10,13 @@ import { WebProjectsTable } from '@/components/dashboard/WebProjectsTable';
 import { CommissionsTable } from '@/components/dashboard/CommissionsTable';
 import { TopCustomers } from '@/components/dashboard/TopCustomers';
 import { OutstandingDetailsDialog } from '@/components/dashboard/OutstandingDetailsDialog';
+import { ActiveOrdersDialog } from '@/components/dashboard/ActiveOrdersDialog';
+import { ActiveCustomersDialog } from '@/components/dashboard/ActiveCustomersDialog';
+import { RevenueDetailsDialog } from '@/components/dashboard/RevenueDetailsDialog';
+import { CommissionsDetailsDialog } from '@/components/dashboard/CommissionsDetailsDialog';
+import { ActiveProjectsDialog } from '@/components/dashboard/ActiveProjectsDialog';
+import { CashFlowDetailsDialog } from '@/components/dashboard/CashFlowDetailsDialog';
+import { OrderHealthDialog } from '@/components/dashboard/OrderHealthDialog';
 import { cn } from '@/lib/utils';
 import {
   Users,
@@ -75,7 +82,16 @@ export default function Dashboard() {
   const [selectedAgent, setSelectedAgent] = useState('All Agents');
   const [selectedAccountManager, setSelectedAccountManager] = useState('All Account Managers');
   const [dateRange, setDateRange] = useState('this-month'); // Default to current month for fast load
+  
+  // Dialog states
   const [outstandingDialogOpen, setOutstandingDialogOpen] = useState(false);
+  const [activeOrdersDialogOpen, setActiveOrdersDialogOpen] = useState(false);
+  const [activeCustomersDialogOpen, setActiveCustomersDialogOpen] = useState(false);
+  const [revenueDialogOpen, setRevenueDialogOpen] = useState(false);
+  const [commissionsDialogOpen, setCommissionsDialogOpen] = useState(false);
+  const [activeProjectsDialogOpen, setActiveProjectsDialogOpen] = useState(false);
+  const [cashFlowDialogOpen, setCashFlowDialogOpen] = useState(false);
+  const [orderHealthDialogOpen, setOrderHealthDialogOpen] = useState(false);
 
   // JIRA data hook
   const {
@@ -361,7 +377,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div>
+                  <div onClick={() => setActiveCustomersDialogOpen(true)} className="cursor-pointer">
                     <MetricCard
                       title="Active Customers"
                       value={reactiveMetrics.totalActiveCustomers}
@@ -374,12 +390,14 @@ export default function Dashboard() {
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs whitespace-pre-line">
                   {metricExplanations.activeCustomers}
+                  <br /><br />
+                  <span className="text-primary">Click to view details</span>
                 </TooltipContent>
               </Tooltip>
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div>
+                  <div onClick={() => setActiveOrdersDialogOpen(true)} className="cursor-pointer">
                     <MetricCard
                       title="Active Orders"
                       value={reactiveMetrics.totalActiveOrders}
@@ -392,12 +410,14 @@ export default function Dashboard() {
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs whitespace-pre-line">
                   {metricExplanations.activeOrders}
+                  <br /><br />
+                  <span className="text-primary">Click to view details</span>
                 </TooltipContent>
               </Tooltip>
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div>
+                  <div onClick={() => setRevenueDialogOpen(true)} className="cursor-pointer">
                     <MetricCard
                       title="Monthly Revenue"
                       value={`$${reactiveMetrics.totalMonthlyRevenue > 0 ? (reactiveMetrics.totalMonthlyRevenue / 1000).toFixed(0) + 'k' : '0'}`}
@@ -410,12 +430,14 @@ export default function Dashboard() {
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs whitespace-pre-line">
                   {metricExplanations.monthlyRevenue}
+                  <br /><br />
+                  <span className="text-primary">Click to view details</span>
                 </TooltipContent>
               </Tooltip>
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div onClick={() => setOutstandingDialogOpen(true)}>
+                  <div onClick={() => setOutstandingDialogOpen(true)} className="cursor-pointer">
                     <MetricCard
                       title="Outstanding"
                       value={`$${reactiveMetrics.totalOutstandingPayments > 0 ? (reactiveMetrics.totalOutstandingPayments / 1000).toFixed(0) + 'k' : '0'}`}
@@ -435,7 +457,7 @@ export default function Dashboard() {
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div>
+                  <div onClick={() => setCommissionsDialogOpen(true)} className="cursor-pointer">
                     <MetricCard
                       title="Commissions Due"
                       value={`$${reactiveMetrics.totalCommissionsDue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
@@ -448,12 +470,14 @@ export default function Dashboard() {
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs whitespace-pre-line">
                   {metricExplanations.commissions}
+                  <br /><br />
+                  <span className="text-primary">Click to view details</span>
                 </TooltipContent>
               </Tooltip>
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div>
+                  <div onClick={() => setActiveProjectsDialogOpen(true)} className="cursor-pointer">
                     <MetricCard
                       title="Active Projects"
                       value={reactiveMetrics.totalActiveProjects}
@@ -466,6 +490,8 @@ export default function Dashboard() {
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs whitespace-pre-line">
                   {metricExplanations.activeProjects}
+                  <br /><br />
+                  <span className="text-primary">Click to view details</span>
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -473,12 +499,16 @@ export default function Dashboard() {
 
           {/* Charts Section */}
           <section className="mb-8 grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <CashFlowChart data={cashFlowProjections.length > 0 ? cashFlowProjections : mockCashFlowProjections} />
-            <OrderHealthChart
-              onTrack={reactiveMetrics.orderHealthBreakdown.onTrack}
-              atRisk={reactiveMetrics.orderHealthBreakdown.atRisk}
-              offTrack={reactiveMetrics.orderHealthBreakdown.offTrack}
-            />
+            <div onClick={() => setCashFlowDialogOpen(true)} className="cursor-pointer">
+              <CashFlowChart data={cashFlowProjections.length > 0 ? cashFlowProjections : mockCashFlowProjections} />
+            </div>
+            <div onClick={() => setOrderHealthDialogOpen(true)} className="cursor-pointer">
+              <OrderHealthChart
+                onTrack={reactiveMetrics.orderHealthBreakdown.onTrack}
+                atRisk={reactiveMetrics.orderHealthBreakdown.atRisk}
+                offTrack={reactiveMetrics.orderHealthBreakdown.offTrack}
+              />
+            </div>
           </section>
 
           {/* Needs Attention Section */}
@@ -498,10 +528,52 @@ export default function Dashboard() {
           </section>
         </main>
         
-        {/* Outstanding Details Dialog */}
+        {/* Detail Dialogs */}
         <OutstandingDetailsDialog
           open={outstandingDialogOpen}
           onOpenChange={setOutstandingDialogOpen}
+          orders={filteredOrders}
+        />
+        
+        <ActiveOrdersDialog
+          open={activeOrdersDialogOpen}
+          onOpenChange={setActiveOrdersDialogOpen}
+          orders={filteredOrders}
+        />
+        
+        <ActiveCustomersDialog
+          open={activeCustomersDialogOpen}
+          onOpenChange={setActiveCustomersDialogOpen}
+          orders={filteredOrders}
+        />
+        
+        <RevenueDetailsDialog
+          open={revenueDialogOpen}
+          onOpenChange={setRevenueDialogOpen}
+          orders={displayOrders}
+        />
+        
+        <CommissionsDetailsDialog
+          open={commissionsDialogOpen}
+          onOpenChange={setCommissionsDialogOpen}
+          orders={displayOrders}
+        />
+        
+        <ActiveProjectsDialog
+          open={activeProjectsDialogOpen}
+          onOpenChange={setActiveProjectsDialogOpen}
+          projects={displayWebProjects}
+        />
+        
+        <CashFlowDetailsDialog
+          open={cashFlowDialogOpen}
+          onOpenChange={setCashFlowDialogOpen}
+          projections={cashFlowProjections}
+        />
+        
+        <OrderHealthDialog
+          open={orderHealthDialogOpen}
+          onOpenChange={setOrderHealthDialogOpen}
           orders={filteredOrders}
         />
       </div>
