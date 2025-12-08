@@ -63,15 +63,31 @@ serve(async (req) => {
       'Accept': 'application/json',
     };
 
-    const { action = 'dashboard' } = await req.json().catch(() => ({}));
+    const { action = 'dashboard', filters = {} } = await req.json().catch(() => ({}));
 
     if (action === 'dashboard') {
-      // Fetch ALL Contract Manufacturing issues from Nov 1, 2025+ using pagination
-      const cmJql = 'project = "CM" AND created >= "2025-11-01" ORDER BY created DESC';
+      // Use dateFrom from filters, default to start of current month
+      const dateFrom = filters.dateFrom || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+      
+      // Fetch CM issues using date filter
+      const cmJql = `project = "CM" AND created >= "${dateFrom}" ORDER BY created DESC`;
+      console.log('JQL Query:', cmJql);
+      
       let allCmIssues: any[] = [];
       let startAt = 0;
       const maxPerPage = 100;
       let fetchedCount = 0;
+      
+      // Only fetch essential fields to speed up requests
+      const requiredFields = [
+        'summary', 'status', 'created', 'duedate', 'description', 'subtasks',
+        FIELD_MAPPINGS.customer, FIELD_MAPPINGS.agent, FIELD_MAPPINGS.accountManager,
+        FIELD_MAPPINGS.orderTotal, FIELD_MAPPINGS.depositAmount, FIELD_MAPPINGS.remainingAmount,
+        FIELD_MAPPINGS.commissionDue, FIELD_MAPPINGS.quantityOrdered, FIELD_MAPPINGS.salesOrderNumber,
+        FIELD_MAPPINGS.productName, FIELD_MAPPINGS.productId, FIELD_MAPPINGS.dateOrdered,
+        FIELD_MAPPINGS.actualShipDate, FIELD_MAPPINGS.commissionPaidDate, FIELD_MAPPINGS.daysInProduction,
+        'customfield_10083' // order health field
+      ];
       
       do {
         const cmResponse = await fetch(
@@ -82,7 +98,7 @@ serve(async (req) => {
             body: JSON.stringify({
               jql: cmJql,
               maxResults: maxPerPage,
-              fields: ['*all'],
+              fields: requiredFields,
             }),
           }
         );
