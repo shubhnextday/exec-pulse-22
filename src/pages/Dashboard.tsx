@@ -77,6 +77,15 @@ export default function Dashboard() {
   const [activeSection, setActiveSection] = useState('overview');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
+  // Handle section navigation - scroll to section
+  const handleSectionChange = (section: string) => {
+    setActiveSection(section);
+    const element = document.getElementById(`section-${section}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+  
   // Filter states
   const [selectedCustomer, setSelectedCustomer] = useState('All Customers');
   const [selectedAgent, setSelectedAgent] = useState('All Agents');
@@ -294,7 +303,7 @@ export default function Dashboard() {
       <div className="min-h-screen bg-background">
         <Sidebar 
           activeSection={activeSection} 
-          onSectionChange={setActiveSection} 
+          onSectionChange={handleSectionChange}
         />
         
         <main className={cn(
@@ -373,7 +382,8 @@ export default function Dashboard() {
           </div>
 
           {/* Executive Summary Section */}
-          <section className="mb-8">
+          <section id="section-overview" className="mb-8 scroll-mt-8">
+            <h2 className="text-lg font-semibold mb-4 text-foreground">Executive Summary</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -497,8 +507,10 @@ export default function Dashboard() {
             </div>
           </section>
 
-          {/* Charts Section */}
-          <section className="mb-8 grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Charts Section - Financial Overview */}
+          <section id="section-financial" className="mb-8 scroll-mt-8">
+            <h2 className="text-lg font-semibold mb-4 text-foreground">Financial Overview</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div onClick={() => setCashFlowDialogOpen(true)} className="cursor-pointer">
               <CashFlowChart data={cashFlowProjections.length > 0 ? cashFlowProjections : mockCashFlowProjections} />
             </div>
@@ -509,22 +521,31 @@ export default function Dashboard() {
                 offTrack={reactiveMetrics.orderHealthBreakdown.offTrack}
               />
             </div>
+            </div>
+          </section>
+
+          {/* Operations (Orders) Section */}
+          <section id="section-operations" className="mb-8 scroll-mt-8">
+            <h2 className="text-lg font-semibold mb-4 text-foreground">Operations (Orders)</h2>
+            <TopCustomers customers={realTopCustomers.length > 0 ? realTopCustomers : mockTopCustomers} />
           </section>
 
           {/* Needs Attention Section */}
-          <section className="mb-8">
+          <section id="section-attention" className="mb-8 scroll-mt-8">
+            <h2 className="text-lg font-semibold mb-4 text-foreground">Needs Attention</h2>
             <NeedsAttentionTable orders={filteredOrders} />
           </section>
 
-          {/* Web Development & Team Section */}
-          <section className="mb-8">
+          {/* Web Development Section */}
+          <section id="section-web-dev" className="mb-8 scroll-mt-8">
+            <h2 className="text-lg font-semibold mb-4 text-foreground">Web Development</h2>
             <WebProjectsTable projects={displayWebProjects} />
           </section>
 
-          {/* Bottom Section: Commissions, Top Customers */}
-          <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Agent Commissions Section */}
+          <section id="section-commissions" className="mb-8 scroll-mt-8">
+            <h2 className="text-lg font-semibold mb-4 text-foreground">Agent Commissions</h2>
             <CommissionsTable commissions={realCommissions.length > 0 ? realCommissions : mockCommissions} />
-            <TopCustomers customers={realTopCustomers.length > 0 ? realTopCustomers : mockTopCustomers} />
           </section>
         </main>
         
