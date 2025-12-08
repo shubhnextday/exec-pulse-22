@@ -75,7 +75,7 @@ export default function Dashboard() {
   const [selectedCustomer, setSelectedCustomer] = useState('All Customers');
   const [selectedAgent, setSelectedAgent] = useState('All Agents');
   const [selectedAccountManager, setSelectedAccountManager] = useState('All Account Managers');
-  const [dateRange, setDateRange] = useState('last-6-months'); // Default to 6 months
+  const [dateRange, setDateRange] = useState('this-month'); // Default to current month for fast load
 
   // JIRA data hook
   const {
