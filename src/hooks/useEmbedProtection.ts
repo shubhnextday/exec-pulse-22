@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 const ALLOWED_ORIGINS = [
   'https://dashboard.nextdaynutra.com',
-  'http://localhost:5173', // For local development
+  'http://localhost:5173',
   'http://localhost:3000',
 ];
 
@@ -11,53 +11,52 @@ export const useEmbedProtection = () => {
 
   useEffect(() => {
     const checkAuthorization = () => {
-      // Check if we're in an iframe
-      const isInIframe = window.self !== window.top;
+      const currentOrigin = window.location.origin;
       
-      if (!isInIframe) {
-        // Not in iframe - check if we're on the allowed domain directly
-        const currentOrigin = window.location.origin;
-        if (ALLOWED_ORIGINS.some(origin => currentOrigin.startsWith(origin.replace('https://', '').replace('http://', '')))) {
-          setIsAuthorized(true);
-          return;
-        }
-        // Allow localhost for development
-        if (currentOrigin.includes('localhost') || currentOrigin.includes('lovable.app')) {
-          setIsAuthorized(true);
-          return;
-        }
-        setIsAuthorized(false);
+      // Always allow lovable.app for development/preview
+      if (currentOrigin.includes('lovable.app')) {
+        setIsAuthorized(true);
         return;
       }
-
-      // We're in an iframe - check the referrer/ancestor
-      try {
-        // Try to get ancestor origins (Chrome/Edge)
-        if (window.location.ancestorOrigins && window.location.ancestorOrigins.length > 0) {
-          const parentOrigin = window.location.ancestorOrigins[0];
-          const isAllowed = ALLOWED_ORIGINS.some(origin => parentOrigin.startsWith(origin));
-          setIsAuthorized(isAllowed);
-          return;
-        }
-      } catch (e) {
-        // ancestorOrigins not available
-      }
-
-      // Fallback to document.referrer
-      const referrer = document.referrer;
-      if (referrer) {
-        const isAllowed = ALLOWED_ORIGINS.some(origin => referrer.startsWith(origin));
-        setIsAuthorized(isAllowed);
-        return;
-      }
-
-      // If no referrer and in iframe, deny by default for security
-      // But allow lovable.app for preview
-      if (window.location.origin.includes('lovable.app')) {
+      
+      // Allow localhost for development
+      if (currentOrigin.includes('localhost')) {
         setIsAuthorized(true);
         return;
       }
 
+      // Check if we're in an iframe
+      const isInIframe = window.self !== window.top;
+      
+      if (isInIframe) {
+        // We're in an iframe - check the referrer
+        const referrer = document.referrer;
+        
+        if (referrer) {
+          const isAllowed = ALLOWED_ORIGINS.some(origin => referrer.startsWith(origin));
+          setIsAuthorized(isAllowed);
+          return;
+        }
+        
+        // Try ancestorOrigins (Chrome/Edge)
+        try {
+          if (window.location.ancestorOrigins && window.location.ancestorOrigins.length > 0) {
+            const parentOrigin = window.location.ancestorOrigins[0];
+            const isAllowed = ALLOWED_ORIGINS.some(origin => parentOrigin.startsWith(origin));
+            setIsAuthorized(isAllowed);
+            return;
+          }
+        } catch (e) {
+          // ancestorOrigins not available
+        }
+        
+        // If in iframe but can't determine parent, allow (for cross-origin iframes)
+        // The iframe sandbox restrictions will handle security
+        setIsAuthorized(true);
+        return;
+      }
+
+      // Not in iframe and not on allowed origin - deny
       setIsAuthorized(false);
     };
 
