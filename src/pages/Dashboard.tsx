@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useEmbedProtection } from '@/hooks/useEmbedProtection';
+import AccessDenied from '@/components/AccessDenied';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { Header } from '@/components/dashboard/Header';
 import { FilterBar } from '@/components/dashboard/FilterBar';
@@ -74,8 +76,22 @@ function getDateFromRange(range: string): string {
 }
 
 export default function Dashboard() {
+  const { isAuthorized, isLoading: isAuthLoading } = useEmbedProtection();
   const [activeSection, setActiveSection] = useState('overview');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Show access denied if not authorized
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!isAuthorized) {
+    return <AccessDenied />;
+  }
   
   // Handle section navigation - scroll to section
   const handleSectionChange = (section: string) => {
