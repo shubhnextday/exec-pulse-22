@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -24,9 +25,30 @@ interface ActiveProjectsDialogProps {
 }
 
 export function ActiveProjectsDialog({ open, onOpenChange, projects }: ActiveProjectsDialogProps) {
-  const activeProjects = projects.filter(p => !['Done', 'Canceled', 'On Hold'].includes(p.status));
+  const activeProjects = projects.filter((p) => !['Done', 'Canceled', 'On Hold'].includes(p.status));
   const totalTasks = activeProjects.reduce((sum, p) => sum + p.totalTasks, 0);
   const completedTasks = activeProjects.reduce((sum, p) => sum + p.completed, 0);
+
+  const STATUS_ORDER: Record<string, number> = {
+    Open: 1,
+    'In Requirements': 2,
+    'In Design': 3,
+    'In Website Development': 4,
+    'In Final QA Testing': 5,
+    'Continuous Development': 6,
+    Done: 7,
+    'On Hold': 8,
+    Canceled: 9,
+  };
+
+  const sortedProjects = useMemo(() => {
+    return [...projects].sort((a, b) => {
+      const orderA = STATUS_ORDER[a.status] ?? 99;
+      const orderB = STATUS_ORDER[b.status] ?? 99;
+      if (orderA !== orderB) return orderA - orderB;
+      return (a.dueDate || '').localeCompare(b.dueDate || '');
+    });
+  }, [projects]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -61,7 +83,7 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects }: ActivePro
             Active Projects ({activeProjects.length})
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="grid grid-cols-3 gap-4 mb-4 p-4 bg-muted/50 rounded-lg">
           <div className="text-center">
             <div className="text-sm text-muted-foreground">Active Projects</div>
@@ -76,7 +98,7 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects }: ActivePro
             <div className="text-xl font-bold text-emerald-600">{completedTasks}</div>
           </div>
         </div>
-        
+
         <ScrollArea className="h-[50vh]">
           <Table>
             <TableHeader>
@@ -89,7 +111,7 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects }: ActivePro
               </TableRow>
             </TableHeader>
             <TableBody>
-              {projects.map((project) => (
+              {sortedProjects.map((project) => (
                 <TableRow key={project.id}>
                   <TableCell>
                     <div className="font-medium">{project.epicName}</div>
@@ -103,9 +125,7 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects }: ActivePro
                   <TableCell className="min-w-[120px]">
                     <div className="flex items-center gap-2">
                       <Progress value={project.percentComplete} className="h-2 flex-1" />
-                      <span className="text-xs text-muted-foreground w-10">
-                        {project.percentComplete}%
-                      </span>
+                      <span className="text-xs text-muted-foreground w-10">{project.percentComplete}%</span>
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
@@ -116,7 +136,7 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects }: ActivePro
                   </TableCell>
                 </TableRow>
               ))}
-              {projects.length === 0 && (
+              {sortedProjects.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                     No projects found
@@ -126,9 +146,9 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects }: ActivePro
             </TableBody>
           </Table>
         </ScrollArea>
-        
+
         <div className="text-sm text-muted-foreground pt-2 border-t">
-          Showing all {projects.length} web development projects
+          Showing all {sortedProjects.length} web development projects
         </div>
       </DialogContent>
     </Dialog>
