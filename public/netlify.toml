@@ -1,0 +1,9 @@
+[[headers]]
+  # Apply to all paths
+  for = "/*"
+  [headers.values]
+    # This is the modern way to allow embedding
+    Content-Security-Policy = "frame-ancestors 'self' http://localhost:5173 https://*.netlify.app;"
+    
+    # Remove the old blocker (Netlify sets SAMEORIGIN by default usually, this overrides it)
+    X-Frame-Options = "ALLOWALL" 
