@@ -9,4 +9,4 @@
   for = "/*"
   [headers.values]
     X-Frame-Options = "ALLOWALL"
-    Content-Security-Policy = "frame-ancestors 'self' http://localhost:5171 https://*.netlify.app"
+    Content-Security-Policy = "frame-ancestors 'self' http://localhost:5171 https://*.netlify.app https://*.nextdaynutra.com"
