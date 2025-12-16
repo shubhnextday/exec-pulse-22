@@ -361,9 +361,21 @@ function calculateDaysInProduction(fields: any, startDate: string | null): numbe
   return Math.ceil((Date.now() - new Date(start).getTime()) / (1000 * 60 * 60 * 24));
 }
 
-function mapEpicStatus(status: string): 'active' | 'on-hold' | 'complete' {
+// Map raw Jira status to standardized EpicStatus values
+function mapEpicStatus(status: string): string {
   const lower = status?.toLowerCase() || '';
-  if (lower.includes('done') || lower.includes('complete') || lower.includes('closed')) return 'complete';
-  if (lower.includes('hold') || lower.includes('blocked') || lower.includes('paused')) return 'on-hold';
-  return 'active';
+  
+  // Map to exact status values expected by frontend
+  if (lower === 'open' || lower.includes('to do') || lower.includes('backlog')) return 'Open';
+  if (lower.includes('requirements') || lower.includes('requirement')) return 'In Requirements';
+  if (lower.includes('design') && !lower.includes('development')) return 'In Design';
+  if (lower.includes('website development') || lower.includes('development') || lower.includes('in progress')) return 'In Website Development';
+  if (lower.includes('qa') || lower.includes('testing') || lower.includes('review')) return 'In Final QA Testing';
+  if (lower.includes('continuous')) return 'Continuous Development';
+  if (lower.includes('done') || lower.includes('complete') || lower.includes('closed')) return 'Done';
+  if (lower.includes('hold') || lower.includes('blocked') || lower.includes('paused')) return 'On Hold';
+  if (lower.includes('cancel')) return 'Canceled';
+  
+  // Return raw status if no mapping found (will be displayed as-is)
+  return status || 'Open';
 }

@@ -1,7 +1,16 @@
 // Dashboard Types based on JIRA field mappings
 
 export type OrderHealth = 'on-track' | 'at-risk' | 'off-track';
-export type EpicStatus = 'active' | 'on-hold' | 'complete';
+export type EpicStatus = 
+  | 'Open'
+  | 'In Requirements'
+  | 'In Design'
+  | 'In Website Development'
+  | 'In Final QA Testing'
+  | 'Continuous Development'
+  | 'Done'
+  | 'On Hold'
+  | 'Canceled';
 
 export interface Order {
   id: string;

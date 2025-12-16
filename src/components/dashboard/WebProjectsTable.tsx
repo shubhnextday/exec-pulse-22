@@ -1,11 +1,25 @@
 import { WebProject, EpicStatus } from '@/types/dashboard';
 import { cn } from '@/lib/utils';
-import { AlertTriangle, CheckCircle2, Code2, PauseCircle, PlayCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Code2, PauseCircle, PlayCircle, Clock, Palette, Monitor, TestTube, RefreshCw, XCircle, FileText } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useMemo } from 'react';
 
 interface WebProjectsTableProps {
   projects: WebProject[];
 }
+
+// Workflow order for sorting
+const STATUS_ORDER: Record<string, number> = {
+  'Open': 1,
+  'In Requirements': 2,
+  'In Design': 3,
+  'In Website Development': 4,
+  'In Final QA Testing': 5,
+  'Continuous Development': 6,
+  'Done': 7,
+  'On Hold': 8,
+  'Canceled': 9,
+};
 
 function StatusBadge({ status, isOffTrack }: { status: EpicStatus; isOffTrack: boolean }) {
   if (isOffTrack) {
@@ -17,25 +31,61 @@ function StatusBadge({ status, isOffTrack }: { status: EpicStatus; isOffTrack: b
     );
   }
 
-  const config = {
-    'active': { 
-      icon: PlayCircle, 
-      className: 'bg-primary/15 text-primary border-primary/30',
-      label: 'Active'
+  const config: Record<string, { icon: typeof PlayCircle; className: string; label: string }> = {
+    'Open': { 
+      icon: Clock, 
+      className: 'bg-muted text-muted-foreground border-muted-foreground/30',
+      label: 'Open'
     },
-    'on-hold': { 
+    'In Requirements': { 
+      icon: FileText, 
+      className: 'bg-blue-500/15 text-blue-600 border-blue-500/30',
+      label: 'In Requirements'
+    },
+    'In Design': { 
+      icon: Palette, 
+      className: 'bg-purple-500/15 text-purple-600 border-purple-500/30',
+      label: 'In Design'
+    },
+    'In Website Development': { 
+      icon: Monitor, 
+      className: 'bg-primary/15 text-primary border-primary/30',
+      label: 'In Development'
+    },
+    'In Final QA Testing': { 
+      icon: TestTube, 
+      className: 'bg-amber-500/15 text-amber-600 border-amber-500/30',
+      label: 'In QA Testing'
+    },
+    'Continuous Development': { 
+      icon: RefreshCw, 
+      className: 'bg-cyan-500/15 text-cyan-600 border-cyan-500/30',
+      label: 'Continuous Dev'
+    },
+    'Done': { 
+      icon: CheckCircle2, 
+      className: 'bg-success/15 text-success border-success/30',
+      label: 'Done'
+    },
+    'On Hold': { 
       icon: PauseCircle, 
       className: 'bg-warning/15 text-warning border-warning/30',
       label: 'On Hold'
     },
-    'complete': { 
-      icon: CheckCircle2, 
-      className: 'bg-success/15 text-success border-success/30',
-      label: 'Complete'
+    'Canceled': { 
+      icon: XCircle, 
+      className: 'bg-destructive/15 text-destructive border-destructive/30',
+      label: 'Canceled'
     },
   };
 
-  const { icon: Icon, className, label } = config[status];
+  const statusConfig = config[status] || { 
+    icon: PlayCircle, 
+    className: 'bg-muted text-muted-foreground border-muted-foreground/30',
+    label: status 
+  };
+
+  const { icon: Icon, className, label } = statusConfig;
 
   return (
     <span className={cn(
@@ -78,7 +128,18 @@ function ProgressBar({
 }
 
 export function WebProjectsTable({ projects }: WebProjectsTableProps) {
-  const activeProjects = projects.filter(p => p.status === 'active').length;
+  // Sort projects by workflow order
+  const sortedProjects = useMemo(() => {
+    return [...projects].sort((a, b) => {
+      const orderA = STATUS_ORDER[a.status] ?? 99;
+      const orderB = STATUS_ORDER[b.status] ?? 99;
+      return orderA - orderB;
+    });
+  }, [projects]);
+
+  const activeProjects = projects.filter(p => 
+    !['Done', 'Canceled', 'On Hold'].includes(p.status)
+  ).length;
   const offTrackCount = projects.filter(p => p.isOffTrack).length;
 
   return (
@@ -133,7 +194,7 @@ export function WebProjectsTable({ projects }: WebProjectsTableProps) {
                 </tr>
               </thead>
               <tbody>
-                {projects.map((project) => (
+                {sortedProjects.map((project) => (
                   <tr key={project.id} className="hover:bg-primary/5 transition-colors">
                     <td className="px-4 py-3.5 border-t border-border/30">
                       <div>
