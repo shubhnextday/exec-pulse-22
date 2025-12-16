@@ -31,7 +31,7 @@ export function OutstandingDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh]">
+      <DialogContent className="max-w-5xl max-h-[85vh] w-[95vw]">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>Outstanding Payments Details</span>
@@ -41,14 +41,15 @@ export function OutstandingDetailsDialog({
           </DialogTitle>
         </DialogHeader>
         
-        <ScrollArea className="h-[60vh] pr-4">
+        <ScrollArea className="h-[65vh]">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Order ID</TableHead>
+                <TableHead>Sales Order #</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead>Product</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>EST Ship Date</TableHead>
                 <TableHead className="text-right">Order Total</TableHead>
                 <TableHead className="text-right">Deposit Paid</TableHead>
                 <TableHead className="text-right">Outstanding</TableHead>
@@ -57,7 +58,7 @@ export function OutstandingDetailsDialog({
             <TableBody>
               {orders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                     No outstanding payments found
                   </TableCell>
                 </TableRow>
@@ -82,6 +83,9 @@ export function OutstandingDetailsDialog({
                       >
                         {order.currentStatus}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {order.estShipDate ? new Date(order.estShipDate).toLocaleDateString() : '-'}
                     </TableCell>
                     <TableCell className="text-right font-medium">
                       ${(order.orderTotal || 0).toLocaleString()}

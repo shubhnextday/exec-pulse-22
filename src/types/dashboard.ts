@@ -106,6 +106,7 @@ export interface OutstandingOrder {
   orderTotal: number;
   depositAmount: number;
   remainingDue: number;
+  estShipDate?: string;
 }
 
 export interface CashFlowProjection {

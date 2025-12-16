@@ -271,6 +271,7 @@ serve(async (req) => {
           orderTotal: o.orderTotal,
           depositAmount: o.depositAmount,
           remainingDue: o.remainingDue,
+          estShipDate: o.estShipDate,
         }));
       
       const allTimeOutstanding = allTimeOutstandingOrders.reduce((sum: number, o: any) => sum + o.remainingDue, 0);
