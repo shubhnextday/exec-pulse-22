@@ -114,6 +114,7 @@ export interface CashFlowProjection {
   expectedAmount: number;
   customer: string;
   orderCount: number;
+  orders?: { id: string; customer: string; productName: string; remainingDue: number; status: string }[];
 }
 
 export interface FilterState {

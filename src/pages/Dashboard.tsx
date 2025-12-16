@@ -187,7 +187,12 @@ export default function Dashboard() {
   // Calculate cash flow projections from filtered orders
   const cashFlowProjections = useMemo(() => {
     // Group orders by EST Ship Date and sum remainingDue
-    const projectionMap = new Map<string, { amount: number; customers: Set<string>; orderCount: number }>();
+    const projectionMap = new Map<string, { 
+      amount: number; 
+      customers: Set<string>; 
+      orderCount: number;
+      orders: { id: string; customer: string; productName: string; remainingDue: number; status: string }[];
+    }>();
     
     filteredOrders.forEach(order => {
       // Use estShipDate, fallback to dueDate if not available
@@ -196,19 +201,38 @@ export default function Dashboard() {
       
       const dateKey = shipDate.substring(0, 10); // Get YYYY-MM-DD
       
+      const orderInfo = {
+        id: order.id,
+        customer: order.customer,
+        productName: order.productName,
+        remainingDue: order.remainingDue,
+        status: order.currentStatus,
+      };
+      
       if (projectionMap.has(dateKey)) {
         const existing = projectionMap.get(dateKey)!;
         existing.amount += order.remainingDue;
         existing.customers.add(order.customer);
         existing.orderCount += 1;
+        existing.orders.push(orderInfo);
       } else {
         projectionMap.set(dateKey, {
           amount: order.remainingDue,
           customers: new Set([order.customer]),
           orderCount: 1,
+          orders: [orderInfo],
         });
       }
     });
+
+    // Debug: Log Dec 12 orders specifically
+    const dec12Data = projectionMap.get('2025-12-12');
+    if (dec12Data) {
+      console.log('=== Dec 12 Cash Flow Debug ===');
+      console.log('Total Amount:', dec12Data.amount);
+      console.log('Order Count:', dec12Data.orderCount);
+      console.log('Orders:', dec12Data.orders.map(o => `${o.id}: ${o.customer} - ${o.productName} = $${o.remainingDue}`));
+    }
 
     // Convert to array and sort by date
     return Array.from(projectionMap.entries())
@@ -217,6 +241,7 @@ export default function Dashboard() {
         expectedAmount: data.amount,
         customer: data.customers.size === 1 ? Array.from(data.customers)[0] : `${data.customers.size} customers`,
         orderCount: data.orderCount,
+        orders: data.orders,
       }))
       .sort((a, b) => a.date.localeCompare(b.date))
       .slice(0, 12); // Show next 12 dates for readability
