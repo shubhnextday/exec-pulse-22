@@ -12,7 +12,7 @@ if (window.self === window.top) {
       font-family:sans-serif;
       text-align:center;
     ">
-      <h2>❌ This application can only be accessed via an embedded view.</h2>
+      <h2>❌ This application can only be accessed by authorized persone.</h2>
     </div>
   `;
   throw new Error("Direct browser access blocked");
