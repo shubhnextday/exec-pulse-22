@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -13,6 +14,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { CashFlowProjection } from '@/types/dashboard';
 
 interface CashFlowDetailsDialogProps {
@@ -22,15 +25,29 @@ interface CashFlowDetailsDialogProps {
 }
 
 export function CashFlowDetailsDialog({ open, onOpenChange, projections }: CashFlowDetailsDialogProps) {
+  const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
+  
   const totalExpected = projections.reduce((sum, p) => sum + p.expectedAmount, 0);
   const totalOrders = projections.reduce((sum, p) => sum + p.orderCount, 0);
 
+  const toggleDate = (date: string) => {
+    setExpandedDates(prev => {
+      const next = new Set(prev);
+      if (next.has(date)) {
+        next.delete(date);
+      } else {
+        next.add(date);
+      }
+      return next;
+    });
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[80vh]">
+      <DialogContent className="max-w-5xl max-h-[85vh] w-[95vw]">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">
-            Expected Cash Flow - ${totalExpected.toLocaleString()}
+            Expected Cash Flow Details
           </DialogTitle>
         </DialogHeader>
         
@@ -45,36 +62,81 @@ export function CashFlowDetailsDialog({ open, onOpenChange, projections }: CashF
           </div>
         </div>
         
-        <ScrollArea className="h-[50vh]">
+        <ScrollArea className="h-[55vh]">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Expected Date</TableHead>
+                <TableHead className="w-8"></TableHead>
+                <TableHead>EST Ship Date</TableHead>
+                <TableHead>Sales Order #</TableHead>
                 <TableHead>Customer</TableHead>
-                <TableHead className="text-center">Orders</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
+                <TableHead>Product</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Remaining Due</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {projections.map((projection, index) => (
-                <TableRow key={index}>
-                  <TableCell className="font-medium">
-                    {new Date(projection.date).toLocaleDateString('en-US', {
-                      weekday: 'short',
-                      month: 'short',
-                      day: 'numeric',
-                    })}
-                  </TableCell>
-                  <TableCell>{projection.customer}</TableCell>
-                  <TableCell className="text-center">{projection.orderCount}</TableCell>
-                  <TableCell className="text-right font-medium text-primary">
-                    ${projection.expectedAmount.toLocaleString()}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {projections.map((projection, index) => {
+                const isExpanded = expandedDates.has(projection.date);
+                const hasOrders = projection.orders && projection.orders.length > 0;
+                
+                return (
+                  <>
+                    {/* Date Summary Row */}
+                    <TableRow 
+                      key={`summary-${index}`} 
+                      className="bg-muted/30 cursor-pointer hover:bg-muted/50"
+                      onClick={() => hasOrders && toggleDate(projection.date)}
+                    >
+                      <TableCell className="w-8">
+                        {hasOrders && (
+                          isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />
+                        )}
+                      </TableCell>
+                      <TableCell className="font-semibold">
+                        {new Date(projection.date).toLocaleDateString('en-US', {
+                          weekday: 'short',
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
+                      </TableCell>
+                      <TableCell colSpan={2} className="text-muted-foreground">
+                        {projection.orderCount} order{projection.orderCount !== 1 ? 's' : ''} • {projection.customer}
+                      </TableCell>
+                      <TableCell></TableCell>
+                      <TableCell></TableCell>
+                      <TableCell className="text-right font-bold text-primary">
+                        ${projection.expectedAmount.toLocaleString()}
+                      </TableCell>
+                    </TableRow>
+                    
+                    {/* Individual Order Rows */}
+                    {isExpanded && hasOrders && projection.orders!.map((order, orderIndex) => (
+                      <TableRow key={`order-${index}-${orderIndex}`} className="bg-background">
+                        <TableCell></TableCell>
+                        <TableCell></TableCell>
+                        <TableCell className="font-mono text-sm">{order.id}</TableCell>
+                        <TableCell>{order.customer}</TableCell>
+                        <TableCell className="max-w-[200px] truncate" title={order.productName}>
+                          {order.productName}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">
+                            {order.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          ${order.remainingDue.toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </>
+                );
+              })}
               {projections.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                     No cash flow projections available
                   </TableCell>
                 </TableRow>
@@ -84,7 +146,7 @@ export function CashFlowDetailsDialog({ open, onOpenChange, projections }: CashF
         </ScrollArea>
         
         <div className="text-sm text-muted-foreground pt-2 border-t">
-          Based on estimated ship dates from {projections.length} date ranges
+          Click a date row to expand and see individual orders. Based on EST Ship Date from {totalOrders} orders.
         </div>
       </DialogContent>
     </Dialog>
