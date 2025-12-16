@@ -33,6 +33,55 @@ const CANCELLED_STATUSES = ['cancelled', 'canceled', 'done', 'shipped', 'complet
 const MAX_RETRIES = 5;
 const INITIAL_RETRY_DELAY_MS = 2000;
 
+// Order workflow statuses with expected percentages (from Order Workflow documentation)
+const ORDER_WORKFLOW = [
+  { status: 'Quote Requirements', percent: 0 },
+  { status: '1 - Ready to Start Order', percent: 7.30 },
+  { status: '2 - In Sourcing', percent: 7.80 },
+  { status: '3 - Ordering Raw Materials', percent: 28.80 },
+  { status: '4 - All Raw Materials Ordered', percent: 39.30 },
+  { status: '5 - All Raw Materials Received', percent: 50.00 },
+  { status: '6 - Raw Materials Testing', percent: 56.00 },
+  { status: '7 - In Manufacturing', percent: 72.40 },
+  { status: '8 - Manufacturing Complete', percent: 73.20 },
+  { status: '9 - Bulk Product Testing', percent: 78.00 },
+  { status: '10 - Awaiting Packaging', percent: 84.00 },
+  { status: '11 - In Packaging', percent: 96.00 },
+  { status: '12 - Finished Goods Testing', percent: 100 },
+  { status: 'Final Product Shipped', percent: 100 },
+];
+
+// Calculate expected status based on elapsed time between start date and due date
+function calculateExpectedStatus(startDate: string | null, dueDate: string | null): string {
+  if (!startDate || !dueDate) return 'Unknown';
+  
+  const start = new Date(startDate);
+  const due = new Date(dueDate);
+  const now = new Date();
+  
+  // Total duration of the order
+  const totalDuration = due.getTime() - start.getTime();
+  if (totalDuration <= 0) return 'Final Product Shipped';
+  
+  // Elapsed time
+  const elapsed = now.getTime() - start.getTime();
+  
+  // Calculate expected percentage complete
+  const expectedPercent = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+  
+  // If past due date, expected status is Final Product Shipped
+  if (expectedPercent >= 100) return 'Final Product Shipped';
+  
+  // Find the workflow status that matches the expected percentage
+  for (let i = ORDER_WORKFLOW.length - 1; i >= 0; i--) {
+    if (expectedPercent >= ORDER_WORKFLOW[i].percent) {
+      return ORDER_WORKFLOW[i].status;
+    }
+  }
+  
+  return ORDER_WORKFLOW[0].status;
+}
+
 // Helper to extract customer name from various field formats
 function extractCustomerName(customerField: any): string {
   if (!customerField) return 'Unknown';
@@ -236,7 +285,7 @@ serve(async (req) => {
           estShipDate,
           actualShipDate: fields[FIELD_MAPPINGS.actualShipDate],
           currentStatus: fields.status?.name || 'Unknown',
-          expectedStatus: fields.status?.name || 'Unknown',
+          expectedStatus: calculateExpectedStatus(startDate, estShipDate || fields.duedate),
           orderHealth,
           daysBehindSchedule: calculateDaysBehind(fields),
           daysInProduction: parseFloat(fields[FIELD_MAPPINGS.daysInProduction]) || calculateDaysInProduction(fields, startDate),
