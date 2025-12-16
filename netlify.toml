@@ -1,9 +1,12 @@
+# 1. FIX THE 404 ERROR (SPA Redirect)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# 2. ALLOW IFRAME EMBEDDING
 [[headers]]
-  # Apply to all paths
   for = "/*"
   [headers.values]
-    # This is the modern way to allow embedding
-    Content-Security-Policy = "frame-ancestors 'self' http://localhost:5173 https://*.netlify.app;"
-    
-    # Remove the old blocker (Netlify sets SAMEORIGIN by default usually, this overrides it)
-    X-Frame-Options = "ALLOWALL" 
+    X-Frame-Options = "ALLOWALL"
+    Content-Security-Policy = "frame-ancestors 'self' http://localhost:5173 https://*.netlify.app"
