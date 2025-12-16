@@ -164,7 +164,7 @@ export default function Dashboard() {
     const commissionsDue = displayOrders.reduce((sum, order) => sum + (order.commissionDue || 0), 0);
     
     // Active Projects: Count from web projects (not filtered by order filters)
-    const activeProjects = displayWebProjects.filter(p => p.status === 'active').length;
+    const activeProjects = displayWebProjects.filter(p => !['Done', 'Canceled', 'On Hold'].includes(p.status)).length;
     
     // Order Health Breakdown: Calculated from filtered orders
     const orderHealthBreakdown = {
