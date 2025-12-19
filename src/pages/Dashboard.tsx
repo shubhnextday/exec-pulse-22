@@ -150,8 +150,9 @@ export default function Dashboard() {
         .filter(c => c && c !== 'Unknown')
     );
     
-    // Active Orders: Total count of filtered orders (excludes cancelled/completed)
-    const activeOrders = filteredOrders.length;
+    // Active Orders: Only on-track orders (excludes at-risk and off-track)
+    const onTrackOrders = filteredOrders.filter(o => o.orderHealth === 'on-track');
+    const activeOrders = onTrackOrders.length;
     
     // Monthly Revenue: Sum of orderTotal from ALL orders (not just active)
     const monthlyRevenue = displayOrders.reduce((sum, order) => sum + (order.orderTotal || 0), 0);
@@ -318,7 +319,7 @@ export default function Dashboard() {
   // Metric explanations for tooltips
   const metricExplanations = {
     activeCustomers: `Unique customers with active orders matching current filters.\n\nSource: JIRA CM Project → Customer field (customfield_10038)\n\nCalculation: COUNT(DISTINCT customer) from filtered active orders\n\nExcludes: Cancelled, Done, Shipped, Complete statuses`,
-    activeOrders: `Total active orders matching current filters.\n\nSource: JIRA CM Project → All CM issues\n\nCalculation: COUNT(*) from filtered orders\n\nExcludes: Cancelled, Done, Shipped, Complete statuses`,
+    activeOrders: `On-track orders matching current filters.\n\nSource: JIRA CM Project → All CM issues\n\nCalculation: COUNT(*) from filtered orders WHERE orderHealth = 'on-track'\n\nExcludes: Cancelled, Done, Shipped, Complete statuses AND at-risk/off-track orders`,
     monthlyRevenue: `Sum of all order totals matching current filters.\n\nSource: JIRA CM Project → Order Total field (customfield_11567)\n\nCalculation: SUM(orderTotal) from filtered orders`,
     outstanding: `Total remaining payments due on filtered orders.\n\nSource: JIRA CM Project → Remaining Amount field (customfield_11569)\n\nCalculation: SUM(remainingDue) from filtered orders`,
     commissions: `Total commissions due from JIRA.\n\nSource: JIRA CM Project → Commission Due field (customfield_11577)\n\nCalculation: SUM(commissionDue) from filtered orders`,
@@ -586,7 +587,7 @@ export default function Dashboard() {
         <ActiveOrdersDialog
           open={activeOrdersDialogOpen}
           onOpenChange={setActiveOrdersDialogOpen}
-          orders={filteredOrders}
+          orders={filteredOrders.filter(o => o.orderHealth === 'on-track')}
         />
         
         <ActiveCustomersDialog
