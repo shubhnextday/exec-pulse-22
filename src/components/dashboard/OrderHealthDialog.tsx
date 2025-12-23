@@ -131,9 +131,9 @@ export function OrderHealthDialog({ open, onOpenChange, orders }: OrderHealthDia
           })}
         </div>
         
-        {/* Filter tabs - only show statuses with orders */}
-        <div className="flex gap-2 border-b border-border pb-2 mb-4">
-          {activeStatuses.map((status) => {
+        {/* Filter tabs - show all statuses to match widget */}
+        <div className="flex gap-2 border-b border-border pb-2 mb-4 flex-wrap">
+          {(Object.keys(HEALTH_CONFIG) as HealthKey[]).map((status) => {
             const config = HEALTH_CONFIG[status];
             const count = ordersByHealth[status].length;
             const isSelected = selectedTab === status;
