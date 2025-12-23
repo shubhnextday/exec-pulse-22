@@ -51,10 +51,11 @@ export function ActiveOrdersDialog({ open, onOpenChange, orders }: ActiveOrdersD
               <TableRow>
                 <TableHead>Order ID</TableHead>
                 <TableHead>Customer</TableHead>
+                <TableHead>Sales Order #</TableHead>
                 <TableHead>Product</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Health</TableHead>
-                <TableHead className="text-right">Total</TableHead>
+                <TableHead className="text-right">Order Total</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -62,6 +63,7 @@ export function ActiveOrdersDialog({ open, onOpenChange, orders }: ActiveOrdersD
                 <TableRow key={order.id}>
                   <TableCell className="font-medium">{order.id}</TableCell>
                   <TableCell>{order.customer}</TableCell>
+                  <TableCell>{order.salesOrderNumber || '-'}</TableCell>
                   <TableCell className="max-w-[200px] truncate">{order.productName}</TableCell>
                   <TableCell>{order.currentStatus}</TableCell>
                   <TableCell>
@@ -76,7 +78,7 @@ export function ActiveOrdersDialog({ open, onOpenChange, orders }: ActiveOrdersD
               ))}
               {orders.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                     No active orders found
                   </TableCell>
                 </TableRow>
