@@ -156,8 +156,8 @@ export default function Dashboard() {
     // Active Orders: Count of on-track orders
     const activeOrders = onTrackOrders.length;
     
-    // Monthly Revenue: Sum of orderTotal from ALL orders (not just active)
-    const monthlyRevenue = displayOrders.reduce((sum, order) => sum + (order.orderTotal || 0), 0);
+    // Monthly Revenue: Sum of orderTotal from filtered orders
+    const monthlyRevenue = filteredOrders.reduce((sum, order) => sum + (order.orderTotal || 0), 0);
     
     // Outstanding Payments: Use all-time outstanding from summary, fallback to filtered orders
     const outstandingPayments = summary?.allTimeOutstandingPayments ?? 
