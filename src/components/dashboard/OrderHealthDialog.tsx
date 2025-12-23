@@ -67,7 +67,9 @@ export function OrderHealthDialog({ open, onOpenChange, orders }: OrderHealthDia
         <TableHeader>
           <TableRow>
             <TableHead>Order ID</TableHead>
+            <TableHead>Sales Order #</TableHead>
             <TableHead>Customer</TableHead>
+            <TableHead>Product Name</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Days Behind</TableHead>
             <TableHead className="text-right">Total</TableHead>
@@ -77,7 +79,9 @@ export function OrderHealthDialog({ open, onOpenChange, orders }: OrderHealthDia
           {orderList.map((order) => (
             <TableRow key={order.id}>
               <TableCell className="font-medium">{order.id}</TableCell>
+              <TableCell>{order.salesOrderNumber || '-'}</TableCell>
               <TableCell>{order.customer}</TableCell>
+              <TableCell className="max-w-[200px] truncate" title={order.productName}>{order.productName || '-'}</TableCell>
               <TableCell>{order.currentStatus}</TableCell>
               <TableCell>
                 {order.daysBehindSchedule > 0 ? (
@@ -93,7 +97,7 @@ export function OrderHealthDialog({ open, onOpenChange, orders }: OrderHealthDia
           ))}
           {orderList.length === 0 && (
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                 No orders in this category
               </TableCell>
             </TableRow>
