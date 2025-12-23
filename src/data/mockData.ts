@@ -18,6 +18,10 @@ export const mockExecutiveSummary: ExecutiveSummary = {
     onTrack: 89,
     atRisk: 27,
     offTrack: 12,
+    complete: 0,
+    pendingDeposit: 0,
+    onHold: 0,
+    whiteLabel: 0,
   },
 };
 

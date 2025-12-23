@@ -1,6 +1,6 @@
 // Dashboard Types based on JIRA field mappings
 
-export type OrderHealth = 'on-track' | 'at-risk' | 'off-track';
+export type OrderHealth = 'on-track' | 'at-risk' | 'off-track' | 'complete' | 'pending-deposit' | 'on-hold' | 'white-label';
 export type EpicStatus = 
   | 'Open'
   | 'In Requirements'
@@ -94,6 +94,10 @@ export interface ExecutiveSummary {
     onTrack: number;
     atRisk: number;
     offTrack: number;
+    complete: number;
+    pendingDeposit: number;
+    onHold: number;
+    whiteLabel: number;
   };
 }
 

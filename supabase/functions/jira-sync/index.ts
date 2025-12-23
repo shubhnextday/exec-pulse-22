@@ -251,16 +251,25 @@ serve(async (req) => {
         }
         
         // Get order health from dedicated field (customfield_10897)
+        // Maps to: on-track, at-risk, off-track, complete, pending-deposit, on-hold, white-label
         const healthFieldValue = fields[FIELD_MAPPINGS.orderHealth];
         let orderHealth = 'on-track';
         if (healthFieldValue) {
           const healthValue = (healthFieldValue.value || healthFieldValue || '').toLowerCase();
-          if (healthValue.includes('off') || healthValue.includes('behind')) {
+          if (healthValue.includes('off track') || healthValue.includes('off-track')) {
             orderHealth = 'off-track';
-          } else if (healthValue.includes('risk') || healthValue.includes('warning')) {
+          } else if (healthValue.includes('at risk') || healthValue.includes('at-risk')) {
             orderHealth = 'at-risk';
-          } else if (healthValue.includes('white label') || healthValue.includes('on hold') || healthValue.includes('pending')) {
-            orderHealth = 'on-track'; // Neutral
+          } else if (healthValue.includes('complete')) {
+            orderHealth = 'complete';
+          } else if (healthValue.includes('pending deposit') || healthValue.includes('pending-deposit')) {
+            orderHealth = 'pending-deposit';
+          } else if (healthValue.includes('on hold') || healthValue.includes('on-hold')) {
+            orderHealth = 'on-hold';
+          } else if (healthValue.includes('white label') || healthValue.includes('white-label')) {
+            orderHealth = 'white-label';
+          } else if (healthValue.includes('on track') || healthValue.includes('on-track')) {
+            orderHealth = 'on-track';
           }
         }
         
@@ -354,6 +363,10 @@ serve(async (req) => {
           onTrack: activeOrders.filter((o: any) => o.orderHealth === 'on-track').length,
           atRisk: activeOrders.filter((o: any) => o.orderHealth === 'at-risk').length,
           offTrack: activeOrders.filter((o: any) => o.orderHealth === 'off-track').length,
+          complete: activeOrders.filter((o: any) => o.orderHealth === 'complete').length,
+          pendingDeposit: activeOrders.filter((o: any) => o.orderHealth === 'pending-deposit').length,
+          onHold: activeOrders.filter((o: any) => o.orderHealth === 'on-hold').length,
+          whiteLabel: activeOrders.filter((o: any) => o.orderHealth === 'white-label').length,
         },
       };
 
