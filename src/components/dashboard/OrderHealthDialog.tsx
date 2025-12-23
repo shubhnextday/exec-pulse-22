@@ -12,7 +12,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { Order } from '@/types/dashboard';
@@ -23,23 +22,33 @@ interface OrderHealthDialogProps {
   orders: Order[];
 }
 
-export function OrderHealthDialog({ open, onOpenChange, orders }: OrderHealthDialogProps) {
-  const onTrack = orders.filter(o => o.orderHealth === 'on-track');
-  const atRisk = orders.filter(o => o.orderHealth === 'at-risk');
-  const offTrack = orders.filter(o => o.orderHealth === 'off-track');
+// Color configuration for each health status
+const HEALTH_CONFIG = {
+  'on-track': { label: 'On Track', color: 'emerald', bgClass: 'bg-emerald-500/10', borderClass: 'border-emerald-500/30', textClass: 'text-emerald-600' },
+  'at-risk': { label: 'At Risk', color: 'amber', bgClass: 'bg-amber-500/10', borderClass: 'border-amber-500/30', textClass: 'text-amber-600' },
+  'off-track': { label: 'Off Track', color: 'red', bgClass: 'bg-red-500/10', borderClass: 'border-red-500/30', textClass: 'text-red-600' },
+  'complete': { label: 'Complete', color: 'blue', bgClass: 'bg-blue-500/10', borderClass: 'border-blue-500/30', textClass: 'text-blue-600' },
+  'pending-deposit': { label: 'Pending Deposit', color: 'orange', bgClass: 'bg-orange-500/10', borderClass: 'border-orange-500/30', textClass: 'text-orange-600' },
+  'on-hold': { label: 'On Hold', color: 'gray', bgClass: 'bg-gray-500/10', borderClass: 'border-gray-500/30', textClass: 'text-gray-600' },
+  'white-label': { label: 'White Label', color: 'violet', bgClass: 'bg-violet-500/10', borderClass: 'border-violet-500/30', textClass: 'text-violet-600' },
+};
 
-  const getHealthColor = (health: string) => {
-    switch (health) {
-      case 'on-track':
-        return 'bg-emerald-500/20 text-emerald-600 border-emerald-500/30';
-      case 'at-risk':
-        return 'bg-amber-500/20 text-amber-600 border-amber-500/30';
-      case 'off-track':
-        return 'bg-red-500/20 text-red-600 border-red-500/30';
-      default:
-        return 'bg-muted text-muted-foreground';
-    }
+export function OrderHealthDialog({ open, onOpenChange, orders }: OrderHealthDialogProps) {
+  // Group orders by health status
+  const ordersByHealth = {
+    'on-track': orders.filter(o => o.orderHealth === 'on-track'),
+    'at-risk': orders.filter(o => o.orderHealth === 'at-risk'),
+    'off-track': orders.filter(o => o.orderHealth === 'off-track'),
+    'complete': orders.filter(o => o.orderHealth === 'complete'),
+    'pending-deposit': orders.filter(o => o.orderHealth === 'pending-deposit'),
+    'on-hold': orders.filter(o => o.orderHealth === 'on-hold'),
+    'white-label': orders.filter(o => o.orderHealth === 'white-label'),
   };
+
+  // Get statuses that have orders (for tabs)
+  const activeStatuses = Object.entries(ordersByHealth)
+    .filter(([_, orderList]) => orderList.length > 0)
+    .map(([status]) => status);
 
   const OrderTable = ({ orderList }: { orderList: Order[] }) => (
     <ScrollArea className="h-[45vh]">
@@ -83,51 +92,53 @@ export function OrderHealthDialog({ open, onOpenChange, orders }: OrderHealthDia
     </ScrollArea>
   );
 
+  // Default to showing the first status with orders, preferring off-track > at-risk > on-track
+  const defaultTab = activeStatuses.includes('off-track') ? 'off-track' 
+    : activeStatuses.includes('at-risk') ? 'at-risk' 
+    : activeStatuses[0] || 'on-track';
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh]">
+      <DialogContent className="max-w-4xl max-h-[85vh]">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">
             Order Health Breakdown
           </DialogTitle>
         </DialogHeader>
         
-        <div className="grid grid-cols-3 gap-4 mb-4">
-          <div className="p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/30 text-center">
-            <div className="text-sm text-emerald-600">On Track</div>
-            <div className="text-2xl font-bold text-emerald-600">{onTrack.length}</div>
-          </div>
-          <div className="p-4 bg-amber-500/10 rounded-lg border border-amber-500/30 text-center">
-            <div className="text-sm text-amber-600">At Risk</div>
-            <div className="text-2xl font-bold text-amber-600">{atRisk.length}</div>
-          </div>
-          <div className="p-4 bg-red-500/10 rounded-lg border border-red-500/30 text-center">
-            <div className="text-sm text-red-600">Off Track</div>
-            <div className="text-2xl font-bold text-red-600">{offTrack.length}</div>
-          </div>
+        {/* Summary cards - show all statuses with counts */}
+        <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 mb-4">
+          {Object.entries(HEALTH_CONFIG).map(([key, config]) => {
+            const count = ordersByHealth[key as keyof typeof ordersByHealth].length;
+            return (
+              <div 
+                key={key} 
+                className={`p-3 rounded-lg border text-center ${config.bgClass} ${config.borderClass}`}
+              >
+                <div className={`text-[10px] uppercase tracking-wider ${config.textClass}`}>{config.label}</div>
+                <div className={`text-xl font-bold ${config.textClass}`}>{count}</div>
+              </div>
+            );
+          })}
         </div>
         
-        <Tabs defaultValue="off-track">
-          <TabsList className="w-full">
-            <TabsTrigger value="off-track" className="flex-1">
-              Off Track ({offTrack.length})
-            </TabsTrigger>
-            <TabsTrigger value="at-risk" className="flex-1">
-              At Risk ({atRisk.length})
-            </TabsTrigger>
-            <TabsTrigger value="on-track" className="flex-1">
-              On Track ({onTrack.length})
-            </TabsTrigger>
+        <Tabs defaultValue={defaultTab}>
+          <TabsList className="w-full flex-wrap h-auto gap-1">
+            {Object.entries(HEALTH_CONFIG).map(([key, config]) => {
+              const count = ordersByHealth[key as keyof typeof ordersByHealth].length;
+              if (count === 0) return null;
+              return (
+                <TabsTrigger key={key} value={key} className="flex-1 min-w-[100px]">
+                  {config.label} ({count})
+                </TabsTrigger>
+              );
+            })}
           </TabsList>
-          <TabsContent value="off-track">
-            <OrderTable orderList={offTrack} />
-          </TabsContent>
-          <TabsContent value="at-risk">
-            <OrderTable orderList={atRisk} />
-          </TabsContent>
-          <TabsContent value="on-track">
-            <OrderTable orderList={onTrack} />
-          </TabsContent>
+          {Object.entries(ordersByHealth).map(([key, orderList]) => (
+            <TabsContent key={key} value={key}>
+              <OrderTable orderList={orderList} />
+            </TabsContent>
+          ))}
         </Tabs>
         
         <div className="text-sm text-muted-foreground pt-2 border-t">

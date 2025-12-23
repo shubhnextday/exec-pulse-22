@@ -174,6 +174,10 @@ export default function Dashboard() {
       onTrack: filteredOrders.filter(o => o.orderHealth === 'on-track').length,
       atRisk: filteredOrders.filter(o => o.orderHealth === 'at-risk').length,
       offTrack: filteredOrders.filter(o => o.orderHealth === 'off-track').length,
+      complete: filteredOrders.filter(o => o.orderHealth === 'complete').length,
+      pendingDeposit: filteredOrders.filter(o => o.orderHealth === 'pending-deposit').length,
+      onHold: filteredOrders.filter(o => o.orderHealth === 'on-hold').length,
+      whiteLabel: filteredOrders.filter(o => o.orderHealth === 'white-label').length,
     };
 
     return {
@@ -549,6 +553,10 @@ export default function Dashboard() {
                   onTrack={reactiveMetrics.orderHealthBreakdown.onTrack}
                   atRisk={reactiveMetrics.orderHealthBreakdown.atRisk}
                   offTrack={reactiveMetrics.orderHealthBreakdown.offTrack}
+                  complete={reactiveMetrics.orderHealthBreakdown.complete}
+                  pendingDeposit={reactiveMetrics.orderHealthBreakdown.pendingDeposit}
+                  onHold={reactiveMetrics.orderHealthBreakdown.onHold}
+                  whiteLabel={reactiveMetrics.orderHealthBreakdown.whiteLabel}
                 />
               </div>
             </div>
