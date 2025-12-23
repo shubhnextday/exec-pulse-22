@@ -46,31 +46,47 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-// Helper to convert dateRange to dateFrom string
-function getDateFromRange(range: string): string {
+// Helper to convert dateRange to date range object (start and end dates)
+function getDateRangeFromSelection(range: string): { start: string; end: string } {
   const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  
   switch (range) {
     case 'last-6-months': {
       const date = new Date(now);
       date.setMonth(date.getMonth() - 6);
-      return date.toISOString().split('T')[0];
+      return { start: date.toISOString().split('T')[0], end: today };
     }
     case 'last-60-days':
-      return new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      return { 
+        start: new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], 
+        end: today 
+      };
     case 'last-30-days':
-      return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      return { 
+        start: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], 
+        end: today 
+      };
     case 'this-month':
-      return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+      return { 
+        start: new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0], 
+        end: new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+      };
     case 'nov-2025':
-      return '2025-11-01';
+      return { start: '2025-11-01', end: '2025-11-30' };
     case 'dec-2025':
-      return '2025-12-01';
+      return { start: '2025-12-01', end: '2025-12-31' };
     default:
       // Default to 6 months ago
       const defaultDate = new Date(now);
       defaultDate.setMonth(defaultDate.getMonth() - 6);
-      return defaultDate.toISOString().split('T')[0];
+      return { start: defaultDate.toISOString().split('T')[0], end: today };
   }
+}
+
+// Helper to get just dateFrom for API call
+function getDateFromRange(range: string): string {
+  return getDateRangeFromSelection(range).start;
 }
 
 export default function Dashboard() {
@@ -133,13 +149,26 @@ export default function Dashboard() {
 
   // Filter orders based on selections - ALL STATS ARE DERIVED FROM THIS
   const filteredOrders = useMemo(() => {
+    const { start, end } = getDateRangeFromSelection(dateRange);
+    
     return displayOrders.filter(order => {
+      // Filter by customer
       if (selectedCustomer !== 'All Customers' && order.customer !== selectedCustomer) return false;
+      // Filter by agent
       if (selectedAgent !== 'All Agents' && order.agent !== selectedAgent) return false;
+      // Filter by account manager
       if (selectedAccountManager !== 'All Account Managers' && order.accountManager !== selectedAccountManager) return false;
+      
+      // Filter by date range - use startDate or dueDate
+      const orderDate = order.startDate || order.dueDate;
+      if (orderDate) {
+        const orderDateStr = orderDate.substring(0, 10);
+        if (orderDateStr < start || orderDateStr > end) return false;
+      }
+      
       return true;
     });
-  }, [displayOrders, selectedCustomer, selectedAgent, selectedAccountManager]);
+  }, [displayOrders, selectedCustomer, selectedAgent, selectedAccountManager, dateRange]);
 
   // REACTIVE METRICS - Revenue/Commissions from ALL orders, active counts from filtered
   const reactiveMetrics = useMemo(() => {
