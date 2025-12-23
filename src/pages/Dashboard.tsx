@@ -609,7 +609,7 @@ export default function Dashboard() {
         <RevenueDetailsDialog
           open={revenueDialogOpen}
           onOpenChange={setRevenueDialogOpen}
-          orders={displayOrders}
+          orders={filteredOrders}
         />
         
         <CommissionsDetailsDialog
