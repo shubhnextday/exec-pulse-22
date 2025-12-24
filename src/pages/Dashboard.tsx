@@ -459,8 +459,8 @@ export default function Dashboard() {
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                   </span>
-                  <span>Live JIRA Data • {filteredOrders.length} orders displayed</span>
-                  {(selectedCustomer !== 'All Customers' || selectedAgent !== 'All Agents' || selectedAccountManager !== 'All Account Managers') && (
+                  <span>Live JIRA Data • {filteredActiveOrders.length} orders displayed</span>
+                  {hasFiltersApplied && (
                     <span className="text-primary font-medium">(filtered from {displayOrders.length} total)</span>
                   )}
                 </span>
