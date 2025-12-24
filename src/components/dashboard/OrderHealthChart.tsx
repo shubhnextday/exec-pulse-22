@@ -116,9 +116,14 @@ export function OrderHealthChart({
                 />
                 <span className="text-xs text-muted-foreground">{item.name}</span>
               </div>
-              <span className="text-sm font-semibold mono text-foreground">
-                {item.value}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">
+                  {total > 0 ? Math.round((item.value / total) * 100) : 0}%
+                </span>
+                <span className="text-sm font-semibold mono text-foreground min-w-[24px] text-right">
+                  {item.value}
+                </span>
+              </div>
             </div>
           ))}
         </div>
