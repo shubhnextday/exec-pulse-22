@@ -19,9 +19,9 @@ const navItems = [
   { id: 'overview', label: 'Executive Summary', icon: LayoutDashboard },
   { id: 'financial', label: 'Financial Overview', icon: DollarSign },
   { id: 'operations', label: 'Operations (Orders)', icon: Package },
-  { id: 'commissions', label: 'Agent Commissions', icon: Users },
-  { id: 'web-dev', label: 'Web Development', icon: Code2 },
   { id: 'attention', label: 'Needs Attention', icon: AlertTriangle },
+  { id: 'web-dev', label: 'Web Development', icon: Code2 },
+  { id: 'commissions', label: 'Agent Commissions', icon: Users },
 ];
 
 export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
