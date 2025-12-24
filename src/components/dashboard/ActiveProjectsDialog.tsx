@@ -16,6 +16,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { TableControlsBar, SortableHeader, TableFilter } from '@/components/ui/table-controls';
+import { useTableFeatures } from '@/hooks/useTableFeatures';
 import type { WebProject } from '@/types/dashboard';
 
 interface ActiveProjectsDialogProps {
@@ -24,35 +26,56 @@ interface ActiveProjectsDialogProps {
   projects: WebProject[];
 }
 
+const STATUS_ORDER: Record<string, number> = {
+  Open: 1,
+  'In Requirements': 2,
+  'In Technical Discovery': 3,
+  'Technical Discovery': 3,
+  'Ready for Scheduling': 4,
+  'In Design': 5,
+  'In Website Development': 6,
+  'In Final QA Testing': 7,
+  'Continuous Development': 8,
+  'Customer Handover': 9,
+  Done: 10,
+  'On Hold': 11,
+  Canceled: 12,
+};
+
 export function ActiveProjectsDialog({ open, onOpenChange, projects }: ActiveProjectsDialogProps) {
+  const {
+    filteredData,
+    searchQuery,
+    setSearchQuery,
+    sortConfig,
+    handleSort,
+    filters,
+    addFilter,
+    removeFilter,
+    clearFilters,
+  } = useTableFeatures({
+    data: projects,
+    searchableKeys: ['epicName', 'epicKey', 'status'],
+  });
+
   const activeProjects = projects.filter((p) => !['Done', 'Canceled', 'On Hold'].includes(p.status));
   const totalTasks = activeProjects.reduce((sum, p) => sum + p.totalTasks, 0);
   const completedTasks = activeProjects.reduce((sum, p) => sum + p.completed, 0);
 
-  const STATUS_ORDER: Record<string, number> = {
-    Open: 1,
-    'In Requirements': 2,
-    'In Technical Discovery': 3,
-    'Technical Discovery': 3,
-    'Ready for Scheduling': 4,
-    'In Design': 5,
-    'In Website Development': 6,
-    'In Final QA Testing': 7,
-    'Continuous Development': 8,
-    'Customer Handover': 9,
-    Done: 10,
-    'On Hold': 11,
-    Canceled: 12,
-  };
-
   const sortedProjects = useMemo(() => {
-    return [...projects].sort((a, b) => {
+    if (sortConfig.key) return filteredData;
+    return [...filteredData].sort((a, b) => {
       const orderA = STATUS_ORDER[a.status] ?? 99;
       const orderB = STATUS_ORDER[b.status] ?? 99;
       if (orderA !== orderB) return orderA - orderB;
       return (a.dueDate || '').localeCompare(b.dueDate || '');
     });
-  }, [projects]);
+  }, [filteredData, sortConfig.key]);
+
+  const statusOptions = [...new Set(projects.map(p => p.status))].map(s => ({
+    label: s,
+    value: s,
+  }));
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -88,7 +111,7 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects }: ActivePro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh]">
+      <DialogContent className="max-w-5xl max-h-[80vh]">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">
             Active Projects ({activeProjects.length})
@@ -110,15 +133,68 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects }: ActivePro
           </div>
         </div>
 
-        <ScrollArea className="h-[50vh]">
+        <TableControlsBar
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Search projects..."
+          filters={filters}
+          onRemoveFilter={removeFilter}
+          onClearFilters={clearFilters}
+          className="px-0 border-b-0"
+        >
+          <TableFilter
+            label="Status"
+            options={statusOptions}
+            value={filters.find(f => f.key === 'status')?.value || ''}
+            onChange={(value) => value ? addFilter('status', value) : removeFilter('status')}
+          />
+        </TableControlsBar>
+
+        <ScrollArea className="h-[40vh]">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Project</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>
+                  <SortableHeader
+                    sortKey="epicName"
+                    currentSortKey={sortConfig.key as string}
+                    direction={sortConfig.direction}
+                    onSort={() => handleSort('epicName')}
+                  >
+                    Project
+                  </SortableHeader>
+                </TableHead>
+                <TableHead>
+                  <SortableHeader
+                    sortKey="status"
+                    currentSortKey={sortConfig.key as string}
+                    direction={sortConfig.direction}
+                    onSort={() => handleSort('status')}
+                  >
+                    Status
+                  </SortableHeader>
+                </TableHead>
                 <TableHead>Progress</TableHead>
-                <TableHead className="text-center">Tasks</TableHead>
-                <TableHead>Due Date</TableHead>
+                <TableHead className="text-center">
+                  <SortableHeader
+                    sortKey="totalTasks"
+                    currentSortKey={sortConfig.key as string}
+                    direction={sortConfig.direction}
+                    onSort={() => handleSort('totalTasks')}
+                  >
+                    Tasks
+                  </SortableHeader>
+                </TableHead>
+                <TableHead>
+                  <SortableHeader
+                    sortKey="dueDate"
+                    currentSortKey={sortConfig.key as string}
+                    direction={sortConfig.direction}
+                    onSort={() => handleSort('dueDate')}
+                  >
+                    Due Date
+                  </SortableHeader>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -159,7 +235,7 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects }: ActivePro
         </ScrollArea>
 
         <div className="text-sm text-muted-foreground pt-2 border-t">
-          Showing all {sortedProjects.length} web development projects
+          Showing {sortedProjects.length} of {projects.length} projects
         </div>
       </DialogContent>
     </Dialog>

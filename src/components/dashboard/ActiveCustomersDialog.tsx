@@ -1,4 +1,3 @@
-import { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -14,7 +13,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { TableControlsBar, SortableHeader, TableFilter } from '@/components/ui/table-controls';
+import { useTableFeatures } from '@/hooks/useTableFeatures';
 import type { ActiveCustomer } from '@/types/dashboard';
 
 interface ActiveCustomersDialogProps {
@@ -23,130 +23,117 @@ interface ActiveCustomersDialogProps {
   customers: ActiveCustomer[];
 }
 
-type SortField = 'id' | 'name' | 'totalOrders' | 'activeOrders' | 'status';
-type SortDirection = 'asc' | 'desc';
-
 export function ActiveCustomersDialog({ open, onOpenChange, customers }: ActiveCustomersDialogProps) {
-  const [sortField, setSortField] = useState<SortField>('name');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const {
+    filteredData,
+    searchQuery,
+    setSearchQuery,
+    sortConfig,
+    handleSort,
+    filters,
+    addFilter,
+    removeFilter,
+    clearFilters,
+  } = useTableFeatures({
+    data: customers,
+    searchableKeys: ['id', 'name', 'status'],
+    initialSort: { key: 'name', direction: 'asc' },
+  });
 
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-  };
-
-  const sortedCustomers = useMemo(() => {
-    return [...customers].sort((a, b) => {
-      let aVal: string | number = '';
-      let bVal: string | number = '';
-
-      switch (sortField) {
-        case 'id':
-          aVal = a.id;
-          bVal = b.id;
-          break;
-        case 'name':
-          aVal = a.name.toLowerCase();
-          bVal = b.name.toLowerCase();
-          break;
-        case 'totalOrders':
-          aVal = a.totalOrders ?? 0;
-          bVal = b.totalOrders ?? 0;
-          break;
-        case 'activeOrders':
-          aVal = a.activeOrders ?? 0;
-          bVal = b.activeOrders ?? 0;
-          break;
-        case 'status':
-          aVal = a.status.toLowerCase();
-          bVal = b.status.toLowerCase();
-          break;
-      }
-
-      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }, [customers, sortField, sortDirection]);
-
-  const SortIcon = ({ field }: { field: SortField }) => {
-    if (sortField !== field) {
-      return <ArrowUpDown className="ml-1 h-3 w-3 opacity-50" />;
-    }
-    return sortDirection === 'asc' 
-      ? <ArrowUp className="ml-1 h-3 w-3" />
-      : <ArrowDown className="ml-1 h-3 w-3" />;
-  };
+  const statusOptions = [...new Set(customers.map(c => c.status))].map(s => ({
+    label: s,
+    value: s,
+  }));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh]">
+      <DialogContent className="max-w-3xl max-h-[80vh]">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">
-            Active Customers ({customers.length})
+            Active Customers ({filteredData.length})
           </DialogTitle>
           <p className="text-sm text-muted-foreground">
             Source: JIRA CUS Project (status = Active)
           </p>
         </DialogHeader>
+
+        <TableControlsBar
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Search customers..."
+          filters={filters}
+          onRemoveFilter={removeFilter}
+          onClearFilters={clearFilters}
+          className="px-0 border-b-0"
+        >
+          <TableFilter
+            label="Status"
+            options={statusOptions}
+            value={filters.find(f => f.key === 'status')?.value || ''}
+            onChange={(value) => value ? addFilter('status', value) : removeFilter('status')}
+          />
+        </TableControlsBar>
         
-        <ScrollArea className="h-[60vh]">
+        <ScrollArea className="h-[50vh]">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead 
-                  className="cursor-pointer hover:bg-muted/50 select-none"
-                  onClick={() => handleSort('id')}
-                >
-                  <span className="flex items-center">
+                <TableHead>
+                  <SortableHeader
+                    sortKey="id"
+                    currentSortKey={sortConfig.key as string}
+                    direction={sortConfig.direction}
+                    onSort={() => handleSort('id')}
+                  >
                     Customer ID
-                    <SortIcon field="id" />
-                  </span>
+                  </SortableHeader>
                 </TableHead>
-                <TableHead 
-                  className="cursor-pointer hover:bg-muted/50 select-none"
-                  onClick={() => handleSort('name')}
-                >
-                  <span className="flex items-center">
+                <TableHead>
+                  <SortableHeader
+                    sortKey="name"
+                    currentSortKey={sortConfig.key as string}
+                    direction={sortConfig.direction}
+                    onSort={() => handleSort('name')}
+                  >
                     Customer Name
-                    <SortIcon field="name" />
-                  </span>
+                  </SortableHeader>
                 </TableHead>
-                <TableHead 
-                  className="text-right cursor-pointer hover:bg-muted/50 select-none"
-                  onClick={() => handleSort('totalOrders')}
-                >
-                  <span className="flex items-center justify-end">
+                <TableHead className="text-right">
+                  <SortableHeader
+                    sortKey="totalOrders"
+                    currentSortKey={sortConfig.key as string}
+                    direction={sortConfig.direction}
+                    onSort={() => handleSort('totalOrders')}
+                    className="justify-end"
+                  >
                     Total Orders
-                    <SortIcon field="totalOrders" />
-                  </span>
+                  </SortableHeader>
                 </TableHead>
-                <TableHead 
-                  className="text-right cursor-pointer hover:bg-muted/50 select-none"
-                  onClick={() => handleSort('activeOrders')}
-                >
-                  <span className="flex items-center justify-end">
+                <TableHead className="text-right">
+                  <SortableHeader
+                    sortKey="activeOrders"
+                    currentSortKey={sortConfig.key as string}
+                    direction={sortConfig.direction}
+                    onSort={() => handleSort('activeOrders')}
+                    className="justify-end"
+                  >
                     Active Orders
-                    <SortIcon field="activeOrders" />
-                  </span>
+                  </SortableHeader>
                 </TableHead>
-                <TableHead 
-                  className="cursor-pointer hover:bg-muted/50 select-none"
-                  onClick={() => handleSort('status')}
-                >
-                  <span className="flex items-center">
+                <TableHead>
+                  <SortableHeader
+                    sortKey="status"
+                    currentSortKey={sortConfig.key as string}
+                    direction={sortConfig.direction}
+                    onSort={() => handleSort('status')}
+                  >
                     Status
-                    <SortIcon field="status" />
-                  </span>
+                  </SortableHeader>
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedCustomers.map((customer) => (
+              {filteredData.map((customer) => (
                 <TableRow key={customer.id}>
                   <TableCell className="font-medium">{customer.id}</TableCell>
                   <TableCell>{customer.name}</TableCell>
@@ -159,10 +146,10 @@ export function ActiveCustomersDialog({ open, onOpenChange, customers }: ActiveC
                   </TableCell>
                 </TableRow>
               ))}
-              {sortedCustomers.length === 0 && (
+              {filteredData.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                    No active customers found
+                    No customers found
                   </TableCell>
                 </TableRow>
               )}
@@ -171,7 +158,7 @@ export function ActiveCustomersDialog({ open, onOpenChange, customers }: ActiveC
         </ScrollArea>
         
         <div className="text-sm text-muted-foreground pt-2 border-t">
-          Total Active Customers: <span className="font-semibold text-foreground">{customers.length}</span>
+          Total Active Customers: <span className="font-semibold text-foreground">{filteredData.length}</span>
         </div>
       </DialogContent>
     </Dialog>

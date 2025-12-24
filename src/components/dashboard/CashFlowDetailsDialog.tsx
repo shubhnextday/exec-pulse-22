@@ -16,6 +16,8 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { ChevronDown, ChevronRight } from 'lucide-react';
+import { TableControlsBar, SortableHeader } from '@/components/ui/table-controls';
+import { useTableFeatures } from '@/hooks/useTableFeatures';
 import type { CashFlowProjection } from '@/types/dashboard';
 
 interface CashFlowDetailsDialogProps {
@@ -27,8 +29,19 @@ interface CashFlowDetailsDialogProps {
 export function CashFlowDetailsDialog({ open, onOpenChange, projections }: CashFlowDetailsDialogProps) {
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   
-  const totalExpected = projections.reduce((sum, p) => sum + p.expectedAmount, 0);
-  const totalOrders = projections.reduce((sum, p) => sum + p.orderCount, 0);
+  const {
+    filteredData,
+    searchQuery,
+    setSearchQuery,
+    sortConfig,
+    handleSort,
+  } = useTableFeatures({
+    data: projections,
+    searchableKeys: ['date', 'customer'],
+  });
+
+  const totalExpected = filteredData.reduce((sum, p) => sum + p.expectedAmount, 0);
+  const totalOrders = filteredData.reduce((sum, p) => sum + p.orderCount, 0);
 
   const toggleDate = (date: string) => {
     setExpandedDates(prev => {
@@ -61,22 +74,57 @@ export function CashFlowDetailsDialog({ open, onOpenChange, projections }: CashF
             <div className="text-xl font-bold">{totalOrders}</div>
           </div>
         </div>
+
+        <TableControlsBar
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Search by date or customer..."
+          className="px-0 border-b-0 pb-3"
+        />
         
-        <ScrollArea className="h-[55vh]">
+        <ScrollArea className="h-[50vh]">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-8"></TableHead>
-                <TableHead>EST Ship Date</TableHead>
+                <TableHead>
+                  <SortableHeader
+                    sortKey="date"
+                    currentSortKey={sortConfig.key as string}
+                    direction={sortConfig.direction}
+                    onSort={() => handleSort('date')}
+                  >
+                    EST Ship Date
+                  </SortableHeader>
+                </TableHead>
                 <TableHead>Sales Order #</TableHead>
-                <TableHead>Customer</TableHead>
+                <TableHead>
+                  <SortableHeader
+                    sortKey="customer"
+                    currentSortKey={sortConfig.key as string}
+                    direction={sortConfig.direction}
+                    onSort={() => handleSort('customer')}
+                  >
+                    Customer
+                  </SortableHeader>
+                </TableHead>
                 <TableHead>Product</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Remaining Due</TableHead>
+                <TableHead className="text-right">
+                  <SortableHeader
+                    sortKey="expectedAmount"
+                    currentSortKey={sortConfig.key as string}
+                    direction={sortConfig.direction}
+                    onSort={() => handleSort('expectedAmount')}
+                    className="justify-end"
+                  >
+                    Remaining Due
+                  </SortableHeader>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {projections.map((projection, index) => {
+              {filteredData.map((projection, index) => {
                 const isExpanded = expandedDates.has(projection.date);
                 const hasOrders = projection.orders && projection.orders.length > 0;
                 
@@ -134,10 +182,10 @@ export function CashFlowDetailsDialog({ open, onOpenChange, projections }: CashF
                   </>
                 );
               })}
-              {projections.length === 0 && (
+              {filteredData.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                    No cash flow projections available
+                    No cash flow projections found
                   </TableCell>
                 </TableRow>
               )}
