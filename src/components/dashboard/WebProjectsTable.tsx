@@ -1,8 +1,10 @@
 import { WebProject, EpicStatus } from '@/types/dashboard';
 import { cn } from '@/lib/utils';
 import { AlertTriangle, CheckCircle2, Code2, PauseCircle, PlayCircle, Clock, Palette, Monitor, TestTube, RefreshCw, XCircle, FileText } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { useMemo } from 'react';
+import { TableControlsBar, SortableHeader, TableFilter } from '@/components/ui/table-controls';
+import { useTableFeatures } from '@/hooks/useTableFeatures';
 
 interface WebProjectsTableProps {
   projects: WebProject[];
@@ -128,19 +130,40 @@ function ProgressBar({
 }
 
 export function WebProjectsTable({ projects }: WebProjectsTableProps) {
-  // Sort projects by workflow order
+  const {
+    filteredData,
+    searchQuery,
+    setSearchQuery,
+    sortConfig,
+    handleSort,
+    filters,
+    addFilter,
+    removeFilter,
+    clearFilters,
+  } = useTableFeatures({
+    data: projects,
+    searchableKeys: ['epicName', 'epicKey', 'status'],
+  });
+
+  // Sort projects by workflow order when no custom sort
   const sortedProjects = useMemo(() => {
-    return [...projects].sort((a, b) => {
+    if (sortConfig.key) return filteredData;
+    return [...filteredData].sort((a, b) => {
       const orderA = STATUS_ORDER[a.status] ?? 99;
       const orderB = STATUS_ORDER[b.status] ?? 99;
       return orderA - orderB;
     });
-  }, [projects]);
+  }, [filteredData, sortConfig.key]);
 
   const activeProjects = projects.filter(p => 
     !['Done', 'Canceled', 'On Hold'].includes(p.status)
   ).length;
   const offTrackCount = projects.filter(p => p.isOffTrack).length;
+
+  const statusOptions = [...new Set(projects.map(p => p.status))].map(s => ({
+    label: s,
+    value: s,
+  }));
 
   return (
     <div className="metric-card opacity-0 animate-slide-up !p-0 overflow-hidden" style={{ animationDelay: '600ms' }}>
@@ -173,24 +196,87 @@ export function WebProjectsTable({ projects }: WebProjectsTableProps) {
           </div>
         </div>
       </div>
+
+      <TableControlsBar
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search projects..."
+        filters={filters}
+        onRemoveFilter={removeFilter}
+        onClearFilters={clearFilters}
+      >
+        <TableFilter
+          label="Status"
+          options={statusOptions}
+          value={filters.find(f => f.key === 'status')?.value || ''}
+          onChange={(value) => value ? addFilter('status', value) : removeFilter('status')}
+        />
+      </TableControlsBar>
       
-      {projects.length === 0 ? (
+      {sortedProjects.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <Code2 className="h-10 w-10 text-muted-foreground/30 mb-2" />
           <p className="text-sm text-muted-foreground">No projects found</p>
         </div>
       ) : (
         <ScrollArea className="h-[500px]">
-          <div className="overflow-x-auto">
-            <table className="data-table">
+          <div className="min-w-max">
+            <table className="data-table w-full">
               <thead>
                 <tr>
-                  <th>Epic</th>
-                  <th>Status</th>
-                  <th>Tasks</th>
-                  <th className="w-[180px]">Progress</th>
-                  <th>% Complete</th>
-                  <th>Due Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30">
+                    <SortableHeader
+                      sortKey="epicName"
+                      currentSortKey={sortConfig.key as string}
+                      direction={sortConfig.direction}
+                      onSort={() => handleSort('epicName')}
+                    >
+                      Epic
+                    </SortableHeader>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30">
+                    <SortableHeader
+                      sortKey="status"
+                      currentSortKey={sortConfig.key as string}
+                      direction={sortConfig.direction}
+                      onSort={() => handleSort('status')}
+                    >
+                      Status
+                    </SortableHeader>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30">
+                    <SortableHeader
+                      sortKey="totalTasks"
+                      currentSortKey={sortConfig.key as string}
+                      direction={sortConfig.direction}
+                      onSort={() => handleSort('totalTasks')}
+                    >
+                      Tasks
+                    </SortableHeader>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 w-[180px]">
+                    Progress
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30">
+                    <SortableHeader
+                      sortKey="percentComplete"
+                      currentSortKey={sortConfig.key as string}
+                      direction={sortConfig.direction}
+                      onSort={() => handleSort('percentComplete')}
+                    >
+                      % Complete
+                    </SortableHeader>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30">
+                    <SortableHeader
+                      sortKey="dueDate"
+                      currentSortKey={sortConfig.key as string}
+                      direction={sortConfig.direction}
+                      onSort={() => handleSort('dueDate')}
+                    >
+                      Due Date
+                    </SortableHeader>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -234,6 +320,7 @@ export function WebProjectsTable({ projects }: WebProjectsTableProps) {
               </tbody>
             </table>
           </div>
+          <ScrollBar orientation="horizontal" />
         </ScrollArea>
       )}
     </div>

@@ -14,6 +14,8 @@ import {
 } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useState } from 'react';
+import { TableControlsBar, SortableHeader } from '@/components/ui/table-controls';
+import { useTableFeatures } from '@/hooks/useTableFeatures';
 import type { Order } from '@/types/dashboard';
 
 interface OrderHealthDialogProps {
@@ -61,51 +63,136 @@ export function OrderHealthDialog({ open, onOpenChange, orders }: OrderHealthDia
 
   const [selectedTab, setSelectedTab] = useState<HealthKey>(getDefaultTab());
 
-  const OrderTable = ({ orderList }: { orderList: Order[] }) => (
-    <ScrollArea className="h-[40vh]">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Order ID</TableHead>
-            <TableHead>Sales Order #</TableHead>
-            <TableHead>Customer</TableHead>
-            <TableHead>Product Name</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Days Behind</TableHead>
-            <TableHead className="text-right">Total</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {orderList.map((order) => (
-            <TableRow key={order.id}>
-              <TableCell className="font-medium">{order.id}</TableCell>
-              <TableCell>{order.salesOrderNumber || '-'}</TableCell>
-              <TableCell>{order.customer}</TableCell>
-              <TableCell className="max-w-[200px] truncate" title={order.productName}>{order.productName || '-'}</TableCell>
-              <TableCell>{order.currentStatus}</TableCell>
-              <TableCell>
-                {order.daysBehindSchedule > 0 ? (
-                  <span className="text-red-600">{order.daysBehindSchedule} days</span>
-                ) : (
-                  <span className="text-emerald-600">On time</span>
-                )}
-              </TableCell>
-              <TableCell className="text-right font-medium">
-                ${order.orderTotal?.toLocaleString() || '0'}
-              </TableCell>
-            </TableRow>
-          ))}
-          {orderList.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                No orders in this category
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-    </ScrollArea>
-  );
+  const OrderTable = ({ orderList }: { orderList: Order[] }) => {
+    const {
+      filteredData,
+      searchQuery,
+      setSearchQuery,
+      sortConfig,
+      handleSort,
+    } = useTableFeatures({
+      data: orderList,
+      searchableKeys: ['customer', 'productName', 'salesOrderNumber', 'currentStatus'],
+    });
+
+    return (
+      <>
+        <TableControlsBar
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Search orders..."
+          className="px-0 border-b-0 pb-3"
+        />
+        <ScrollArea className="h-[35vh]">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>
+                  <SortableHeader
+                    sortKey="id"
+                    currentSortKey={sortConfig.key as string}
+                    direction={sortConfig.direction}
+                    onSort={() => handleSort('id')}
+                  >
+                    Order ID
+                  </SortableHeader>
+                </TableHead>
+                <TableHead>
+                  <SortableHeader
+                    sortKey="salesOrderNumber"
+                    currentSortKey={sortConfig.key as string}
+                    direction={sortConfig.direction}
+                    onSort={() => handleSort('salesOrderNumber')}
+                  >
+                    Sales Order #
+                  </SortableHeader>
+                </TableHead>
+                <TableHead>
+                  <SortableHeader
+                    sortKey="customer"
+                    currentSortKey={sortConfig.key as string}
+                    direction={sortConfig.direction}
+                    onSort={() => handleSort('customer')}
+                  >
+                    Customer
+                  </SortableHeader>
+                </TableHead>
+                <TableHead>
+                  <SortableHeader
+                    sortKey="productName"
+                    currentSortKey={sortConfig.key as string}
+                    direction={sortConfig.direction}
+                    onSort={() => handleSort('productName')}
+                  >
+                    Product Name
+                  </SortableHeader>
+                </TableHead>
+                <TableHead>
+                  <SortableHeader
+                    sortKey="currentStatus"
+                    currentSortKey={sortConfig.key as string}
+                    direction={sortConfig.direction}
+                    onSort={() => handleSort('currentStatus')}
+                  >
+                    Status
+                  </SortableHeader>
+                </TableHead>
+                <TableHead>
+                  <SortableHeader
+                    sortKey="daysBehindSchedule"
+                    currentSortKey={sortConfig.key as string}
+                    direction={sortConfig.direction}
+                    onSort={() => handleSort('daysBehindSchedule')}
+                  >
+                    Days Behind
+                  </SortableHeader>
+                </TableHead>
+                <TableHead className="text-right">
+                  <SortableHeader
+                    sortKey="orderTotal"
+                    currentSortKey={sortConfig.key as string}
+                    direction={sortConfig.direction}
+                    onSort={() => handleSort('orderTotal')}
+                    className="justify-end"
+                  >
+                    Total
+                  </SortableHeader>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredData.map((order) => (
+                <TableRow key={order.id}>
+                  <TableCell className="font-medium">{order.id}</TableCell>
+                  <TableCell>{order.salesOrderNumber || '-'}</TableCell>
+                  <TableCell>{order.customer}</TableCell>
+                  <TableCell className="max-w-[200px] truncate" title={order.productName}>{order.productName || '-'}</TableCell>
+                  <TableCell>{order.currentStatus}</TableCell>
+                  <TableCell>
+                    {order.daysBehindSchedule > 0 ? (
+                      <span className="text-red-600">{order.daysBehindSchedule} days</span>
+                    ) : (
+                      <span className="text-emerald-600">On time</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right font-medium">
+                    ${order.orderTotal?.toLocaleString() || '0'}
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filteredData.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                    No orders found
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </ScrollArea>
+      </>
+    );
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
