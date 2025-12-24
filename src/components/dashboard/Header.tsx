@@ -27,7 +27,7 @@ export function Header({ lastSynced, onRefresh, isLoading }: HeaderProps) {
         <Button 
           variant="outline" 
           size="sm" 
-          className="h-9 gap-2 bg-muted/30 border-border/30 hover:border-primary/50 hover:bg-primary/5"
+          className="h-9 gap-2 bg-muted/30 border-border/30 hover:border-primary/50 hover:bg-primary/5 hover:text-[#F05323]"
           onClick={onRefresh}
           disabled={isLoading}
         >
@@ -38,7 +38,7 @@ export function Header({ lastSynced, onRefresh, isLoading }: HeaderProps) {
           )}
           {isLoading ? 'Syncing...' : 'Sync'}
         </Button>
-        <Button variant="outline" size="sm" className="h-9 gap-2 bg-muted/30 border-border/30 hover:border-primary/50 hover:bg-primary/5">
+        <Button variant="outline" size="sm" className="h-9 gap-2 bg-muted/30 border-border/30 hover:border-primary/50 hover:bg-primary/5 hover:text-[#F05323]">
           <Download className="h-4 w-4" />
           Export
         </Button>
