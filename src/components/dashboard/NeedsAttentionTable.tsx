@@ -158,32 +158,32 @@ function SortableColumnHeader({ column, children }: { column: ColumnDef; childre
 
 function OrderRowTooltipContent({ order }: { order: Order }) {
   return (
-    <div className="p-2 max-w-md space-y-2 text-sm">
-      <div className="font-semibold text-base border-b pb-2">{order.customer}</div>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+    <div className="p-3 max-w-md space-y-2 text-sm bg-card rounded-lg">
+      <div className="font-semibold text-base border-b border-border pb-2 text-foreground">{order.customer}</div>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
         <span className="text-muted-foreground">Product:</span>
-        <span>{order.productName}</span>
+        <span className="text-foreground">{order.productName}</span>
         <span className="text-muted-foreground">Sales Order:</span>
-        <span className="mono">{order.salesOrderNumber}</span>
+        <span className="mono text-foreground">{order.salesOrderNumber}</span>
         <span className="text-muted-foreground">Current Status:</span>
-        <span>{order.currentStatus}</span>
+        <span className="text-foreground">{order.currentStatus}</span>
         <span className="text-muted-foreground">Expected Status:</span>
-        <span>{order.expectedStatus}</span>
+        <span className="text-foreground">{order.expectedStatus}</span>
         <span className="text-muted-foreground">Behind Schedule:</span>
-        <span className={cn(order.daysBehindSchedule > 0 && "text-danger font-medium")}>
+        <span className={cn("text-foreground", order.daysBehindSchedule > 0 && "text-danger font-medium")}>
           {order.daysBehindSchedule > 0 ? `-${order.daysBehindSchedule}` : '0'} days
         </span>
         <span className="text-muted-foreground">Est. Ship Date:</span>
-        <span>{order.estShipDate}</span>
+        <span className="text-foreground">{order.estShipDate}</span>
         <span className="text-muted-foreground">Quantity:</span>
-        <span className="mono">{order.quantityOrdered.toLocaleString()}</span>
+        <span className="mono text-foreground">{order.quantityOrdered.toLocaleString()}</span>
         <span className="text-muted-foreground">Order Total:</span>
-        <span className="mono">${order.orderTotal.toLocaleString()}</span>
+        <span className="mono text-foreground">${order.orderTotal.toLocaleString()}</span>
       </div>
       {order.orderNotes && (
-        <div className="border-t pt-2 mt-2">
+        <div className="border-t border-border pt-2 mt-2">
           <span className="text-muted-foreground text-xs font-semibold uppercase">Notes:</span>
-          <p className="mt-1">{order.orderNotes}</p>
+          <p className="mt-1 text-foreground">{order.orderNotes}</p>
         </div>
       )}
     </div>
