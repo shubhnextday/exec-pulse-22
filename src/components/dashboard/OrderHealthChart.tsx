@@ -61,66 +61,67 @@ export function OrderHealthChart({
         </span>
       </div>
       
-      <div className="h-[140px] relative px-5">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={data}
-              cx="50%"
-              cy="50%"
-              innerRadius={40}
-              outerRadius={55}
-              paddingAngle={3}
-              dataKey="value"
-              strokeWidth={0}
-            >
-              {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
-              ))}
-            </Pie>
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: 'hsl(0 0% 100%)', 
-                border: '1px solid hsl(0 0% 88%)',
-                borderRadius: '12px',
-                padding: '8px 12px',
-                boxShadow: '0 4px 12px hsl(0 0% 0% / 0.1)',
-              }}
-              labelStyle={{ color: 'hsl(0 0% 5%)' }}
-              formatter={(value: number, name: string) => [
-                `${value} orders (${total > 0 ? Math.round((value / total) * 100) : 0}%)`, 
-                name
-              ]}
-            />
-          </PieChart>
-        </ResponsiveContainer>
-        {/* Center text */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="text-center">
-            <p className="text-xl font-bold mono text-foreground">{total > 0 ? Math.round((healthyCount / total) * 100) : 0}%</p>
-            <p className="text-[9px] uppercase tracking-wider text-muted-foreground">Healthy</p>
+      <div className="flex items-center gap-4 px-5 pb-5 pt-2">
+        {/* Pie Chart - Left Side */}
+        <div className="h-[120px] w-[120px] relative flex-shrink-0">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={data}
+                cx="50%"
+                cy="50%"
+                innerRadius={35}
+                outerRadius={50}
+                paddingAngle={3}
+                dataKey="value"
+                strokeWidth={0}
+              >
+                {data.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'hsl(0 0% 100%)', 
+                  border: '1px solid hsl(0 0% 88%)',
+                  borderRadius: '12px',
+                  padding: '8px 12px',
+                  boxShadow: '0 4px 12px hsl(0 0% 0% / 0.1)',
+                }}
+                labelStyle={{ color: 'hsl(0 0% 5%)' }}
+                formatter={(value: number, name: string) => [
+                  `${value} orders (${total > 0 ? Math.round((value / total) * 100) : 0}%)`, 
+                  name
+                ]}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+          {/* Center text */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="text-center">
+              <p className="text-lg font-bold mono text-foreground">{total}</p>
+              <p className="text-[8px] uppercase tracking-wider text-muted-foreground">Total</p>
+            </div>
           </div>
         </div>
-      </div>
-      
-      {/* Dynamic grid based on number of statuses with data */}
-      <div className={`grid gap-1.5 p-4 pt-2 border-t border-border/40 mx-4 mb-4 ${
-        data.length <= 3 ? 'grid-cols-3' : data.length <= 4 ? 'grid-cols-4' : 'grid-cols-3 sm:grid-cols-4'
-      }`}>
-        {data.map((item) => (
-          <div key={item.name} className="text-center p-1.5 rounded-lg bg-muted/30">
-            <div className="flex items-center justify-center gap-1 mb-0.5">
-              <div 
-                className="w-1.5 h-1.5 rounded-full" 
-                style={{ backgroundColor: item.color }}
-              />
-              <span className="text-[8px] uppercase tracking-wider text-muted-foreground truncate">{item.name}</span>
+        
+        {/* Legend - Right Side */}
+        <div className="flex-1 flex flex-col gap-1.5">
+          {data.map((item) => (
+            <div key={item.name} className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div 
+                  className="w-2.5 h-2.5 rounded-sm flex-shrink-0" 
+                  style={{ backgroundColor: item.color }}
+                />
+                <span className="text-xs text-muted-foreground">{item.name}</span>
+              </div>
+              <span className="text-sm font-semibold mono text-foreground">
+                {item.value}
+              </span>
             </div>
-            <p className="text-base font-bold mono text-foreground">
-              {item.value}
-            </p>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
