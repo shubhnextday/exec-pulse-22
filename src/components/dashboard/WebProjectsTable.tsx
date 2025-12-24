@@ -1,6 +1,6 @@
 import { WebProject, EpicStatus } from '@/types/dashboard';
 import { cn } from '@/lib/utils';
-import { AlertTriangle, CheckCircle2, Code2, PauseCircle, PlayCircle, Clock, Palette, Monitor, TestTube, RefreshCw, XCircle, FileText } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Code2, PauseCircle, PlayCircle, Clock, Palette, Monitor, TestTube, RefreshCw, XCircle, FileText, Search, Calendar, UserCheck } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useMemo } from 'react';
 
@@ -12,13 +12,16 @@ interface WebProjectsTableProps {
 const STATUS_ORDER: Record<string, number> = {
   'Open': 1,
   'In Requirements': 2,
-  'In Design': 3,
-  'In Website Development': 4,
-  'In Final QA Testing': 5,
-  'Continuous Development': 6,
-  'Done': 7,
-  'On Hold': 8,
-  'Canceled': 9,
+  'In Technical Discovery': 3,
+  'Ready for Scheduling': 4,
+  'In Design': 5,
+  'In Website Development': 6,
+  'In Final QA Testing': 7,
+  'Continuous Development': 8,
+  'Customer Handover': 9,
+  'Done': 10,
+  'On Hold': 11,
+  'Canceled': 12,
 };
 
 function StatusBadge({ status, isOffTrack }: { status: EpicStatus; isOffTrack: boolean }) {
@@ -42,6 +45,16 @@ function StatusBadge({ status, isOffTrack }: { status: EpicStatus; isOffTrack: b
       className: 'bg-blue-500/15 text-blue-600 border-blue-500/30',
       label: 'In Requirements'
     },
+    'In Technical Discovery': { 
+      icon: Search, 
+      className: 'bg-indigo-500/15 text-indigo-600 border-indigo-500/30',
+      label: 'Technical Discovery'
+    },
+    'Ready for Scheduling': { 
+      icon: Calendar, 
+      className: 'bg-sky-500/15 text-sky-600 border-sky-500/30',
+      label: 'Ready for Scheduling'
+    },
     'In Design': { 
       icon: Palette, 
       className: 'bg-purple-500/15 text-purple-600 border-purple-500/30',
@@ -61,6 +74,11 @@ function StatusBadge({ status, isOffTrack }: { status: EpicStatus; isOffTrack: b
       icon: RefreshCw, 
       className: 'bg-cyan-500/15 text-cyan-600 border-cyan-500/30',
       label: 'Continuous Dev'
+    },
+    'Customer Handover': { 
+      icon: UserCheck, 
+      className: 'bg-teal-500/15 text-teal-600 border-teal-500/30',
+      label: 'Customer Handover'
     },
     'Done': { 
       icon: CheckCircle2, 
