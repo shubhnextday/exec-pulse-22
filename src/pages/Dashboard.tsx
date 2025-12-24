@@ -173,6 +173,25 @@ export default function Dashboard() {
     });
   }, [displayOrders, selectedCustomer, selectedAgent, selectedAccountManager, dateRange]);
 
+  // Check if any filters are applied
+  const hasFiltersApplied = selectedCustomer !== 'All Customers' || 
+    selectedAgent !== 'All Agents' || 
+    selectedAccountManager !== 'All Account Managers';
+
+  // Filter order health orders when filters are applied
+  const filteredOrderHealthOrders = useMemo(() => {
+    if (!hasFiltersApplied) {
+      return displayOrderHealthOrders;
+    }
+    
+    return displayOrderHealthOrders.filter(order => {
+      if (selectedCustomer !== 'All Customers' && order.customer !== selectedCustomer) return false;
+      if (selectedAgent !== 'All Agents' && order.agent !== selectedAgent) return false;
+      if (selectedAccountManager !== 'All Account Managers' && order.accountManager !== selectedAccountManager) return false;
+      return true;
+    });
+  }, [displayOrderHealthOrders, selectedCustomer, selectedAgent, selectedAccountManager, hasFiltersApplied]);
+
   // REACTIVE METRICS - Use proper data sources
   const reactiveMetrics = useMemo(() => {
     // Active Customers: Count from CUS project (activeCustomers from API)
@@ -194,15 +213,15 @@ export default function Dashboard() {
     // Active Projects: Count from web projects (not filtered by order filters)
     const activeProjects = displayWebProjects.filter(p => !['Done', 'Canceled', 'On Hold'].includes(p.status)).length;
     
-    // Order Health Breakdown: Calculated from orderHealthOrders (all non-cancelled orders)
+    // Order Health Breakdown: Use filtered order health orders when filters applied
     const orderHealthBreakdown = {
-      onTrack: displayOrderHealthOrders.filter(o => o.orderHealth === 'on-track').length,
-      atRisk: displayOrderHealthOrders.filter(o => o.orderHealth === 'at-risk').length,
-      offTrack: displayOrderHealthOrders.filter(o => o.orderHealth === 'off-track').length,
-      complete: displayOrderHealthOrders.filter(o => o.orderHealth === 'complete').length,
-      pendingDeposit: displayOrderHealthOrders.filter(o => o.orderHealth === 'pending-deposit').length,
-      onHold: displayOrderHealthOrders.filter(o => o.orderHealth === 'on-hold').length,
-      whiteLabel: displayOrderHealthOrders.filter(o => o.orderHealth === 'white-label').length,
+      onTrack: filteredOrderHealthOrders.filter(o => o.orderHealth === 'on-track').length,
+      atRisk: filteredOrderHealthOrders.filter(o => o.orderHealth === 'at-risk').length,
+      offTrack: filteredOrderHealthOrders.filter(o => o.orderHealth === 'off-track').length,
+      complete: filteredOrderHealthOrders.filter(o => o.orderHealth === 'complete').length,
+      pendingDeposit: filteredOrderHealthOrders.filter(o => o.orderHealth === 'pending-deposit').length,
+      onHold: filteredOrderHealthOrders.filter(o => o.orderHealth === 'on-hold').length,
+      whiteLabel: filteredOrderHealthOrders.filter(o => o.orderHealth === 'white-label').length,
     };
 
     return {
@@ -214,7 +233,7 @@ export default function Dashboard() {
       totalActiveProjects: activeProjects,
       orderHealthBreakdown,
     };
-  }, [filteredOrders, displayWebProjects, displayOrders, displayOrderHealthOrders, activeCustomers, summary]);
+  }, [filteredOrders, displayWebProjects, displayOrders, filteredOrderHealthOrders, activeCustomers, summary]);
 
   // Calculate cash flow projections from filtered orders
   const cashFlowProjections = useMemo(() => {
@@ -658,7 +677,7 @@ export default function Dashboard() {
         <OrderHealthDialog
           open={orderHealthDialogOpen}
           onOpenChange={setOrderHealthDialogOpen}
-          orders={displayOrderHealthOrders}
+          orders={filteredOrderHealthOrders}
         />
       </div>
     </TooltipProvider>
