@@ -109,7 +109,7 @@ export function CommissionsDetailsDialog({ open, onOpenChange, orders }: Commiss
 
         <ScrollArea className="h-[35vh]">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 z-10 bg-card">
               <TableRow>
                 <TableHead>
                   <SortableHeader

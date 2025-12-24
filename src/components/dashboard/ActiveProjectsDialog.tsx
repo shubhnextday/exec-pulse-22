@@ -152,7 +152,7 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects }: ActivePro
 
         <ScrollArea className="h-[40vh]">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 z-10 bg-card">
               <TableRow>
                 <TableHead>
                   <SortableHeader

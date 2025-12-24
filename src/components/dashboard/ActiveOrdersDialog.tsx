@@ -98,7 +98,7 @@ export function ActiveOrdersDialog({ open, onOpenChange, orders }: ActiveOrdersD
         
         <ScrollArea className="h-[50vh]">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 z-10 bg-card">
               <TableRow>
                 <TableHead>
                   <SortableHeader
