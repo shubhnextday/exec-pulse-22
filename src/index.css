@@ -1,5 +1,5 @@
 /* NextDay Nutra Executive Dashboard - Next Generation Design */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -8,10 +8,10 @@
 @layer base {
   :root {
     /* Brand Colors - NextDay Nutra */
-    --brand-orange: 14 87% 54%;       /* #F05323 */
-    --brand-slate: 209 24% 48%;       /* #5d7996 */
-    --brand-white: 0 0% 100%;         /* #FFFFFF */
-    
+    --brand-orange: 14 87% 54%; /* #F05323 */
+    --brand-slate: 209 24% 48%; /* #5d7996 */
+    --brand-white: 0 0% 100%; /* #FFFFFF */
+
     /* Light Executive Theme - White Background */
     --background: 0 0% 98%;
     --foreground: 0 0% 5%;
@@ -22,10 +22,10 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 5%;
 
-    --primary: 14 87% 54%;            /* #F05323 - Brand Orange */
+    --primary: 14 87% 54%; /* #F05323 - Brand Orange */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 209 24% 48%;          /* #5d7996 - Brand Slate */
+    --secondary: 209 24% 48%; /* #5d7996 - Brand Slate */
     --secondary-foreground: 0 0% 100%;
 
     --muted: 0 0% 94%;
@@ -52,11 +52,11 @@
     --danger-foreground: 0 0% 100%;
 
     /* Chart Colors - Next Gen Palette */
-    --chart-1: 14 87% 54%;            /* Brand Orange */
-    --chart-2: 209 24% 48%;           /* Brand Slate */
-    --chart-3: 14 87% 65%;            /* Light Orange */
-    --chart-4: 209 24% 60%;           /* Light Slate */
-    --chart-5: 14 60% 40%;            /* Dark Orange */
+    --chart-1: 14 87% 54%; /* Brand Orange */
+    --chart-2: 209 24% 48%; /* Brand Slate */
+    --chart-3: 14 87% 65%; /* Light Orange */
+    --chart-4: 209 24% 60%; /* Light Slate */
+    --chart-5: 14 60% 40%; /* Dark Orange */
 
     /* Order Health Colors */
     --on-track: 142 70% 40%;
@@ -94,7 +94,7 @@
   }
 
   html {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: "Inter", system-ui, sans-serif;
   }
 
   body {
@@ -125,11 +125,13 @@
   /* Next Gen Metric Cards - Light Theme */
   .metric-card {
     @apply relative overflow-hidden rounded-2xl border border-border p-6 bg-card;
-    box-shadow: 0 1px 3px hsl(0 0% 0% / 0.06), 0 1px 2px hsl(0 0% 0% / 0.04);
+    box-shadow:
+      0 1px 3px hsl(0 0% 0% / 0.06),
+      0 1px 2px hsl(0 0% 0% / 0.04);
   }
 
   .metric-card::before {
-    content: '';
+    content: "";
     @apply absolute inset-0 opacity-0 transition-opacity duration-500;
     background: radial-gradient(circle at 50% -20%, hsl(14 87% 54% / 0.06) 0%, transparent 60%);
   }
@@ -140,7 +142,9 @@
 
   .metric-card:hover {
     border-color: hsl(14 87% 54% / 0.4);
-    box-shadow: 0 4px 12px hsl(14 87% 54% / 0.1), 0 1px 3px hsl(0 0% 0% / 0.06);
+    box-shadow:
+      0 4px 12px hsl(14 87% 54% / 0.1),
+      0 1px 3px hsl(0 0% 0% / 0.06);
   }
 
   /* Status Indicators */
@@ -211,13 +215,18 @@
   }
 
   @keyframes pulse-alert {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.6;
+    }
   }
 
   /* Mono Numbers - Enhanced */
   .mono {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: "JetBrains Mono", monospace;
     font-weight: 500;
     letter-spacing: -0.02em;
   }
@@ -250,28 +259,42 @@
   }
 
   /* Stagger Animation */
-  .stagger-1 { animation-delay: 0.05s; }
-  .stagger-2 { animation-delay: 0.1s; }
-  .stagger-3 { animation-delay: 0.15s; }
-  .stagger-4 { animation-delay: 0.2s; }
-  .stagger-5 { animation-delay: 0.25s; }
-  .stagger-6 { animation-delay: 0.3s; }
+  .stagger-1 {
+    animation-delay: 0.05s;
+  }
+  .stagger-2 {
+    animation-delay: 0.1s;
+  }
+  .stagger-3 {
+    animation-delay: 0.15s;
+  }
+  .stagger-4 {
+    animation-delay: 0.2s;
+  }
+  .stagger-5 {
+    animation-delay: 0.25s;
+  }
+  .stagger-6 {
+    animation-delay: 0.3s;
+  }
 
   /* Chart Container */
   .chart-container {
     @apply relative rounded-2xl border border-border p-6 bg-card;
-    box-shadow: 0 1px 3px hsl(0 0% 0% / 0.06), 0 1px 2px hsl(0 0% 0% / 0.04);
+    box-shadow:
+      0 1px 3px hsl(0 0% 0% / 0.06),
+      0 1px 2px hsl(0 0% 0% / 0.04);
   }
 
   /* Stat Value - Large Display */
   .stat-value {
     @apply text-4xl font-bold tracking-tight;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: "JetBrains Mono", monospace;
   }
 
   .stat-value-secondary {
     @apply text-3xl font-semibold tracking-tight;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: "JetBrains Mono", monospace;
   }
 
   /* Filter Bar */
@@ -315,4 +338,8 @@
     background: hsl(209 24% 48% / 0.1);
     color: hsl(209 24% 60%);
   }
+}
+
+html {
+  scrollbar-width: none;
 }
