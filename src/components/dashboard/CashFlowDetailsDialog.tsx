@@ -84,7 +84,7 @@ export function CashFlowDetailsDialog({ open, onOpenChange, projections }: CashF
         
         <ScrollArea className="h-[50vh]">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 z-10 bg-card">
               <TableRow>
                 <TableHead className="w-8"></TableHead>
                 <TableHead>

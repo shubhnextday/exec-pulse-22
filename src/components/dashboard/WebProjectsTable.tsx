@@ -221,7 +221,7 @@ export function WebProjectsTable({ projects }: WebProjectsTableProps) {
       ) : (
         <ScrollArea className="h-[500px]">
           <table className="data-table w-full table-fixed">
-            <thead>
+            <thead className="sticky top-0 z-10">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 w-[30%]">
                   <SortableHeader

@@ -356,7 +356,7 @@ export function NeedsAttentionTable({ orders }: NeedsAttentionTableProps) {
               onDragEnd={handleDragEnd}
             >
               <table className="data-table w-full">
-                <thead>
+                <thead className="sticky top-0 z-20 bg-card">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 w-[50px] sticky left-0 z-20">
                       {/* Expand column */}
