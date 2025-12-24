@@ -622,7 +622,7 @@ export default function Dashboard() {
         <ActiveOrdersDialog
           open={activeOrdersDialogOpen}
           onOpenChange={setActiveOrdersDialogOpen}
-          orders={filteredOrders}
+          orders={displayOrders}
         />
         
         <ActiveCustomersDialog
