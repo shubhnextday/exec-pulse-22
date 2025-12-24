@@ -101,6 +101,12 @@ export interface ExecutiveSummary {
   };
 }
 
+export interface ActiveCustomer {
+  id: string;
+  name: string;
+  status: string;
+}
+
 export interface OutstandingOrder {
   id: string;
   salesOrderNumber: string;

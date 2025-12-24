@@ -122,6 +122,8 @@ export default function Dashboard() {
   const {
     summary,
     orders,
+    orderHealthOrders,
+    activeCustomers,
     allTimeOutstandingOrders,
     webProjects,
     customers,
@@ -142,6 +144,7 @@ export default function Dashboard() {
 
   // Use JIRA data if available, otherwise fall back to mock data
   const displayOrders = orders.length > 0 ? orders : mockOrders;
+  const displayOrderHealthOrders = orderHealthOrders.length > 0 ? orderHealthOrders : mockOrders;
   const displayWebProjects = webProjects.length > 0 ? webProjects : mockWebProjects;
   const displayCustomers = customers.length > 1 ? customers : ['All Customers', ...mockOrders.map(o => o.customer)];
   const displayAgents = agents.length > 1 ? agents : ['All Agents'];
@@ -170,20 +173,13 @@ export default function Dashboard() {
     });
   }, [displayOrders, selectedCustomer, selectedAgent, selectedAccountManager, dateRange]);
 
-  // REACTIVE METRICS - Revenue/Commissions from ALL orders, active counts from filtered
+  // REACTIVE METRICS - Use proper data sources
   const reactiveMetrics = useMemo(() => {
-    // On-track orders only
-    const onTrackOrders = filteredOrders.filter(o => o.orderHealth === 'on-track');
+    // Active Customers: Count from CUS project (activeCustomers from API)
+    const totalActiveCustomers = activeCustomers.length;
     
-    // Active Customers: Count of unique customer names from on-track orders only
-    const uniqueCustomers = new Set(
-      onTrackOrders
-        .map(o => o.customer)
-        .filter(c => c && c !== 'Unknown')
-    );
-    
-    // Active Orders: Count of on-track orders
-    const activeOrders = onTrackOrders.length;
+    // Active Orders: Count of active orders from filtered query
+    const activeOrdersCount = filteredOrders.length;
     
     // Monthly Revenue: Sum of orderTotal from filtered orders
     const monthlyRevenue = filteredOrders.reduce((sum, order) => sum + (order.orderTotal || 0), 0);
@@ -198,27 +194,27 @@ export default function Dashboard() {
     // Active Projects: Count from web projects (not filtered by order filters)
     const activeProjects = displayWebProjects.filter(p => !['Done', 'Canceled', 'On Hold'].includes(p.status)).length;
     
-    // Order Health Breakdown: Calculated from filtered orders
+    // Order Health Breakdown: Calculated from orderHealthOrders (all non-cancelled orders)
     const orderHealthBreakdown = {
-      onTrack: filteredOrders.filter(o => o.orderHealth === 'on-track').length,
-      atRisk: filteredOrders.filter(o => o.orderHealth === 'at-risk').length,
-      offTrack: filteredOrders.filter(o => o.orderHealth === 'off-track').length,
-      complete: filteredOrders.filter(o => o.orderHealth === 'complete').length,
-      pendingDeposit: filteredOrders.filter(o => o.orderHealth === 'pending-deposit').length,
-      onHold: filteredOrders.filter(o => o.orderHealth === 'on-hold').length,
-      whiteLabel: filteredOrders.filter(o => o.orderHealth === 'white-label').length,
+      onTrack: displayOrderHealthOrders.filter(o => o.orderHealth === 'on-track').length,
+      atRisk: displayOrderHealthOrders.filter(o => o.orderHealth === 'at-risk').length,
+      offTrack: displayOrderHealthOrders.filter(o => o.orderHealth === 'off-track').length,
+      complete: displayOrderHealthOrders.filter(o => o.orderHealth === 'complete').length,
+      pendingDeposit: displayOrderHealthOrders.filter(o => o.orderHealth === 'pending-deposit').length,
+      onHold: displayOrderHealthOrders.filter(o => o.orderHealth === 'on-hold').length,
+      whiteLabel: displayOrderHealthOrders.filter(o => o.orderHealth === 'white-label').length,
     };
 
     return {
-      totalActiveCustomers: uniqueCustomers.size,
-      totalActiveOrders: activeOrders,
+      totalActiveCustomers,
+      totalActiveOrders: activeOrdersCount,
       totalMonthlyRevenue: monthlyRevenue,
       totalOutstandingPayments: outstandingPayments,
       totalCommissionsDue: commissionsDue,
       totalActiveProjects: activeProjects,
       orderHealthBreakdown,
     };
-  }, [filteredOrders, displayWebProjects, displayOrders]);
+  }, [filteredOrders, displayWebProjects, displayOrders, displayOrderHealthOrders, activeCustomers, summary]);
 
   // Calculate cash flow projections from filtered orders
   const cashFlowProjections = useMemo(() => {
@@ -626,13 +622,13 @@ export default function Dashboard() {
         <ActiveOrdersDialog
           open={activeOrdersDialogOpen}
           onOpenChange={setActiveOrdersDialogOpen}
-          orders={filteredOrders.filter(o => o.orderHealth === 'on-track')}
+          orders={filteredOrders}
         />
         
         <ActiveCustomersDialog
           open={activeCustomersDialogOpen}
           onOpenChange={setActiveCustomersDialogOpen}
-          orders={filteredOrders.filter(o => o.orderHealth === 'on-track')}
+          customers={activeCustomers}
         />
         
         <RevenueDetailsDialog
@@ -662,7 +658,7 @@ export default function Dashboard() {
         <OrderHealthDialog
           open={orderHealthDialogOpen}
           onOpenChange={setOrderHealthDialogOpen}
-          orders={filteredOrders}
+          orders={displayOrderHealthOrders}
         />
       </div>
     </TooltipProvider>
