@@ -1,4 +1,4 @@
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { CashFlowProjection } from '@/types/dashboard';
 import { format, parseISO } from 'date-fns';
 import { TrendingUp } from 'lucide-react';
@@ -6,6 +6,21 @@ import { TrendingUp } from 'lucide-react';
 interface CashFlowChartProps {
   data: CashFlowProjection[];
 }
+
+// Custom dot component for the line
+const CustomDot = (props: any) => {
+  const { cx, cy } = props;
+  if (!cx || !cy) return null;
+  
+  return (
+    <g>
+      {/* Outer glow */}
+      <circle cx={cx} cy={cy} r={8} fill="hsl(var(--primary))" opacity={0.2} />
+      {/* Inner dot */}
+      <circle cx={cx} cy={cy} r={4} fill="hsl(var(--primary))" stroke="hsl(var(--background))" strokeWidth={2} />
+    </g>
+  );
+};
 
 export function CashFlowChart({ data }: CashFlowChartProps) {
   const chartData = data.map(item => ({
@@ -34,7 +49,7 @@ export function CashFlowChart({ data }: CashFlowChartProps) {
           </p>
         </div>
       </div>
-      <div className="h-[180px] px-5 pb-5 pt-4">
+      <div className="h-[200px] px-5 pb-5 pt-4">
         {data.length === 0 ? (
           <div className="h-full flex items-center justify-center text-muted-foreground">
             <p className="text-sm">No outstanding payments for selected filter</p>
@@ -43,44 +58,57 @@ export function CashFlowChart({ data }: CashFlowChartProps) {
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData}>
               <defs>
-                <linearGradient id="colorExpected" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#5d7996" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#5d7996" stopOpacity={0}/>
+                <linearGradient id="colorExpectedGlow" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.4}/>
+                  <stop offset="50%" stopColor="hsl(var(--primary))" stopOpacity={0.15}/>
+                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
                 </linearGradient>
+                <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                  <feMerge>
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                  </feMerge>
+                </filter>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(0 0% 90%)" vertical={false} />
               <XAxis 
                 dataKey="formattedDate" 
-                stroke="hsl(0 0% 50%)"
+                stroke="hsl(var(--muted-foreground))"
                 fontSize={11}
                 tickLine={false}
                 axisLine={false}
+                dy={10}
               />
               <YAxis 
-                stroke="hsl(0 0% 50%)"
+                stroke="hsl(var(--muted-foreground))"
                 fontSize={11}
                 tickLine={false}
                 axisLine={false}
                 tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                dx={-5}
               />
               <Tooltip 
                 contentStyle={{ 
-                  backgroundColor: 'hsl(0 0% 100%)', 
-                  border: '1px solid hsl(0 0% 88%)',
+                  backgroundColor: 'hsl(var(--background))', 
+                  border: '1px solid hsl(var(--border))',
                   borderRadius: '12px',
                   padding: '10px 14px',
-                  boxShadow: '0 4px 12px hsl(0 0% 0% / 0.1)',
+                  boxShadow: '0 8px 24px hsl(var(--primary) / 0.15)',
                 }}
-                labelStyle={{ color: 'hsl(0 0% 5%)', fontWeight: 600, marginBottom: '4px' }}
+                labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600, marginBottom: '4px' }}
                 formatter={(value: number) => [`$${value.toLocaleString()}`, 'Expected Revenue']}
+                cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '4 4' }}
               />
               <Area 
                 type="monotone" 
                 dataKey="expectedAmount" 
-                stroke="#5d7996"
-                strokeWidth={2.5}
+                stroke="hsl(var(--primary))"
+                strokeWidth={3}
                 fillOpacity={1} 
-                fill="url(#colorExpected)" 
+                fill="url(#colorExpectedGlow)"
+                filter="url(#glow)"
+                dot={<CustomDot />}
+                activeDot={{ r: 6, fill: 'hsl(var(--primary))', stroke: 'hsl(var(--background))', strokeWidth: 2 }}
               />
             </AreaChart>
           </ResponsiveContainer>

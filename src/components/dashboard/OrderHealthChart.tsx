@@ -1,4 +1,4 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Label } from 'recharts';
 import { Activity } from 'lucide-react';
 
 interface OrderHealthChartProps {
@@ -39,46 +39,89 @@ export function OrderHealthChart({
     { name: 'Pending Deposit', value: pendingDeposit, color: HEALTH_COLORS['Pending Deposit'] },
     { name: 'On Hold', value: onHold, color: HEALTH_COLORS['On Hold'] },
     { name: 'White Label', value: whiteLabel, color: HEALTH_COLORS['White Label'] },
-  ].filter(item => item.value > 0); // Only show statuses with orders
+  ].filter(item => item.value > 0);
 
   const total = onTrack + atRisk + offTrack + complete + pendingDeposit + onHold + whiteLabel;
-  const healthyCount = onTrack + complete; // Consider on-track and complete as healthy
 
   return (
     <div className="metric-card opacity-0 animate-slide-up !p-0 overflow-hidden" style={{ animationDelay: '300ms' }}>
-      <div className="flex items-center justify-between p-5 pb-0">
-        <div className="flex items-center gap-3">
-          <div className="icon-container icon-container-primary">
-            <Activity className="h-5 w-5" />
-          </div>
-          <div>
-            <h3 className="text-base font-semibold text-foreground">Order Health</h3>
-            <p className="text-xs text-muted-foreground">Current status breakdown</p>
-          </div>
-        </div>
-        <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-secondary/15 text-secondary border border-secondary/30">
-          {total} orders
+      <div className="flex items-center justify-between p-5 pb-2">
+        <h3 className="text-base font-semibold text-foreground">Order Health</h3>
+        <span className="text-xs text-muted-foreground border border-border rounded-md px-2 py-1">
+          Current Status
         </span>
       </div>
       
-      <div className="flex items-center gap-4 px-5 pb-5 pt-2">
-        {/* Pie Chart - Left Side */}
-        <div className="h-[160px] w-[160px] relative flex-shrink-0">
+      <div className="flex flex-col items-center px-5 pb-4">
+        {/* Pie Chart with center label */}
+        <div className="h-[180px] w-full relative">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={data}
                 cx="50%"
                 cy="50%"
-                innerRadius={50}
-                outerRadius={70}
-                paddingAngle={3}
+                innerRadius={55}
+                outerRadius={80}
+                paddingAngle={2}
                 dataKey="value"
                 strokeWidth={0}
+                label={({ cx, cy, midAngle, outerRadius, percent }) => {
+                  const RADIAN = Math.PI / 180;
+                  const radius = outerRadius + 20;
+                  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                  return (
+                    <text
+                      x={x}
+                      y={y}
+                      fill="hsl(var(--muted-foreground))"
+                      textAnchor={x > cx ? 'start' : 'end'}
+                      dominantBaseline="central"
+                      fontSize={11}
+                      fontWeight={500}
+                    >
+                      {`${(percent * 100).toFixed(1)}%`}
+                    </text>
+                  );
+                }}
+                labelLine={{
+                  stroke: 'hsl(var(--border))',
+                  strokeWidth: 1,
+                }}
               >
                 {data.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
+                <Label
+                  content={({ viewBox }) => {
+                    if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                      return (
+                        <text
+                          x={viewBox.cx}
+                          y={viewBox.cy}
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                        >
+                          <tspan
+                            x={viewBox.cx}
+                            y={(viewBox.cy || 0) - 8}
+                            className="fill-foreground text-2xl font-bold"
+                          >
+                            {total}
+                          </tspan>
+                          <tspan
+                            x={viewBox.cx}
+                            y={(viewBox.cy || 0) + 12}
+                            className="fill-muted-foreground text-xs"
+                          >
+                            Orders
+                          </tspan>
+                        </text>
+                      );
+                    }
+                  }}
+                />
               </Pie>
               <Tooltip 
                 contentStyle={{ 
@@ -88,42 +131,24 @@ export function OrderHealthChart({
                   padding: '8px 12px',
                   boxShadow: '0 4px 12px hsl(0 0% 0% / 0.1)',
                 }}
-                labelStyle={{ color: 'hsl(0 0% 5%)' }}
                 formatter={(value: number, name: string) => [
-                  `${value} orders (${total > 0 ? Math.round((value / total) * 100) : 0}%)`, 
+                  `${value} orders`, 
                   name
                 ]}
               />
             </PieChart>
           </ResponsiveContainer>
-          {/* Center text */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="text-center">
-              <p className="text-lg font-bold mono text-foreground">{total}</p>
-              <p className="text-[8px] uppercase tracking-wider text-muted-foreground">Total</p>
-            </div>
-          </div>
         </div>
         
-        {/* Legend - Right Side */}
-        <div className="flex-1 flex flex-col gap-1.5">
+        {/* Legend - Bottom */}
+        <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 mt-2">
           {data.map((item) => (
-            <div key={item.name} className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <div 
-                  className="w-2.5 h-2.5 rounded-sm flex-shrink-0" 
-                  style={{ backgroundColor: item.color }}
-                />
-                <span className="text-xs text-muted-foreground">{item.name}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">
-                  {total > 0 ? Math.round((item.value / total) * 100) : 0}%
-                </span>
-                <span className="text-sm font-semibold mono text-foreground min-w-[24px] text-right">
-                  {item.value}
-                </span>
-              </div>
+            <div key={item.name} className="flex items-center gap-1.5">
+              <div 
+                className="w-2.5 h-2.5 rounded-full flex-shrink-0" 
+                style={{ backgroundColor: item.color }}
+              />
+              <span className="text-xs text-muted-foreground">{item.name}</span>
             </div>
           ))}
         </div>
