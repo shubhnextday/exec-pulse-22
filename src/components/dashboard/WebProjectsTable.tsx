@@ -204,14 +204,7 @@ export function WebProjectsTable({ projects }: WebProjectsTableProps) {
         filters={filters}
         onRemoveFilter={removeFilter}
         onClearFilters={clearFilters}
-      >
-        <TableFilter
-          label="Status"
-          options={statusOptions}
-          value={filters.find(f => f.key === 'status')?.value || ''}
-          onChange={(value) => value ? addFilter('status', value) : removeFilter('status')}
-        />
-      </TableControlsBar>
+      />
       
       {sortedProjects.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
