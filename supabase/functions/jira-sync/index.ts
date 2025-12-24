@@ -334,12 +334,28 @@ serve(async (req) => {
       const orderHealthOrders = orderHealthIssues.map(transformIssueToOrder);
       console.log(`Order health orders transformed: ${orderHealthOrders.length}`);
 
-      // Extract Active Customers from CUS project
-      const activeCustomers = activeCustomerIssues.map((issue: any) => ({
-        id: issue.key,
-        name: issue.fields?.summary || 'Unknown Customer',
-        status: issue.fields?.status?.name || 'Unknown',
-      }));
+      // Extract Active Customers from CUS project with order counts
+      const activeCustomers = activeCustomerIssues.map((issue: any) => {
+        const customerName = issue.fields?.summary || 'Unknown Customer';
+        
+        // Count total orders (from orderHealthOrders - all non-cancelled orders)
+        const totalOrders = orderHealthOrders.filter((o: any) => 
+          o.customer?.toLowerCase() === customerName.toLowerCase()
+        ).length;
+        
+        // Count active orders (from activeOrders - excludes completed/cancelled)
+        const activeOrdersCount = activeOrders.filter((o: any) => 
+          o.customer?.toLowerCase() === customerName.toLowerCase()
+        ).length;
+        
+        return {
+          id: issue.key,
+          name: customerName,
+          status: issue.fields?.status?.name || 'Unknown',
+          totalOrders,
+          activeOrders: activeOrdersCount,
+        };
+      });
       console.log(`Active customers from CUS project: ${activeCustomers.length}`);
 
       // Calculate all-time outstanding from order health orders
