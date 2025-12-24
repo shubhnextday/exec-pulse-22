@@ -192,13 +192,27 @@ export default function Dashboard() {
     });
   }, [displayOrderHealthOrders, selectedCustomer, selectedAgent, selectedAccountManager, hasFiltersApplied]);
 
+  // Filter active orders when filters are applied
+  const filteredActiveOrders = useMemo(() => {
+    if (!hasFiltersApplied) {
+      return displayOrders;
+    }
+    
+    return displayOrders.filter(order => {
+      if (selectedCustomer !== 'All Customers' && order.customer !== selectedCustomer) return false;
+      if (selectedAgent !== 'All Agents' && order.agent !== selectedAgent) return false;
+      if (selectedAccountManager !== 'All Account Managers' && order.accountManager !== selectedAccountManager) return false;
+      return true;
+    });
+  }, [displayOrders, selectedCustomer, selectedAgent, selectedAccountManager, hasFiltersApplied]);
+
   // REACTIVE METRICS - Use proper data sources
   const reactiveMetrics = useMemo(() => {
     // Active Customers: Count from CUS project (activeCustomers from API)
     const totalActiveCustomers = activeCustomers.length;
     
-    // Active Orders: Count of ALL active orders from API (no frontend filters)
-    const activeOrdersCount = displayOrders.length;
+    // Active Orders: Use filtered when filters applied, all when default
+    const activeOrdersCount = filteredActiveOrders.length;
     
     // Monthly Revenue: Sum of orderTotal from filtered orders
     const monthlyRevenue = filteredOrders.reduce((sum, order) => sum + (order.orderTotal || 0), 0);
@@ -233,7 +247,7 @@ export default function Dashboard() {
       totalActiveProjects: activeProjects,
       orderHealthBreakdown,
     };
-  }, [filteredOrders, displayWebProjects, displayOrders, filteredOrderHealthOrders, activeCustomers, summary]);
+  }, [filteredOrders, displayWebProjects, displayOrders, filteredActiveOrders, filteredOrderHealthOrders, activeCustomers, summary]);
 
   // Calculate cash flow projections from filtered orders
   const cashFlowProjections = useMemo(() => {
@@ -641,7 +655,7 @@ export default function Dashboard() {
         <ActiveOrdersDialog
           open={activeOrdersDialogOpen}
           onOpenChange={setActiveOrdersDialogOpen}
-          orders={displayOrders}
+          orders={filteredActiveOrders}
         />
         
         <ActiveCustomersDialog
