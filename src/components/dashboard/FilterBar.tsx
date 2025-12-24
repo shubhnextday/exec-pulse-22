@@ -1,4 +1,4 @@
-import { Calendar, Filter, Search, X } from 'lucide-react';
+import { Calendar, Filter, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 
 interface FilterBarProps {
   customers: string[];
@@ -61,7 +61,7 @@ export function FilterBar({
             <Calendar className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
             <SelectValue placeholder="Date Range" />
           </SelectTrigger>
-          <SelectContent className="bg-popover border-border/50">
+          <SelectContent className="bg-card border-border z-[100]">
             <SelectItem value="this-month">This Month</SelectItem>
             <SelectItem value="last-30-days">Last 30 Days</SelectItem>
             <SelectItem value="last-60-days">Last 60 Days</SelectItem>
@@ -71,44 +71,38 @@ export function FilterBar({
           </SelectContent>
         </Select>
 
-        <Select value={selectedCustomer} onValueChange={onCustomerChange}>
-          <SelectTrigger className={`w-[180px] h-9 text-sm bg-muted/30 border-border/30 hover:border-primary/30 transition-colors ${selectedCustomer !== 'All Customers' ? 'border-primary/50 bg-primary/5' : ''}`}>
-            <SelectValue placeholder="Customer" />
-          </SelectTrigger>
-          <SelectContent className="bg-popover border-border/50 max-h-[300px]">
-            {customers.map((customer) => (
-              <SelectItem key={customer} value={customer}>
-                {customer}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Customer - Searchable */}
+        <SearchableSelect
+          options={customers}
+          value={selectedCustomer}
+          onValueChange={onCustomerChange}
+          placeholder="Customer"
+          searchPlaceholder="Search customers..."
+          className="w-[180px] h-9 text-sm"
+          allLabel="All Customers"
+        />
 
-        <Select value={selectedAgent} onValueChange={onAgentChange}>
-          <SelectTrigger className={`w-[140px] h-9 text-sm bg-muted/30 border-border/30 hover:border-primary/30 transition-colors ${selectedAgent !== 'All Agents' ? 'border-primary/50 bg-primary/5' : ''}`}>
-            <SelectValue placeholder="Agent" />
-          </SelectTrigger>
-          <SelectContent className="bg-popover border-border/50">
-            {agents.map((agent) => (
-              <SelectItem key={agent} value={agent}>
-                {agent}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Agent - Searchable */}
+        <SearchableSelect
+          options={agents}
+          value={selectedAgent}
+          onValueChange={onAgentChange}
+          placeholder="Agent"
+          searchPlaceholder="Search agents..."
+          className="w-[140px] h-9 text-sm"
+          allLabel="All Agents"
+        />
 
-        <Select value={selectedAccountManager} onValueChange={onAccountManagerChange}>
-          <SelectTrigger className={`w-[180px] h-9 text-sm bg-muted/30 border-border/30 hover:border-primary/30 transition-colors ${selectedAccountManager !== 'All Account Managers' ? 'border-primary/50 bg-primary/5' : ''}`}>
-            <SelectValue placeholder="Account Manager" />
-          </SelectTrigger>
-          <SelectContent className="bg-popover border-border/50">
-            {accountManagers.map((am) => (
-              <SelectItem key={am} value={am}>
-                {am}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Account Manager - Searchable */}
+        <SearchableSelect
+          options={accountManagers}
+          value={selectedAccountManager}
+          onValueChange={onAccountManagerChange}
+          placeholder="Account Manager"
+          searchPlaceholder="Search account managers..."
+          className="w-[180px] h-9 text-sm"
+          allLabel="All Account Managers"
+        />
 
         {hasActiveFilters && (
           <Button 
@@ -123,14 +117,6 @@ export function FilterBar({
         )}
 
         <div className="flex-1" />
-
-        <Button 
-          className="h-9 text-sm font-medium"
-          style={{ backgroundColor: '#F05323' }}
-        >
-          <Search className="h-3.5 w-3.5 mr-2" />
-          Search
-        </Button>
       </div>
     </div>
   );
