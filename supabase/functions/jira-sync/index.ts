@@ -187,9 +187,6 @@ serve(async (req) => {
     const { action = 'dashboard' } = await req.json().catch(() => ({}));
 
     if (action === 'dashboard') {
-      // Use full project name like PHP: "Contract Manufacturing"
-      const cmJql = 'project = "Contract Manufacturing"';
-      
       // Fields to fetch - matching PHP implementation
       const requiredFields = [
         'summary', 'status', 'created', 'duedate', 'parent', 'issuetype', 'subtasks',
@@ -212,8 +209,35 @@ serve(async (req) => {
         FIELD_MAPPINGS.healthField,
       ];
       
-      // Fetch ALL CM orders with pagination
-      const allCmIssues = await fetchAllIssues(jiraDomain, headers, cmJql, requiredFields);
+      // JQL for Active Orders (excludes cancelled and completed statuses)
+      const activeOrdersJql = 'project = CM AND type = "Order" AND status NOT IN (Cancelled, "Final Product Shipped", "In Quote Requirements", "Partial Shipment", "On Hold") ORDER BY created DESC';
+      
+      // JQL for Order Health pie chart (all orders except cancelled)
+      const orderHealthJql = 'project = CM AND type = "Order" AND status != Cancelled ORDER BY created DESC';
+      
+      // JQL for Active Customers
+      const activeCustomersJql = 'project = CUS AND status = Active ORDER BY created DESC';
+      
+      // Fetch Active Orders
+      console.log('Fetching Active Orders...');
+      const activeOrderIssues = await fetchAllIssues(jiraDomain, headers, activeOrdersJql, requiredFields);
+      console.log(`Fetched ${activeOrderIssues.length} active orders`);
+      
+      // Fetch Order Health orders (all non-cancelled orders)
+      console.log('Fetching Order Health orders...');
+      const orderHealthIssues = await fetchAllIssues(jiraDomain, headers, orderHealthJql, requiredFields);
+      console.log(`Fetched ${orderHealthIssues.length} orders for health chart`);
+      
+      // Fetch Active Customers from CUS project
+      console.log('Fetching Active Customers...');
+      const customerFields = ['summary', 'status', 'created'];
+      let activeCustomerIssues: any[] = [];
+      try {
+        activeCustomerIssues = await fetchAllIssues(jiraDomain, headers, activeCustomersJql, customerFields);
+      } catch (e) {
+        console.log('CUS project fetch failed, continuing with empty:', e);
+      }
+      console.log(`Fetched ${activeCustomerIssues.length} active customers`);
       
       // Fetch WEB epics
       const webJql = 'project = "WEB" AND issuetype = Epic ORDER BY created DESC';
@@ -227,13 +251,10 @@ serve(async (req) => {
       }
       console.log(`Fetched ${webIssues.length} WEB epics`);
 
-      // Transform CM issues to orders
-      const orders = allCmIssues.map((issue: any) => {
+      // Helper function to transform issue to order
+      const transformIssueToOrder = (issue: any) => {
         const fields = issue.fields || {};
         const issueType = fields.issuetype?.name || '';
-        
-        // Skip non-Order issue types for main order list
-        // (Design Order and Packaging are child items)
         
         const orderTotal = parseFloat(fields[FIELD_MAPPINGS.orderTotal]) || 0;
         const depositAmount = parseFloat(fields[FIELD_MAPPINGS.depositAmount]) || 0;
@@ -251,7 +272,6 @@ serve(async (req) => {
         }
         
         // Get order health from dedicated field (customfield_10897)
-        // Maps to: on-track, at-risk, off-track, complete, pending-deposit, on-hold, white-label
         const healthFieldValue = fields[FIELD_MAPPINGS.orderHealth];
         let orderHealth = 'on-track';
         if (healthFieldValue) {
@@ -302,23 +322,26 @@ serve(async (req) => {
           accountManager: fields[FIELD_MAPPINGS.accountManager]?.displayName || null,
           orderNotes: '',
         };
-      });
+      };
 
-      // Filter to only Order type issues (not Design Order or Packaging)
-      const orderTypeOrders = orders.filter((o: any) => 
-        o.issueType === 'Order' || o.issueType === '' || !o.issueType
-      );
-      
-      console.log(`Total orders: ${orders.length}, Order type: ${orderTypeOrders.length}`);
+      // Transform Active Orders (for Active Orders popup - excludes cancelled/completed)
+      const activeOrders = activeOrderIssues.map(transformIssueToOrder);
+      console.log(`Active orders transformed: ${activeOrders.length}`);
 
-      // Filter active orders (exclude cancelled/completed)
-      const activeOrders = orderTypeOrders.filter((o: any) => {
-        const status = (o.currentStatus || '').toLowerCase();
-        return !CANCELLED_STATUSES.some(s => status.includes(s));
-      });
+      // Transform Order Health orders (all non-cancelled orders - for pie chart)
+      const orderHealthOrders = orderHealthIssues.map(transformIssueToOrder);
+      console.log(`Order health orders transformed: ${orderHealthOrders.length}`);
 
-      // Calculate all-time outstanding (from all orders with remaining due > 0)
-      const allTimeOutstandingOrders = orders
+      // Extract Active Customers from CUS project
+      const activeCustomers = activeCustomerIssues.map((issue: any) => ({
+        id: issue.key,
+        name: issue.fields?.summary || 'Unknown Customer',
+        status: issue.fields?.status?.name || 'Unknown',
+      }));
+      console.log(`Active customers from CUS project: ${activeCustomers.length}`);
+
+      // Calculate all-time outstanding from order health orders
+      const allTimeOutstandingOrders = orderHealthOrders
         .filter((o: any) => o.remainingDue > 0)
         .map((o: any) => ({
           id: o.id,
@@ -348,42 +371,47 @@ serve(async (req) => {
         isOffTrack: false,
       }));
 
-      // Get unique customers from all orders (not just active)
-      const uniqueCustomers = [...new Set(orderTypeOrders.map((o: any) => o.customer).filter((c: string) => c && c !== 'Unknown'))];
+      // Get unique customers from active orders for dropdown filters
+      const uniqueCustomersFromOrders = [...new Set(activeOrders.map((o: any) => o.customer).filter((c: string) => c && c !== 'Unknown'))];
       
       const summary = {
-        totalActiveCustomers: new Set(activeOrders.map((o: any) => o.customer).filter((c: string) => c && c !== 'Unknown')).size,
+        // Active Customers count from CUS project
+        totalActiveCustomers: activeCustomers.length,
+        // Active Orders count from filtered query
         totalActiveOrders: activeOrders.length,
-        totalMonthlyRevenue: orderTypeOrders.reduce((sum: number, o: any) => sum + (o.orderTotal || 0), 0),
-        totalOutstandingPayments: orderTypeOrders.reduce((sum: number, o: any) => sum + (o.remainingDue || 0), 0),
+        totalMonthlyRevenue: orderHealthOrders.reduce((sum: number, o: any) => sum + (o.orderTotal || 0), 0),
+        totalOutstandingPayments: orderHealthOrders.reduce((sum: number, o: any) => sum + (o.remainingDue || 0), 0),
         allTimeOutstandingPayments: allTimeOutstanding,
-        totalCommissionsDue: orderTypeOrders.reduce((sum: number, o: any) => sum + (o.commissionDue || 0), 0),
+        totalCommissionsDue: orderHealthOrders.reduce((sum: number, o: any) => sum + (o.commissionDue || 0), 0),
         totalActiveProjects: webProjects.filter((p: any) => p.status === 'active').length,
+        // Order Health breakdown from orderHealthOrders (all non-cancelled orders)
         orderHealthBreakdown: {
-          onTrack: activeOrders.filter((o: any) => o.orderHealth === 'on-track').length,
-          atRisk: activeOrders.filter((o: any) => o.orderHealth === 'at-risk').length,
-          offTrack: activeOrders.filter((o: any) => o.orderHealth === 'off-track').length,
-          complete: activeOrders.filter((o: any) => o.orderHealth === 'complete').length,
-          pendingDeposit: activeOrders.filter((o: any) => o.orderHealth === 'pending-deposit').length,
-          onHold: activeOrders.filter((o: any) => o.orderHealth === 'on-hold').length,
-          whiteLabel: activeOrders.filter((o: any) => o.orderHealth === 'white-label').length,
+          onTrack: orderHealthOrders.filter((o: any) => o.orderHealth === 'on-track').length,
+          atRisk: orderHealthOrders.filter((o: any) => o.orderHealth === 'at-risk').length,
+          offTrack: orderHealthOrders.filter((o: any) => o.orderHealth === 'off-track').length,
+          complete: orderHealthOrders.filter((o: any) => o.orderHealth === 'complete').length,
+          pendingDeposit: orderHealthOrders.filter((o: any) => o.orderHealth === 'pending-deposit').length,
+          onHold: orderHealthOrders.filter((o: any) => o.orderHealth === 'on-hold').length,
+          whiteLabel: orderHealthOrders.filter((o: any) => o.orderHealth === 'white-label').length,
         },
       };
 
-      console.log(`Summary: ${activeOrders.length} active orders, ${uniqueCustomers.length} unique customers, $${summary.totalMonthlyRevenue} revenue`);
+      console.log(`Summary: ${activeOrders.length} active orders, ${activeCustomers.length} active customers, $${summary.totalMonthlyRevenue} revenue`);
 
       return new Response(JSON.stringify({
         success: true,
         data: {
           summary,
-          orders: orderTypeOrders,
+          orders: activeOrders, // Active orders for the popup
+          orderHealthOrders, // All non-cancelled orders for health chart
+          activeCustomers, // Active customers from CUS project
           allTimeOutstandingOrders,
           webProjects,
-          customers: ['All Customers', ...uniqueCustomers.sort()],
-          agents: ['All Agents', ...new Set(orderTypeOrders.map((o: any) => o.agent).filter(Boolean))],
-          accountManagers: ['All Account Managers', ...new Set(orderTypeOrders.map((o: any) => o.accountManager).filter(Boolean))],
+          customers: ['All Customers', ...uniqueCustomersFromOrders.sort()],
+          agents: ['All Agents', ...new Set(activeOrders.map((o: any) => o.agent).filter(Boolean))],
+          accountManagers: ['All Account Managers', ...new Set(activeOrders.map((o: any) => o.accountManager).filter(Boolean))],
           lastSynced: new Date().toISOString(),
-          totalOrdersInJira: allCmIssues.length,
+          totalOrdersInJira: orderHealthIssues.length,
         }
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
