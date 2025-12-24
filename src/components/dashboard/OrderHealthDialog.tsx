@@ -223,7 +223,7 @@ export function OrderHealthDialog({ open, onOpenChange, orders }: OrderHealthDia
         </div>
         
         {/* Filter tabs - show all statuses to match widget */}
-        <div className="flex gap-2 border-b border-border pb-2 mb-4 flex-wrap">
+        <div className="flex gap-2 border-b border-border pb-2 mb-2 flex-wrap">
           {(Object.keys(HEALTH_CONFIG) as HealthKey[]).map((status) => {
             const config = HEALTH_CONFIG[status];
             const count = ordersByHealth[status].length;
