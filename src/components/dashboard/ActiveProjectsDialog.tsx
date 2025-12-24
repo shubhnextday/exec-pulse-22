@@ -32,6 +32,7 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects }: ActivePro
   const STATUS_ORDER: Record<string, number> = {
     Open: 1,
     'In Requirements': 2,
+    'In Technical Discovery': 3,
     'Technical Discovery': 3,
     'Ready for Scheduling': 4,
     'In Design': 5,
@@ -59,6 +60,7 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects }: ActivePro
         return 'bg-muted text-muted-foreground border-muted-foreground/30';
       case 'In Requirements':
         return 'bg-blue-500/20 text-blue-600 border-blue-500/30';
+      case 'In Technical Discovery':
       case 'Technical Discovery':
         return 'bg-indigo-500/20 text-indigo-600 border-indigo-500/30';
       case 'Ready for Scheduling':
