@@ -629,7 +629,7 @@ export default function Dashboard() {
           {/* Needs Attention Section */}
           <section id="section-attention" className="mb-8 scroll-mt-8">
             <h2 className="text-lg font-semibold mb-4 text-foreground">Needs Attention</h2>
-            <NeedsAttentionTable orders={filteredOrders} />
+            <NeedsAttentionTable orders={filteredOrderHealthOrders} />
           </section>
 
           {/* Web Development Section */}
