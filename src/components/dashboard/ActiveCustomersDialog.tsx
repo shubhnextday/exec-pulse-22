@@ -40,6 +40,8 @@ export function ActiveCustomersDialog({ open, onOpenChange, customers }: ActiveC
               <TableRow>
                 <TableHead>Customer ID</TableHead>
                 <TableHead>Customer Name</TableHead>
+                <TableHead className="text-right">Total Orders</TableHead>
+                <TableHead className="text-right">Active Orders</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -48,6 +50,8 @@ export function ActiveCustomersDialog({ open, onOpenChange, customers }: ActiveC
                 <TableRow key={customer.id}>
                   <TableCell className="font-medium">{customer.id}</TableCell>
                   <TableCell>{customer.name}</TableCell>
+                  <TableCell className="text-right">{customer.totalOrders ?? 0}</TableCell>
+                  <TableCell className="text-right">{customer.activeOrders ?? 0}</TableCell>
                   <TableCell>
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
                       {customer.status}
@@ -57,7 +61,7 @@ export function ActiveCustomersDialog({ open, onOpenChange, customers }: ActiveC
               ))}
               {customers.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                     No active customers found
                   </TableCell>
                 </TableRow>

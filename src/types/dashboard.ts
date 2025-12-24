@@ -105,6 +105,8 @@ export interface ActiveCustomer {
   id: string;
   name: string;
   status: string;
+  totalOrders?: number;
+  activeOrders?: number;
 }
 
 export interface OutstandingOrder {
