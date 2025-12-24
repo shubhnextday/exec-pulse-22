@@ -220,107 +220,104 @@ export function WebProjectsTable({ projects }: WebProjectsTableProps) {
         </div>
       ) : (
         <ScrollArea className="h-[500px]">
-          <div className="min-w-max">
-            <table className="data-table w-full">
-              <thead>
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30">
-                    <SortableHeader
-                      sortKey="epicName"
-                      currentSortKey={sortConfig.key as string}
-                      direction={sortConfig.direction}
-                      onSort={() => handleSort('epicName')}
-                    >
-                      Epic
-                    </SortableHeader>
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30">
-                    <SortableHeader
-                      sortKey="status"
-                      currentSortKey={sortConfig.key as string}
-                      direction={sortConfig.direction}
-                      onSort={() => handleSort('status')}
-                    >
-                      Status
-                    </SortableHeader>
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30">
-                    <SortableHeader
-                      sortKey="totalTasks"
-                      currentSortKey={sortConfig.key as string}
-                      direction={sortConfig.direction}
-                      onSort={() => handleSort('totalTasks')}
-                    >
-                      Tasks
-                    </SortableHeader>
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 w-[180px]">
-                    Progress
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30">
-                    <SortableHeader
-                      sortKey="percentComplete"
-                      currentSortKey={sortConfig.key as string}
-                      direction={sortConfig.direction}
-                      onSort={() => handleSort('percentComplete')}
-                    >
-                      % Complete
-                    </SortableHeader>
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30">
-                    <SortableHeader
-                      sortKey="dueDate"
-                      currentSortKey={sortConfig.key as string}
-                      direction={sortConfig.direction}
-                      onSort={() => handleSort('dueDate')}
-                    >
-                      Due Date
-                    </SortableHeader>
-                  </th>
+          <table className="data-table w-full table-fixed">
+            <thead>
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 w-[30%]">
+                  <SortableHeader
+                    sortKey="epicName"
+                    currentSortKey={sortConfig.key as string}
+                    direction={sortConfig.direction}
+                    onSort={() => handleSort('epicName')}
+                  >
+                    Epic
+                  </SortableHeader>
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 w-[18%]">
+                  <SortableHeader
+                    sortKey="status"
+                    currentSortKey={sortConfig.key as string}
+                    direction={sortConfig.direction}
+                    onSort={() => handleSort('status')}
+                  >
+                    Status
+                  </SortableHeader>
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 w-[10%]">
+                  <SortableHeader
+                    sortKey="totalTasks"
+                    currentSortKey={sortConfig.key as string}
+                    direction={sortConfig.direction}
+                    onSort={() => handleSort('totalTasks')}
+                  >
+                    Tasks
+                  </SortableHeader>
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 w-[18%]">
+                  Progress
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 w-[12%]">
+                  <SortableHeader
+                    sortKey="percentComplete"
+                    currentSortKey={sortConfig.key as string}
+                    direction={sortConfig.direction}
+                    onSort={() => handleSort('percentComplete')}
+                  >
+                    % Complete
+                  </SortableHeader>
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 w-[12%]">
+                  <SortableHeader
+                    sortKey="dueDate"
+                    currentSortKey={sortConfig.key as string}
+                    direction={sortConfig.direction}
+                    onSort={() => handleSort('dueDate')}
+                  >
+                    Due Date
+                  </SortableHeader>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedProjects.map((project) => (
+                <tr key={project.id} className="hover:bg-primary/5 transition-colors">
+                  <td className="px-4 py-3.5 border-t border-border/30">
+                    <div className="truncate">
+                      <p className="font-medium text-foreground truncate">{project.epicName}</p>
+                      <p className="text-[11px] text-muted-foreground mono truncate">{project.epicKey}</p>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3.5 border-t border-border/30">
+                    <StatusBadge status={project.status} isOffTrack={project.isOffTrack} />
+                  </td>
+                  <td className="px-4 py-3.5 border-t border-border/30 mono text-sm">
+                    {project.totalTasks}
+                  </td>
+                  <td className="px-4 py-3.5 border-t border-border/30">
+                    <ProgressBar 
+                      notStarted={project.notStarted}
+                      inProgress={project.inProgress}
+                      completed={project.completed}
+                      total={project.totalTasks}
+                    />
+                  </td>
+                  <td className="px-4 py-3.5 border-t border-border/30">
+                    <span className={cn(
+                      "mono font-medium",
+                      project.percentComplete >= 75 && "text-success",
+                      project.percentComplete >= 50 && project.percentComplete < 75 && "text-primary",
+                      project.percentComplete < 50 && "text-muted-foreground"
+                    )}>
+                      {project.percentComplete}%
+                    </span>
+                  </td>
+                  <td className="px-4 py-3.5 border-t border-border/30 text-sm truncate">
+                    {project.dueDate}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {sortedProjects.map((project) => (
-                  <tr key={project.id} className="hover:bg-primary/5 transition-colors">
-                    <td className="px-4 py-3.5 border-t border-border/30">
-                      <div>
-                        <p className="font-medium text-foreground">{project.epicName}</p>
-                        <p className="text-[11px] text-muted-foreground mono">{project.epicKey}</p>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3.5 border-t border-border/30">
-                      <StatusBadge status={project.status} isOffTrack={project.isOffTrack} />
-                    </td>
-                    <td className="px-4 py-3.5 border-t border-border/30 mono text-sm">
-                      {project.totalTasks}
-                    </td>
-                    <td className="px-4 py-3.5 border-t border-border/30">
-                      <ProgressBar 
-                        notStarted={project.notStarted}
-                        inProgress={project.inProgress}
-                        completed={project.completed}
-                        total={project.totalTasks}
-                      />
-                    </td>
-                    <td className="px-4 py-3.5 border-t border-border/30">
-                      <span className={cn(
-                        "mono font-medium",
-                        project.percentComplete >= 75 && "text-success",
-                        project.percentComplete >= 50 && project.percentComplete < 75 && "text-primary",
-                        project.percentComplete < 50 && "text-muted-foreground"
-                      )}>
-                        {project.percentComplete}%
-                      </span>
-                    </td>
-                    <td className="px-4 py-3.5 border-t border-border/30 text-sm">
-                      {project.dueDate}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <ScrollBar orientation="horizontal" />
+              ))}
+            </tbody>
+          </table>
         </ScrollArea>
       )}
     </div>
