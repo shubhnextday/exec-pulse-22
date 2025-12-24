@@ -34,7 +34,7 @@ export function CashFlowChart({ data }: CashFlowChartProps) {
           </p>
         </div>
       </div>
-      <div className="h-[220px] px-5 pb-5 pt-4">
+      <div className="h-[180px] px-5 pb-5 pt-4">
         {data.length === 0 ? (
           <div className="h-full flex items-center justify-center text-muted-foreground">
             <p className="text-sm">No outstanding payments for selected filter</p>
