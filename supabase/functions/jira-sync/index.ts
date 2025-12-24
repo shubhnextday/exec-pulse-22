@@ -258,7 +258,9 @@ serve(async (req) => {
         
         const orderTotal = parseFloat(fields[FIELD_MAPPINGS.orderTotal]) || 0;
         const depositAmount = parseFloat(fields[FIELD_MAPPINGS.depositAmount]) || 0;
-        const remainingDue = parseFloat(fields[FIELD_MAPPINGS.remainingAmount]) || (orderTotal - depositAmount);
+        // Use JIRA's remainingAmount field directly - if it's 0 or not set, the order is paid
+        const remainingAmountFromJira = parseFloat(fields[FIELD_MAPPINGS.remainingAmount]);
+        const remainingDue = !isNaN(remainingAmountFromJira) ? remainingAmountFromJira : Math.max(0, orderTotal - depositAmount);
         
         // Extract customer name from various formats
         const customerName = extractCustomerName(fields[FIELD_MAPPINGS.customer]);
