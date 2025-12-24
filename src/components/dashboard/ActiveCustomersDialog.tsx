@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -13,6 +14,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import type { ActiveCustomer } from '@/types/dashboard';
 
 interface ActiveCustomersDialogProps {
@@ -21,7 +23,65 @@ interface ActiveCustomersDialogProps {
   customers: ActiveCustomer[];
 }
 
+type SortField = 'id' | 'name' | 'totalOrders' | 'activeOrders' | 'status';
+type SortDirection = 'asc' | 'desc';
+
 export function ActiveCustomersDialog({ open, onOpenChange, customers }: ActiveCustomersDialogProps) {
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortedCustomers = useMemo(() => {
+    return [...customers].sort((a, b) => {
+      let aVal: string | number = '';
+      let bVal: string | number = '';
+
+      switch (sortField) {
+        case 'id':
+          aVal = a.id;
+          bVal = b.id;
+          break;
+        case 'name':
+          aVal = a.name.toLowerCase();
+          bVal = b.name.toLowerCase();
+          break;
+        case 'totalOrders':
+          aVal = a.totalOrders ?? 0;
+          bVal = b.totalOrders ?? 0;
+          break;
+        case 'activeOrders':
+          aVal = a.activeOrders ?? 0;
+          bVal = b.activeOrders ?? 0;
+          break;
+        case 'status':
+          aVal = a.status.toLowerCase();
+          bVal = b.status.toLowerCase();
+          break;
+      }
+
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [customers, sortField, sortDirection]);
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="ml-1 h-3 w-3 opacity-50" />;
+    }
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="ml-1 h-3 w-3" />
+      : <ArrowDown className="ml-1 h-3 w-3" />;
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh]">
@@ -38,15 +98,55 @@ export function ActiveCustomersDialog({ open, onOpenChange, customers }: ActiveC
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Customer ID</TableHead>
-                <TableHead>Customer Name</TableHead>
-                <TableHead className="text-right">Total Orders</TableHead>
-                <TableHead className="text-right">Active Orders</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort('id')}
+                >
+                  <span className="flex items-center">
+                    Customer ID
+                    <SortIcon field="id" />
+                  </span>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort('name')}
+                >
+                  <span className="flex items-center">
+                    Customer Name
+                    <SortIcon field="name" />
+                  </span>
+                </TableHead>
+                <TableHead 
+                  className="text-right cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort('totalOrders')}
+                >
+                  <span className="flex items-center justify-end">
+                    Total Orders
+                    <SortIcon field="totalOrders" />
+                  </span>
+                </TableHead>
+                <TableHead 
+                  className="text-right cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort('activeOrders')}
+                >
+                  <span className="flex items-center justify-end">
+                    Active Orders
+                    <SortIcon field="activeOrders" />
+                  </span>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort('status')}
+                >
+                  <span className="flex items-center">
+                    Status
+                    <SortIcon field="status" />
+                  </span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {customers.map((customer) => (
+              {sortedCustomers.map((customer) => (
                 <TableRow key={customer.id}>
                   <TableCell className="font-medium">{customer.id}</TableCell>
                   <TableCell>{customer.name}</TableCell>
@@ -59,7 +159,7 @@ export function ActiveCustomersDialog({ open, onOpenChange, customers }: ActiveC
                   </TableCell>
                 </TableRow>
               ))}
-              {customers.length === 0 && (
+              {sortedCustomers.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                     No active customers found
