@@ -330,14 +330,7 @@ export function NeedsAttentionTable({ orders }: NeedsAttentionTableProps) {
         filters={filters}
         onRemoveFilter={removeFilter}
         onClearFilters={clearFilters}
-      >
-        <TableFilter
-          label="Health"
-          options={healthOptions}
-          value={filters.find(f => f.key === 'orderHealth')?.value || ''}
-          onChange={(value) => value ? addFilter('orderHealth', value) : removeFilter('orderHealth')}
-        />
-      </TableControlsBar>
+      />
       
       {sortedOrders.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
