@@ -63,15 +63,15 @@ export function OrderHealthChart({
       
       <div className="flex items-center gap-4 px-5 pb-5 pt-2">
         {/* Pie Chart - Left Side */}
-        <div className="h-[120px] w-[120px] relative flex-shrink-0">
+        <div className="h-[160px] w-[160px] relative flex-shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={data}
                 cx="50%"
                 cy="50%"
-                innerRadius={35}
-                outerRadius={50}
+                innerRadius={50}
+                outerRadius={70}
                 paddingAngle={3}
                 dataKey="value"
                 strokeWidth={0}
