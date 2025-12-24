@@ -61,15 +61,15 @@ export function OrderHealthChart({
         </span>
       </div>
       
-      <div className="h-[160px] relative px-5">
+      <div className="h-[140px] relative px-5">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={data}
               cx="50%"
               cy="50%"
-              innerRadius={50}
-              outerRadius={68}
+              innerRadius={40}
+              outerRadius={55}
               paddingAngle={3}
               dataKey="value"
               strokeWidth={0}
@@ -97,26 +97,26 @@ export function OrderHealthChart({
         {/* Center text */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="text-center">
-            <p className="text-2xl font-bold mono text-foreground">{total > 0 ? Math.round((healthyCount / total) * 100) : 0}%</p>
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Healthy</p>
+            <p className="text-xl font-bold mono text-foreground">{total > 0 ? Math.round((healthyCount / total) * 100) : 0}%</p>
+            <p className="text-[9px] uppercase tracking-wider text-muted-foreground">Healthy</p>
           </div>
         </div>
       </div>
       
       {/* Dynamic grid based on number of statuses with data */}
-      <div className={`grid gap-2 p-5 pt-3 border-t border-border/40 mx-5 mb-5 ${
+      <div className={`grid gap-1.5 p-4 pt-2 border-t border-border/40 mx-4 mb-4 ${
         data.length <= 3 ? 'grid-cols-3' : data.length <= 4 ? 'grid-cols-4' : 'grid-cols-3 sm:grid-cols-4'
       }`}>
         {data.map((item) => (
-          <div key={item.name} className="text-center p-2 rounded-lg bg-muted/30">
-            <div className="flex items-center justify-center gap-1.5 mb-1">
+          <div key={item.name} className="text-center p-1.5 rounded-lg bg-muted/30">
+            <div className="flex items-center justify-center gap-1 mb-0.5">
               <div 
-                className="w-2 h-2 rounded-full" 
+                className="w-1.5 h-1.5 rounded-full" 
                 style={{ backgroundColor: item.color }}
               />
-              <span className="text-[9px] uppercase tracking-wider text-muted-foreground truncate">{item.name}</span>
+              <span className="text-[8px] uppercase tracking-wider text-muted-foreground truncate">{item.name}</span>
             </div>
-            <p className="text-lg font-bold mono text-foreground">
+            <p className="text-base font-bold mono text-foreground">
               {item.value}
             </p>
           </div>
