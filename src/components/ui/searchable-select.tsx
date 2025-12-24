@@ -48,13 +48,13 @@ export function SearchableSelect({
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "justify-between font-normal bg-muted/30 border-border/30 hover:border-primary/30 hover:bg-muted/40 transition-colors",
+            "justify-between font-normal bg-muted/30 border-border/30 hover:border-primary/50 hover:bg-muted/50 text-foreground transition-colors",
             !isAllSelected && value && "border-primary/50 bg-primary/5",
             className
           )}
         >
-          <span className="truncate">{displayValue}</span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <span className="truncate text-foreground">{displayValue}</span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[220px] p-0 bg-card border-border z-[100]" align="start">
