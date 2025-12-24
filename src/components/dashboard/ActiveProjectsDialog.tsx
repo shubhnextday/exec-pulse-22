@@ -30,15 +30,18 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects }: ActivePro
   const completedTasks = activeProjects.reduce((sum, p) => sum + p.completed, 0);
 
   const STATUS_ORDER: Record<string, number> = {
-    Open: 1,
+    'Open': 1,
     'In Requirements': 2,
-    'In Design': 3,
-    'In Website Development': 4,
-    'In Final QA Testing': 5,
-    'Continuous Development': 6,
-    Done: 7,
-    'On Hold': 8,
-    Canceled: 9,
+    'In Technical Discovery': 3,
+    'Ready for Scheduling': 4,
+    'In Design': 5,
+    'In Website Development': 6,
+    'In Final QA Testing': 7,
+    'Continuous Development': 8,
+    'Customer Handover': 9,
+    'Done': 10,
+    'On Hold': 11,
+    'Canceled': 12,
   };
 
   const sortedProjects = useMemo(() => {
@@ -56,6 +59,10 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects }: ActivePro
         return 'bg-muted text-muted-foreground border-muted-foreground/30';
       case 'In Requirements':
         return 'bg-blue-500/20 text-blue-600 border-blue-500/30';
+      case 'In Technical Discovery':
+        return 'bg-indigo-500/20 text-indigo-600 border-indigo-500/30';
+      case 'Ready for Scheduling':
+        return 'bg-sky-500/20 text-sky-600 border-sky-500/30';
       case 'In Design':
         return 'bg-purple-500/20 text-purple-600 border-purple-500/30';
       case 'In Website Development':
@@ -64,6 +71,8 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects }: ActivePro
         return 'bg-amber-500/20 text-amber-600 border-amber-500/30';
       case 'Continuous Development':
         return 'bg-cyan-500/20 text-cyan-600 border-cyan-500/30';
+      case 'Customer Handover':
+        return 'bg-teal-500/20 text-teal-600 border-teal-500/30';
       case 'Done':
         return 'bg-emerald-500/20 text-emerald-600 border-emerald-500/30';
       case 'On Hold':
