@@ -178,8 +178,8 @@ export default function Dashboard() {
     // Active Customers: Count from CUS project (activeCustomers from API)
     const totalActiveCustomers = activeCustomers.length;
     
-    // Active Orders: Count of active orders from filtered query
-    const activeOrdersCount = filteredOrders.length;
+    // Active Orders: Count of ALL active orders from API (no frontend filters)
+    const activeOrdersCount = displayOrders.length;
     
     // Monthly Revenue: Sum of orderTotal from filtered orders
     const monthlyRevenue = filteredOrders.reduce((sum, order) => sum + (order.orderTotal || 0), 0);
