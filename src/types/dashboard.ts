@@ -118,6 +118,7 @@ export interface OutstandingOrder {
   orderTotal: number;
   depositAmount: number;
   remainingDue: number;
+  finalPaymentDue?: number;
   estShipDate?: string;
 }
 
