@@ -33,6 +33,11 @@ interface NeedsAttentionTableProps {
   orders: Order[];
 }
 
+// Helper to strip number prefix like "10 - " from status strings
+const stripStatusPrefix = (status: string): string => {
+  return status.replace(/^\d+\s*-\s*/, '');
+};
+
 interface ColumnDef {
   id: string;
   label: string;
@@ -75,7 +80,7 @@ const ALL_COLUMNS: ColumnDef[] = [
     id: 'expectedStatus',
     label: 'Expected Status',
     width: 'min-w-[150px]',
-    accessor: (order) => <span className="text-sm text-muted-foreground">{order.expectedStatus}</span>,
+    accessor: (order) => <span className="text-sm text-muted-foreground">{stripStatusPrefix(order.expectedStatus)}</span>,
   },
   {
     id: 'behindSchedule',
@@ -168,7 +173,7 @@ function OrderRowTooltipContent({ order }: { order: Order }) {
         <span className="text-muted-foreground">Current Status:</span>
         <span className="text-foreground">{order.currentStatus}</span>
         <span className="text-muted-foreground">Expected Status:</span>
-        <span className="text-foreground">{order.expectedStatus}</span>
+        <span className="text-foreground">{stripStatusPrefix(order.expectedStatus)}</span>
         <span className="text-muted-foreground">Behind Schedule:</span>
         <span className={cn("text-foreground", order.daysBehindSchedule > 0 && "text-danger font-medium")}>
           {order.daysBehindSchedule > 0 ? `-${order.daysBehindSchedule}` : '0'} days
