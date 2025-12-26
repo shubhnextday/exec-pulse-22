@@ -298,7 +298,7 @@ serve(async (req) => {
         // Parse dates
         const startDate = fields[FIELD_MAPPINGS.startDate] || fields[FIELD_MAPPINGS.dateOrdered] || fields.created?.substring(0, 10);
         const estShipDate = fields[FIELD_MAPPINGS.estShipDate] || fields.duedate;
-        
+
         return {
           id: issue.key,
           issueType,
@@ -316,7 +316,8 @@ serve(async (req) => {
           estShipDate,
           actualShipDate: fields[FIELD_MAPPINGS.actualShipDate],
           currentStatus: fields.status?.name || 'Unknown',
-          expectedStatus: calculateExpectedStatus(startDate, estShipDate || fields.duedate),
+          // Expected Status should be based on the order's Due Date (not EST Ship Date)
+          expectedStatus: calculateExpectedStatus(startDate, fields.duedate),
           orderHealth,
           daysBehindSchedule: calculateDaysBehind(fields),
           daysInProduction: parseFloat(fields[FIELD_MAPPINGS.daysInProduction]) || calculateDaysInProduction(fields, startDate),
