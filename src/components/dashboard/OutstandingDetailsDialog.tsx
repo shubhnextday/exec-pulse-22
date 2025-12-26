@@ -81,12 +81,8 @@ const getOutstandingAmount = (order: OutstandingOrder) => {
                     </TableCell>
                     <TableCell>
                       <Badge 
-                        variant={
-                          order.currentStatus?.toLowerCase().includes('complete') ? 'default' :
-                          order.currentStatus?.toLowerCase().includes('progress') ? 'secondary' :
-                          'outline'
-                        }
-                        className="text-xs"
+                        variant="secondary"
+                        className="text-xs text-foreground bg-muted rounded-sm"
                       >
                         {order.currentStatus}
                       </Badge>
