@@ -27,14 +27,8 @@ export function OutstandingDetailsDialog({
   onOpenChange, 
   orders 
 }: OutstandingDetailsDialogProps) {
-const getOutstandingAmount = (order: OutstandingOrder) => {
-    if (order.currentStatus === '12 - Finished Goods Testing') {
-      return order.finalPaymentDue || 0;
-    }
-    return order.remainingDue || 0;
-  };
-
-  const totalOutstanding = orders.reduce((sum, o) => sum + getOutstandingAmount(o), 0);
+  // Use remainingDue consistently to match the API calculation
+  const totalOutstanding = orders.reduce((sum, o) => sum + (o.remainingDue || 0), 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -97,7 +91,7 @@ const getOutstandingAmount = (order: OutstandingOrder) => {
                       ${(order.depositAmount || 0).toLocaleString()}
                     </TableCell>
                     <TableCell className="text-right font-bold text-primary">
-                      ${getOutstandingAmount(order).toLocaleString()}
+                      ${(order.remainingDue || 0).toLocaleString()}
                     </TableCell>
                   </TableRow>
                 ))
