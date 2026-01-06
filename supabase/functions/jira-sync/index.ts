@@ -14,6 +14,7 @@ const FIELD_MAPPINGS = {
   orderTotal: 'customfield_11567',
   depositAmount: 'customfield_10074',
   remainingAmount: 'customfield_11569',
+  finalPaymentDue: 'customfield_11650', // Final Payment Due field
   commissionDue: 'customfield_11577',
   quantityOrdered: 'customfield_10073',
   salesOrderNumber: 'customfield_10113',
@@ -196,6 +197,7 @@ serve(async (req) => {
         FIELD_MAPPINGS.orderTotal,
         FIELD_MAPPINGS.depositAmount,
         FIELD_MAPPINGS.remainingAmount,
+        FIELD_MAPPINGS.finalPaymentDue,
         FIELD_MAPPINGS.commissionDue,
         FIELD_MAPPINGS.quantityOrdered,
         FIELD_MAPPINGS.salesOrderNumber,
@@ -261,6 +263,7 @@ serve(async (req) => {
         // Use JIRA's remainingAmount field directly - if it's 0 or not set, the order is paid
         const remainingAmountFromJira = parseFloat(fields[FIELD_MAPPINGS.remainingAmount]);
         const remainingDue = !isNaN(remainingAmountFromJira) ? remainingAmountFromJira : Math.max(0, orderTotal - depositAmount);
+        const finalPaymentDue = parseFloat(fields[FIELD_MAPPINGS.finalPaymentDue]) || 0;
         
         // Extract customer name from various formats
         const customerName = extractCustomerName(fields[FIELD_MAPPINGS.customer]);
@@ -310,6 +313,7 @@ serve(async (req) => {
           depositAmount,
           finalPayment: orderTotal - depositAmount,
           remainingDue,
+          finalPaymentDue,
           commissionDue: parseFloat(fields[FIELD_MAPPINGS.commissionDue]) || 0,
           startDate,
           dueDate: fields.duedate,
@@ -361,7 +365,13 @@ serve(async (req) => {
 
       // Calculate all-time outstanding from order health orders
       const allTimeOutstandingOrders = orderHealthOrders
-        .filter((o: any) => o.remainingDue > 0)
+        .filter((o: any) => {
+          // For "12 - Finished Goods Testing", use finalPaymentDue; otherwise use remainingDue
+          const outstandingAmount = o.currentStatus === '12 - Finished Goods Testing' 
+            ? (o.finalPaymentDue || 0) 
+            : (o.remainingDue || 0);
+          return outstandingAmount > 0;
+        })
         .map((o: any) => ({
           id: o.id,
           salesOrderNumber: o.salesOrderNumber,
@@ -371,10 +381,17 @@ serve(async (req) => {
           orderTotal: o.orderTotal,
           depositAmount: o.depositAmount,
           remainingDue: o.remainingDue,
+          finalPaymentDue: o.finalPaymentDue,
           estShipDate: o.estShipDate,
         }));
       
-      const allTimeOutstanding = allTimeOutstandingOrders.reduce((sum: number, o: any) => sum + o.remainingDue, 0);
+      const allTimeOutstanding = allTimeOutstandingOrders.reduce((sum: number, o: any) => {
+        // For "12 - Finished Goods Testing", use finalPaymentDue; otherwise use remainingDue
+        const amount = o.currentStatus === '12 - Finished Goods Testing' 
+          ? (o.finalPaymentDue || 0) 
+          : (o.remainingDue || 0);
+        return sum + amount;
+      }, 0);
       console.log(`All-time outstanding from ${allTimeOutstandingOrders.length} orders: $${allTimeOutstanding}`);
 
       // Transform WEB epics
