@@ -15,10 +15,16 @@ import {
 } from '@/components/ui/table';
 import { TableControlsBar, SortableHeader } from '@/components/ui/table-controls';
 import { useTableFeatures } from '@/hooks/useTableFeatures';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import type { Order } from '@/types/dashboard';
-import { format, parseISO, startOfMonth, endOfMonth, addMonths, isWithinInterval } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth, addMonths, subMonths, isWithinInterval } from 'date-fns';
 
 interface ExpectedCashFlowDialogProps {
   open: boolean;
@@ -27,7 +33,43 @@ interface ExpectedCashFlowDialogProps {
   customers: string[];
 }
 
-type MonthFilter = 'all' | 'this-month' | 'next-month' | 'month-after' | 'future';
+// Generate dynamic month options
+function getMonthOptions() {
+  const now = new Date();
+  const options: { value: string; label: string; start: Date; end: Date }[] = [];
+  
+  // Past 3 months
+  for (let i = 3; i >= 1; i--) {
+    const date = subMonths(now, i);
+    options.push({
+      value: format(date, 'yyyy-MM'),
+      label: format(date, 'MMMM yyyy'),
+      start: startOfMonth(date),
+      end: endOfMonth(date),
+    });
+  }
+  
+  // Current month
+  options.push({
+    value: format(now, 'yyyy-MM'),
+    label: `${format(now, 'MMMM yyyy')} (Current)`,
+    start: startOfMonth(now),
+    end: endOfMonth(now),
+  });
+  
+  // Next 3 months
+  for (let i = 1; i <= 3; i++) {
+    const date = addMonths(now, i);
+    options.push({
+      value: format(date, 'yyyy-MM'),
+      label: format(date, 'MMMM yyyy'),
+      start: startOfMonth(date),
+      end: endOfMonth(date),
+    });
+  }
+  
+  return options;
+}
 
 export function ExpectedCashFlowDialog({ 
   open, 
@@ -35,7 +77,10 @@ export function ExpectedCashFlowDialog({
   orders,
   customers 
 }: ExpectedCashFlowDialogProps) {
-  const [monthFilter, setMonthFilter] = useState<MonthFilter>('this-month');
+  const monthOptions = useMemo(() => getMonthOptions(), []);
+  const currentMonthValue = format(new Date(), 'yyyy-MM');
+  
+  const [monthFilter, setMonthFilter] = useState<string>(currentMonthValue);
   const [selectedCustomer, setSelectedCustomer] = useState('All Customers');
   
   // Filter orders to only those with EST Ship Date and remaining due > 0
@@ -50,36 +95,21 @@ export function ExpectedCashFlowDialog({
 
   // Apply month filter
   const monthFilteredOrders = useMemo(() => {
-    const now = new Date();
-    const thisMonthStart = startOfMonth(now);
-    const thisMonthEnd = endOfMonth(now);
-    const nextMonthStart = startOfMonth(addMonths(now, 1));
-    const nextMonthEnd = endOfMonth(addMonths(now, 1));
-    const monthAfterStart = startOfMonth(addMonths(now, 2));
-    const monthAfterEnd = endOfMonth(addMonths(now, 2));
+    if (monthFilter === 'all') {
+      return activeOrdersWithShipDate;
+    }
+    
+    const selectedOption = monthOptions.find(opt => opt.value === monthFilter);
+    if (!selectedOption) return activeOrdersWithShipDate;
 
     return activeOrdersWithShipDate.filter(order => {
       const shipDate = order.estShipDate || order.dueDate;
       if (!shipDate) return false;
       
       const shipDateParsed = parseISO(shipDate);
-      
-      switch (monthFilter) {
-        case 'all':
-          return true;
-        case 'this-month':
-          return isWithinInterval(shipDateParsed, { start: thisMonthStart, end: thisMonthEnd });
-        case 'next-month':
-          return isWithinInterval(shipDateParsed, { start: nextMonthStart, end: nextMonthEnd });
-        case 'month-after':
-          return isWithinInterval(shipDateParsed, { start: monthAfterStart, end: monthAfterEnd });
-        case 'future':
-          return shipDateParsed > monthAfterEnd;
-        default:
-          return true;
-      }
+      return isWithinInterval(shipDateParsed, { start: selectedOption.start, end: selectedOption.end });
     });
-  }, [activeOrdersWithShipDate, monthFilter]);
+  }, [activeOrdersWithShipDate, monthFilter, monthOptions]);
 
   // Apply customer filter
   const customerFilteredOrders = useMemo(() => {
@@ -108,13 +138,12 @@ export function ExpectedCashFlowDialog({
     return { totalQuotedOrderTotal, totalDeposits, totalFinalPayment, totalRemainingDue };
   }, [filteredData]);
 
-  // Get month labels
-  const now = new Date();
-  const thisMonthLabel = format(now, 'MMMM');
-  const nextMonthLabel = format(addMonths(now, 1), 'MMMM');
-  const monthAfterLabel = format(addMonths(now, 2), 'MMMM');
-
-  // Customer options for filter are the customers array directly
+  // Get selected month label for display
+  const selectedMonthLabel = useMemo(() => {
+    if (monthFilter === 'all') return 'All Months';
+    const option = monthOptions.find(opt => opt.value === monthFilter);
+    return option?.label || 'Select Month';
+  }, [monthFilter, monthOptions]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -128,16 +157,23 @@ export function ExpectedCashFlowDialog({
           </p>
         </DialogHeader>
 
-        {/* Month Filter Tabs */}
-        <Tabs value={monthFilter} onValueChange={(v) => setMonthFilter(v as MonthFilter)} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="this-month">{thisMonthLabel}</TabsTrigger>
-            <TabsTrigger value="next-month">{nextMonthLabel}</TabsTrigger>
-            <TabsTrigger value="month-after">{monthAfterLabel}</TabsTrigger>
-            <TabsTrigger value="future">Future</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {/* Month Filter Dropdown */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Filter by month:</span>
+          <Select value={monthFilter} onValueChange={setMonthFilter}>
+            <SelectTrigger className="w-[220px]">
+              <SelectValue placeholder="Select month">{selectedMonthLabel}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Months</SelectItem>
+              {monthOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* Summary Stats */}
         <div className="grid grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
