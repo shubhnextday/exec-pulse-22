@@ -60,18 +60,20 @@ function calculateExpectedStatus(startDate: string | null, dueDate: string | nul
   const due = new Date(dueDate);
   const now = new Date();
   
+  // Check if due date is in the past - should be shipped
+  if (now > due) {
+    return 'Final Product Shipped';
+  }
+  
   // Total duration of the order
   const totalDuration = due.getTime() - start.getTime();
   if (totalDuration <= 0) return 'Final Product Shipped';
   
-  // Elapsed time
+  // Elapsed time from start to now
   const elapsed = now.getTime() - start.getTime();
   
   // Calculate expected percentage complete
   const expectedPercent = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
-  
-  // If past due date, expected status is Final Product Shipped
-  if (expectedPercent >= 100) return 'Final Product Shipped';
   
   // Find the workflow status that matches the expected percentage
   for (let i = ORDER_WORKFLOW.length - 1; i >= 0; i--) {
