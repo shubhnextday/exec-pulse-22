@@ -521,7 +521,7 @@ export default function Dashboard() {
                 <TooltipTrigger asChild>
                   <div onClick={() => setRevenueDialogOpen(true)} className="cursor-pointer">
                     <MetricCard
-                      title="Monthly Revenue"
+                      title="This Month's Revenue"
                       value={`$${reactiveMetrics.totalMonthlyRevenue > 0 ? (reactiveMetrics.totalMonthlyRevenue / 1000).toFixed(0) + 'k' : '0'}`}
                       icon={DollarSign}
                       iconColor="text-primary"
