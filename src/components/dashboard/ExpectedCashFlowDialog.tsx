@@ -13,7 +13,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { TableControlsBar, SortableHeader } from '@/components/ui/table-controls';
 import { useTableFeatures } from '@/hooks/useTableFeatures';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -181,7 +180,8 @@ export function ExpectedCashFlowDialog({
           </div>
         </div>
         
-        <ScrollArea className="h-[50vh]">
+        <div className="h-[50vh] overflow-auto">
+          <div className="min-w-[1200px]">
           <Table>
             <TableHeader className="sticky top-0 z-10 bg-card">
               <TableRow>
@@ -309,7 +309,8 @@ export function ExpectedCashFlowDialog({
               )}
             </TableBody>
           </Table>
-        </ScrollArea>
+          </div>
+        </div>
         
         <div className="text-sm text-muted-foreground pt-2 border-t flex justify-between items-center">
           <span>
