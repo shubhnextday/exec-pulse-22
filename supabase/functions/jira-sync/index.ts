@@ -493,12 +493,13 @@ function mapEpicStatus(status: string): string {
   const lower = status?.toLowerCase() || '';
   
   // Map to exact status values expected by frontend
+  // IMPORTANT: Check "continuous development" BEFORE generic "development" to avoid false match
   if (lower === 'open' || lower.includes('to do') || lower.includes('backlog')) return 'Open';
   if (lower.includes('requirements') || lower.includes('requirement')) return 'In Requirements';
   if (lower.includes('design') && !lower.includes('development')) return 'In Design';
+  if (lower.includes('continuous development')) return 'Continuous Development';
   if (lower.includes('website development') || lower.includes('development') || lower.includes('in progress')) return 'In Website Development';
   if (lower.includes('qa') || lower.includes('testing') || lower.includes('review')) return 'In Final QA Testing';
-  if (lower.includes('continuous')) return 'Continuous Development';
   if (lower.includes('done') || lower.includes('complete') || lower.includes('closed')) return 'Done';
   if (lower.includes('hold') || lower.includes('blocked') || lower.includes('paused')) return 'On Hold';
   if (lower.includes('cancel')) return 'Canceled';
