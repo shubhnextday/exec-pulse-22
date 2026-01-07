@@ -15,7 +15,7 @@ import { ActiveCustomersDialog } from '@/components/dashboard/ActiveCustomersDia
 import { RevenueDetailsDialog } from '@/components/dashboard/RevenueDetailsDialog';
 import { CommissionsDetailsDialog } from '@/components/dashboard/CommissionsDetailsDialog';
 import { ActiveProjectsDialog } from '@/components/dashboard/ActiveProjectsDialog';
-import { CashFlowDetailsDialog } from '@/components/dashboard/CashFlowDetailsDialog';
+import { ExpectedCashFlowDialog } from '@/components/dashboard/ExpectedCashFlowDialog';
 import { OrderHealthDialog } from '@/components/dashboard/OrderHealthDialog';
 import { cn } from '@/lib/utils';
 import {
@@ -249,7 +249,7 @@ export default function Dashboard() {
     };
   }, [filteredOrders, displayWebProjects, displayOrders, filteredActiveOrders, filteredOrderHealthOrders, activeCustomers, summary]);
 
-  // Calculate cash flow projections from filtered orders
+  // Calculate cash flow projections from ALL active orders (not filtered by date)
   const cashFlowProjections = useMemo(() => {
     // Group orders by EST Ship Date and sum remainingDue
     const projectionMap = new Map<string, { 
@@ -259,7 +259,8 @@ export default function Dashboard() {
       orders: { id: string; customer: string; productName: string; remainingDue: number; status: string }[];
     }>();
     
-    filteredOrders.forEach(order => {
+    // Use displayOrderHealthOrders (all active non-cancelled orders) instead of filteredOrders
+    displayOrderHealthOrders.forEach(order => {
       // Use estShipDate, fallback to dueDate if not available
       const shipDate = order.estShipDate || order.dueDate;
       if (!shipDate || !order.remainingDue || order.remainingDue <= 0) return;
@@ -290,17 +291,12 @@ export default function Dashboard() {
       }
     });
 
-    // Debug: Log Dec 12 orders specifically
-    const dec12Data = projectionMap.get('2025-12-12');
-    if (dec12Data) {
-      console.log('=== Dec 12 Cash Flow Debug ===');
-      console.log('Total Amount:', dec12Data.amount);
-      console.log('Order Count:', dec12Data.orderCount);
-      console.log('Orders:', dec12Data.orders.map(o => `${o.id}: ${o.customer} - ${o.productName} = $${o.remainingDue}`));
-    }
-
-    // Convert to array and sort by date
+    // Convert to array and sort by date, then get next 12 dates from today onwards
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    
     return Array.from(projectionMap.entries())
+      .filter(([date]) => date >= todayStr) // Only show future/today dates
       .map(([date, data]) => ({
         date,
         expectedAmount: data.amount,
@@ -310,7 +306,7 @@ export default function Dashboard() {
       }))
       .sort((a, b) => a.date.localeCompare(b.date))
       .slice(0, 12); // Show next 12 dates for readability
-  }, [filteredOrders]);
+  }, [displayOrderHealthOrders]);
 
   // Calculate commissions from real order data - ACCURATE from JIRA
   const realCommissions = useMemo(() => {
@@ -682,10 +678,11 @@ export default function Dashboard() {
           projects={displayWebProjects}
         />
         
-        <CashFlowDetailsDialog
+        <ExpectedCashFlowDialog
           open={cashFlowDialogOpen}
           onOpenChange={setCashFlowDialogOpen}
-          projections={cashFlowProjections}
+          orders={displayOrderHealthOrders}
+          customers={displayCustomers}
         />
         
         <OrderHealthDialog
