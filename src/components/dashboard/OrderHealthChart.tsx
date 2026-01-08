@@ -55,21 +55,21 @@ export function OrderHealthChart({
       
       <div className="flex flex-col items-center px-5 pb-4">
         {/* Pie Chart with center label */}
-        <div className="h-[180px] w-full relative">
+        <div className="h-[220px] w-full relative">
           <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
+            <PieChart margin={{ top: 20, right: 40, bottom: 20, left: 40 }}>
               <Pie
                 data={data}
                 cx="50%"
                 cy="50%"
-                innerRadius={55}
-                outerRadius={80}
+                innerRadius={45}
+                outerRadius={65}
                 paddingAngle={2}
                 dataKey="value"
                 strokeWidth={0}
                 label={({ cx, cy, midAngle, outerRadius, percent }) => {
                   const RADIAN = Math.PI / 180;
-                  const radius = outerRadius + 20;
+                  const radius = outerRadius + 18;
                   const x = cx + radius * Math.cos(-midAngle * RADIAN);
                   const y = cy + radius * Math.sin(-midAngle * RADIAN);
                   return (
@@ -79,10 +79,10 @@ export function OrderHealthChart({
                       fill="hsl(var(--muted-foreground))"
                       textAnchor={x > cx ? 'start' : 'end'}
                       dominantBaseline="central"
-                      fontSize={11}
+                      fontSize={10}
                       fontWeight={500}
                     >
-                      {`${(percent * 100).toFixed(1)}%`}
+                      {`${(percent * 100).toFixed(0)}%`}
                     </text>
                   );
                 }}
