@@ -220,9 +220,12 @@ export default function Dashboard() {
     // Monthly Revenue: Sum of orderTotal from filtered orders
     const monthlyRevenue = filteredOrders.reduce((sum, order) => sum + (order.orderTotal || 0), 0);
     
-    // Outstanding Payments: Use all-time outstanding from summary, fallback to filtered orders
-    const outstandingPayments = summary?.allTimeOutstandingPayments ?? 
-      filteredOrders.reduce((sum, order) => sum + (order.remainingDue || 0), 0);
+    // Outstanding Payments: Use all-time outstanding from summary, excluding On Hold orders
+    const onHoldTotal = allTimeOutstandingOrders
+      .filter(order => order.currentStatus === 'On Hold')
+      .reduce((sum, o) => sum + (o.remainingDue || 0), 0);
+    const outstandingPayments = (summary?.allTimeOutstandingPayments ?? 
+      filteredOrders.reduce((sum, order) => sum + (order.remainingDue || 0), 0)) - onHoldTotal;
     
     // Commissions Due: Sum of commissionDue field from ALL orders (not just active)
     const commissionsDue = displayOrders.reduce((sum, order) => sum + (order.commissionDue || 0), 0);
