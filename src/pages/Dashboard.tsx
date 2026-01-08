@@ -493,7 +493,8 @@ export default function Dashboard() {
           {/* Executive Summary Section */}
           <section id="section-overview" className="mb-8 scroll-mt-8">
             <h2 className="text-lg font-semibold mb-4 text-foreground">Executive Summary</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            {/* First row - 4 cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div onClick={() => setActiveCustomersDialogOpen(true)} className="cursor-pointer">
@@ -573,7 +574,10 @@ export default function Dashboard() {
                   <span className="text-primary">Click to view details</span>
                 </TooltipContent>
               </Tooltip>
+            </div>
 
+            {/* Second row - 3 cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div onClick={() => setOnHoldDialogOpen(true)} className="cursor-pointer">
