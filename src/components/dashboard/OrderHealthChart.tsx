@@ -31,17 +31,18 @@ export function OrderHealthChart({
   onHold, 
   whiteLabel 
 }: OrderHealthChartProps) {
+  // Exclude 'Complete' from pie chart
   const data = [
     { name: 'On Track', value: onTrack, color: HEALTH_COLORS['On Track'] },
     { name: 'At Risk', value: atRisk, color: HEALTH_COLORS['At Risk'] },
     { name: 'Off Track', value: offTrack, color: HEALTH_COLORS['Off Track'] },
-    { name: 'Complete', value: complete, color: HEALTH_COLORS['Complete'] },
     { name: 'Pending Deposit', value: pendingDeposit, color: HEALTH_COLORS['Pending Deposit'] },
     { name: 'On Hold', value: onHold, color: HEALTH_COLORS['On Hold'] },
     { name: 'White Label', value: whiteLabel, color: HEALTH_COLORS['White Label'] },
   ].filter(item => item.value > 0);
 
-  const total = onTrack + atRisk + offTrack + complete + pendingDeposit + onHold + whiteLabel;
+  // Total excludes complete orders for the pie chart
+  const total = onTrack + atRisk + offTrack + pendingDeposit + onHold + whiteLabel;
 
   return (
     <div className="metric-card opacity-0 animate-slide-up !p-0 overflow-hidden" style={{ animationDelay: '300ms' }}>
