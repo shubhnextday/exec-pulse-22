@@ -144,7 +144,7 @@ export function OrderHealthDialog({ open, onOpenChange, orders }: OrderHealthDia
                     direction={sortConfig.direction}
                     onSort={() => handleSort('daysBehindSchedule')}
                   >
-                    Days Behind
+                    Days Past Due
                   </SortableHeader>
                 </TableHead>
                 <TableHead className="text-right">
@@ -169,7 +169,9 @@ export function OrderHealthDialog({ open, onOpenChange, orders }: OrderHealthDia
                   <TableCell className="max-w-[200px] truncate" title={order.productName}>{order.productName || '-'}</TableCell>
                   <TableCell>{order.currentStatus}</TableCell>
                   <TableCell>
-                    {order.daysBehindSchedule > 0 ? (
+                    {order.currentStatus === 'Partial Shipment' || order.currentStatus === 'Final Product Shipped' ? (
+                      <span className="text-blue-600 font-medium">Complete</span>
+                    ) : order.daysBehindSchedule > 0 ? (
                       <span className="text-red-600">{order.daysBehindSchedule} days</span>
                     ) : (
                       <span className="text-emerald-600">On time</span>
