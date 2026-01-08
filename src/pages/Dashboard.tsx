@@ -560,7 +560,7 @@ export default function Dashboard() {
                     <MetricCard
                       title="Commissions Due"
                       value={`$${reactiveMetrics.totalCommissionsDue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
-                      icon={Percent}
+                      icon={DollarSign}
                       iconColor="text-primary"
                       delay={300}
                       showInfo
