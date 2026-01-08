@@ -28,12 +28,17 @@ export function MetricCard({
   return (
     <div 
       className={cn(
-        "metric-card opacity-0 animate-slide-up cursor-pointer group",
+        "metric-card opacity-0 animate-slide-up cursor-pointer group relative overflow-hidden",
         className
       )}
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className="flex items-start justify-between">
+      {/* Blended background icon */}
+      <div className="absolute -right-4 -bottom-4 opacity-[0.08] transition-transform duration-300 group-hover:scale-110 group-hover:opacity-[0.12]">
+        <Icon className="h-28 w-28" strokeWidth={1.5} />
+      </div>
+      
+      <div className="flex items-start justify-between relative z-10">
         <div className="space-y-2 flex-1">
           <div className="flex items-center gap-2">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
@@ -58,6 +63,7 @@ export function MetricCard({
           iconColor.includes('success') && "bg-success/10 text-success",
           iconColor.includes('warning') && "bg-warning/10 text-warning",
           iconColor.includes('danger') && "bg-danger/10 text-danger",
+          iconColor.includes('muted') && "bg-muted text-muted-foreground",
         )}>
           <Icon className="h-5 w-5" />
         </div>
