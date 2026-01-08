@@ -17,6 +17,7 @@ import { CommissionsDetailsDialog } from '@/components/dashboard/CommissionsDeta
 import { ActiveProjectsDialog } from '@/components/dashboard/ActiveProjectsDialog';
 import { ExpectedCashFlowDialog } from '@/components/dashboard/ExpectedCashFlowDialog';
 import { OrderHealthDialog } from '@/components/dashboard/OrderHealthDialog';
+import { OnHoldOrdersDialog } from '@/components/dashboard/OnHoldOrdersDialog';
 import { cn } from '@/lib/utils';
 import {
   Users,
@@ -24,6 +25,7 @@ import {
   DollarSign,
   CreditCard,
   Percent,
+  PauseCircle,
   FolderKanban,
   Loader2,
   AlertCircle,
@@ -117,6 +119,7 @@ export default function Dashboard() {
   const [activeProjectsDialogOpen, setActiveProjectsDialogOpen] = useState(false);
   const [cashFlowDialogOpen, setCashFlowDialogOpen] = useState(false);
   const [orderHealthDialogOpen, setOrderHealthDialogOpen] = useState(false);
+  const [onHoldDialogOpen, setOnHoldDialogOpen] = useState(false);
 
   // JIRA data hook
   const {
@@ -377,14 +380,28 @@ export default function Dashboard() {
       .sort((a, b) => b.totalOrders - a.totalOrders);
   }, [filteredOrders]);
 
+  // Split outstanding orders: On Hold vs Active Outstanding
+  const onHoldOrders = useMemo(() => {
+    return allTimeOutstandingOrders.filter(order => order.currentStatus === 'On Hold');
+  }, [allTimeOutstandingOrders]);
+
+  const activeOutstandingOrders = useMemo(() => {
+    return allTimeOutstandingOrders.filter(order => order.currentStatus !== 'On Hold');
+  }, [allTimeOutstandingOrders]);
+
+  const onHoldTotal = useMemo(() => {
+    return onHoldOrders.reduce((sum, o) => sum + (o.remainingDue || 0), 0);
+  }, [onHoldOrders]);
+
   // Metric explanations for tooltips
   const metricExplanations = {
     activeCustomers: `Unique customers with on-track orders matching current filters.\n\nSource: JIRA CM Project → Customer field (customfield_10038)\n\nCalculation: COUNT(DISTINCT customer) from on-track orders\n\nExcludes: Customers with only at-risk/off-track orders`,
     activeOrders: `On-track orders matching current filters.\n\nSource: JIRA CM Project → All CM issues\n\nCalculation: COUNT(*) from filtered orders WHERE orderHealth = 'on-track'\n\nExcludes: Cancelled, Done, Shipped, Complete statuses AND at-risk/off-track orders`,
     monthlyRevenue: `Sum of all order totals matching current filters.\n\nSource: JIRA CM Project → Order Total field (customfield_11567)\n\nCalculation: SUM(orderTotal) from filtered orders`,
-    outstanding: `Total remaining payments due on filtered orders.\n\nSource: JIRA CM Project → Remaining Amount field (customfield_11569)\n\nCalculation: SUM(remainingDue) from filtered orders`,
+    outstanding: `Total remaining payments due on filtered orders (excludes On Hold orders).\n\nSource: JIRA CM Project → Remaining Amount field (customfield_11569)\n\nCalculation: SUM(remainingDue) from filtered orders WHERE status != 'On Hold'`,
     commissions: `Total commissions due from JIRA.\n\nSource: JIRA CM Project → Commission Due field (customfield_11577)\n\nCalculation: SUM(commissionDue) from filtered orders`,
     activeProjects: `Web development projects currently in progress.\n\nSource: JIRA WEB Project → Epic issues\n\nCalculation: COUNT(*) where status = 'active'`,
+    onHold: `Orders currently on hold with outstanding payments.\n\nSource: JIRA CM Project → Orders with status 'On Hold'\n\nCalculation: COUNT(*) and SUM(remainingDue) from orders WHERE status = 'On Hold'`,
   };
 
   return (
@@ -556,6 +573,26 @@ export default function Dashboard() {
 
               <Tooltip>
                 <TooltipTrigger asChild>
+                  <div onClick={() => setOnHoldDialogOpen(true)} className="cursor-pointer">
+                    <MetricCard
+                      title={`On Hold (${onHoldOrders.length})`}
+                      value={`$${onHoldTotal > 0 ? (onHoldTotal / 1000).toFixed(0) + 'k' : '0'}`}
+                      icon={PauseCircle}
+                      iconColor="text-muted-foreground"
+                      delay={275}
+                      showInfo
+                    />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs whitespace-pre-line">
+                  {metricExplanations.onHold}
+                  <br /><br />
+                  <span className="text-primary">Click to view details</span>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
                   <div onClick={() => setCommissionsDialogOpen(true)} className="cursor-pointer">
                     <MetricCard
                       title="Commissions Due"
@@ -646,7 +683,13 @@ export default function Dashboard() {
         <OutstandingDetailsDialog
           open={outstandingDialogOpen}
           onOpenChange={setOutstandingDialogOpen}
-          orders={allTimeOutstandingOrders}
+          orders={activeOutstandingOrders}
+        />
+        
+        <OnHoldOrdersDialog
+          open={onHoldDialogOpen}
+          onOpenChange={setOnHoldDialogOpen}
+          orders={onHoldOrders}
         />
         
         <ActiveOrdersDialog
