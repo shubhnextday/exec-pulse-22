@@ -225,7 +225,8 @@ export default function Dashboard() {
     const commissionsDue = displayOrders.reduce((sum, order) => sum + (order.commissionDue || 0), 0);
     
     // Active Projects: Count from web projects (not filtered by order filters)
-    const activeProjects = displayWebProjects.filter(p => !['Done', 'Canceled', 'On Hold'].includes(p.status)).length;
+    // Exclude "Open" status from count - they're in queue, not yet active until "In Requirements"
+    const activeProjects = displayWebProjects.filter(p => !['Done', 'Canceled', 'On Hold', 'Open'].includes(p.status)).length;
     
     // Order Health Breakdown: Use filtered order health orders when filters applied
     const orderHealthBreakdown = {
