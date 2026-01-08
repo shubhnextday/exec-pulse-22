@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import {
   Users,
   Package,
+  TrendingUp,
   DollarSign,
   CreditCard,
   Percent,
@@ -541,7 +542,7 @@ export default function Dashboard() {
                     <MetricCard
                       title="This Month's Revenue"
                       value={`$${reactiveMetrics.totalMonthlyRevenue > 0 ? (reactiveMetrics.totalMonthlyRevenue / 1000).toFixed(0) + 'k' : '0'}`}
-                      icon={DollarSign}
+                      icon={TrendingUp}
                       iconColor="text-primary"
                       delay={200}
                       showInfo
