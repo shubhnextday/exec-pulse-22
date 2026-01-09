@@ -35,6 +35,8 @@ export interface Order {
   agent?: string;
   accountManager?: string;
   orderNotes?: string;
+  depositReceivedDate?: string; // Date when deposit was received
+  finalPaymentReceivedDate?: string; // Date when final payment was received
 }
 
 export interface LabelOrder {

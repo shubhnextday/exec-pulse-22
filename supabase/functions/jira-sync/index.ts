@@ -28,6 +28,8 @@ const FIELD_MAPPINGS = {
   daysInProduction: 'customfield_10930',
   orderHealth: 'customfield_10897', // Order Health field from PHP
   healthField: 'customfield_10083',
+  depositReceivedDate: 'customfield_11651', // Deposit Received Date
+  finalPaymentReceivedDate: 'customfield_11652', // Final Payment Received Date
 };
 
 const CANCELLED_STATUSES = ['cancelled', 'canceled', 'done', 'shipped', 'complete', 'completed', 'closed', 'final product shipped'];
@@ -211,6 +213,8 @@ serve(async (req) => {
         FIELD_MAPPINGS.daysInProduction,
         FIELD_MAPPINGS.orderHealth,
         FIELD_MAPPINGS.healthField,
+        FIELD_MAPPINGS.depositReceivedDate,
+        FIELD_MAPPINGS.finalPaymentReceivedDate,
       ];
       
       // JQL for Active Orders (excludes cancelled and completed statuses)
@@ -330,6 +334,8 @@ serve(async (req) => {
           agent: agentName,
           accountManager: fields[FIELD_MAPPINGS.accountManager]?.displayName || null,
           orderNotes: '',
+          depositReceivedDate: fields[FIELD_MAPPINGS.depositReceivedDate] || null,
+          finalPaymentReceivedDate: fields[FIELD_MAPPINGS.finalPaymentReceivedDate] || null,
         };
       };
 
