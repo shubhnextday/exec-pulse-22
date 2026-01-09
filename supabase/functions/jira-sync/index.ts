@@ -16,6 +16,7 @@ const FIELD_MAPPINGS = {
   remainingAmount: 'customfield_11569',
   finalPaymentDue: 'customfield_11650', // Final Payment Due field
   commissionDue: 'customfield_11577',
+  commissionPercent: 'customfield_11576', // Commission % field
   quantityOrdered: 'customfield_10073',
   salesOrderNumber: 'customfield_10113',
   productName: 'customfield_10115',
@@ -203,6 +204,7 @@ serve(async (req) => {
         FIELD_MAPPINGS.remainingAmount,
         FIELD_MAPPINGS.finalPaymentDue,
         FIELD_MAPPINGS.commissionDue,
+        FIELD_MAPPINGS.commissionPercent,
         FIELD_MAPPINGS.quantityOrdered,
         FIELD_MAPPINGS.salesOrderNumber,
         FIELD_MAPPINGS.productName,
@@ -321,6 +323,7 @@ serve(async (req) => {
           remainingDue,
           finalPaymentDue,
           commissionDue: parseFloat(fields[FIELD_MAPPINGS.commissionDue]) || 0,
+          commissionPercent: parseFloat(fields[FIELD_MAPPINGS.commissionPercent]) || 0,
           startDate,
           dueDate: fields.duedate,
           estShipDate,
