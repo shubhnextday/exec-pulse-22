@@ -69,7 +69,7 @@ export function ActiveOrdersDialog({ open, onOpenChange, orders }: ActiveOrdersD
       <DialogContent className="max-w-5xl max-h-[80vh]">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">
-            On-Track Orders ({filteredData.length})
+            Active Orders ({filteredData.length})
           </DialogTitle>
         </DialogHeader>
 
