@@ -361,7 +361,7 @@ export default function Dashboard() {
   const realCommissions = useMemo(() => {
     // Group by agent and aggregate commission data from filtered orders
     const agentMap = new Map<string, { 
-      orders: { customer: string; orderTotal: number; commissionDue: number; orderId: string }[];
+      orders: { customer: string; orderTotal: number; commissionDue: number; commissionPercent: number; orderId: string }[];
       totalCommission: number;
     }>();
     
@@ -375,6 +375,7 @@ export default function Dashboard() {
         customer: order.customer,
         orderTotal: order.orderTotal || 0,
         commissionDue: order.commissionDue || 0,
+        commissionPercent: order.commissionPercent || 0,
         orderId: order.id,
       });
       data.totalCommission += order.commissionDue || 0;
@@ -391,7 +392,7 @@ export default function Dashboard() {
             agent,
             customer: order.customer,
             orderTotal: order.orderTotal,
-            commissionPercent: order.orderTotal > 0 ? (order.commissionDue / order.orderTotal) * 100 : 0,
+            commissionPercent: order.commissionPercent,
             commissionDue: order.commissionDue,
             commissionPaid: 0, // JIRA doesn't track paid status yet
           }))

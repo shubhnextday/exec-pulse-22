@@ -277,8 +277,8 @@ export function ExpectedCashFlowDialog({
             <TableBody>
               {filteredData.map((order) => {
                 const shipDate = order.estShipDate || order.dueDate;
-                const commissionPercent = order.orderTotal > 0 
-                  ? ((order.commissionDue || 0) / order.orderTotal * 100).toFixed(1)
+                const commissionPercent = order.commissionPercent != null 
+                  ? order.commissionPercent.toFixed(1)
                   : '0.0';
                 
                 return (
