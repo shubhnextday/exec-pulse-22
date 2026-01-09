@@ -43,7 +43,7 @@ export function TopCustomers({ customers }: TopCustomersProps) {
       {/* Summary */}
       <div className="grid grid-cols-2 gap-3 mb-5">
         <div className="p-3 rounded-xl bg-muted/40 border border-border/50">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Total Revenue</p>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Quoted Orders Total</p>
           <p className="text-xl font-bold mono text-foreground">{formatCurrency(totalRevenue)}</p>
         </div>
         <div className="p-3 rounded-xl bg-muted/40 border border-border/50">
