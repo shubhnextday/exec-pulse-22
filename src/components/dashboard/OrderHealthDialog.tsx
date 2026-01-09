@@ -149,13 +149,13 @@ export function OrderHealthDialog({ open, onOpenChange, orders }: OrderHealthDia
                 </TableHead>
                 <TableHead className="text-right">
                   <SortableHeader
-                    sortKey="orderTotal"
+                    sortKey="daysInProduction"
                     currentSortKey={sortConfig.key as string}
                     direction={sortConfig.direction}
-                    onSort={() => handleSort('orderTotal')}
+                    onSort={() => handleSort('daysInProduction')}
                     className="justify-end"
                   >
-                    Total
+                    Days in Production
                   </SortableHeader>
                 </TableHead>
               </TableRow>
@@ -178,7 +178,7 @@ export function OrderHealthDialog({ open, onOpenChange, orders }: OrderHealthDia
                     )}
                   </TableCell>
                   <TableCell className="text-right font-medium">
-                    ${order.orderTotal?.toLocaleString() || '0'}
+                    {order.daysInProduction || 0} days
                   </TableCell>
                 </TableRow>
               ))}
