@@ -28,8 +28,8 @@ const FIELD_MAPPINGS = {
   daysInProduction: 'customfield_10930',
   orderHealth: 'customfield_10897', // Order Health field from PHP
   healthField: 'customfield_10083',
-  depositReceivedDate: 'customfield_11651', // Deposit Received Date
-  finalPaymentReceivedDate: 'customfield_11652', // Final Payment Received Date
+  depositReceivedDate: 'customfield_10039', // Deposit Received Date
+  finalPaymentReceivedDate: 'customfield_10051', // Final Payment Received Date
 };
 
 const CANCELLED_STATUSES = ['cancelled', 'canceled', 'done', 'shipped', 'complete', 'completed', 'closed', 'final product shipped'];
