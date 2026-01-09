@@ -212,14 +212,38 @@ export default function Dashboard() {
 
   // REACTIVE METRICS - Use proper data sources
   const reactiveMetrics = useMemo(() => {
+    // Get current month boundaries
+    const now = new Date();
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    
+    // Helper to check if a date is in current month
+    const isInCurrentMonth = (dateStr: string | undefined | null): boolean => {
+      if (!dateStr) return false;
+      const date = new Date(dateStr);
+      return date >= currentMonthStart && date <= currentMonthEnd;
+    };
+    
     // Active Customers: Count from CUS project (activeCustomers from API)
     const totalActiveCustomers = activeCustomers.length;
     
     // Active Orders: Use filtered when filters applied, all when default
     const activeOrdersCount = filteredActiveOrders.length;
     
-    // Monthly Revenue: Sum of orderTotal from filtered orders
-    const monthlyRevenue = filteredOrders.reduce((sum, order) => sum + (order.orderTotal || 0), 0);
+    // Monthly Revenue: Sum of deposits received this month + final payments received this month
+    // Uses depositReceivedDate and finalPaymentReceivedDate fields
+    const monthlyRevenue = displayOrders.reduce((sum, order) => {
+      let amount = 0;
+      // Add deposit if received this month
+      if (isInCurrentMonth(order.depositReceivedDate)) {
+        amount += order.depositAmount || 0;
+      }
+      // Add final payment if received this month
+      if (isInCurrentMonth(order.finalPaymentReceivedDate)) {
+        amount += order.finalPayment || 0;
+      }
+      return sum + amount;
+    }, 0);
     
     // Outstanding Payments: Use all-time outstanding from summary, excluding On Hold orders
     const onHoldTotal = allTimeOutstandingOrders
@@ -255,7 +279,24 @@ export default function Dashboard() {
       totalActiveProjects: activeProjects,
       orderHealthBreakdown,
     };
-  }, [filteredOrders, displayWebProjects, displayOrders, filteredActiveOrders, filteredOrderHealthOrders, activeCustomers, summary]);
+  }, [displayWebProjects, displayOrders, filteredActiveOrders, filteredOrderHealthOrders, activeCustomers, summary, allTimeOutstandingOrders, filteredOrders]);
+
+  // Orders that received money this month (deposit or final payment received this month)
+  const ordersReceivedThisMonth = useMemo(() => {
+    const now = new Date();
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    
+    const isInCurrentMonth = (dateStr: string | undefined | null): boolean => {
+      if (!dateStr) return false;
+      const date = new Date(dateStr);
+      return date >= currentMonthStart && date <= currentMonthEnd;
+    };
+    
+    return displayOrders.filter(order => 
+      isInCurrentMonth(order.depositReceivedDate) || isInCurrentMonth(order.finalPaymentReceivedDate)
+    );
+  }, [displayOrders]);
 
   // Calculate cash flow projections from ALL active orders (not filtered by date)
   const cashFlowProjections = useMemo(() => {
@@ -715,7 +756,7 @@ export default function Dashboard() {
         <RevenueDetailsDialog
           open={revenueDialogOpen}
           onOpenChange={setRevenueDialogOpen}
-          orders={filteredOrders}
+          orders={ordersReceivedThisMonth}
         />
         
         <CommissionsDetailsDialog
