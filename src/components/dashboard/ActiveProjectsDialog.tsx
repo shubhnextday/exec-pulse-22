@@ -118,20 +118,6 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects }: ActivePro
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-3 gap-4 mb-4 p-4 bg-muted/50 rounded-lg">
-          <div className="text-center">
-            <div className="text-sm text-muted-foreground">Active Projects</div>
-            <div className="text-xl font-bold text-primary">{activeProjects.length}</div>
-          </div>
-          <div className="text-center">
-            <div className="text-sm text-muted-foreground">Total Tasks</div>
-            <div className="text-xl font-bold">{totalTasks}</div>
-          </div>
-          <div className="text-center">
-            <div className="text-sm text-muted-foreground">Completed</div>
-            <div className="text-xl font-bold text-emerald-600">{completedTasks}</div>
-          </div>
-        </div>
 
         <TableControlsBar
           searchValue={searchQuery}
