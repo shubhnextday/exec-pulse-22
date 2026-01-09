@@ -541,7 +541,7 @@ export default function Dashboard() {
                 <TooltipTrigger asChild>
                   <div onClick={() => setActiveCustomersDialogOpen(true)} className="cursor-pointer">
                     <MetricCard
-                      title="Active Customers"
+                      title="Active Contract Manufacturing Customers"
                       value={reactiveMetrics.totalActiveCustomers}
                       icon={Users}
                       iconColor="text-primary"
@@ -561,7 +561,7 @@ export default function Dashboard() {
                 <TooltipTrigger asChild>
                   <div onClick={() => setActiveOrdersDialogOpen(true)} className="cursor-pointer">
                     <MetricCard
-                      title="Active Orders"
+                      title="Active Contract Manufacturing Orders"
                       value={reactiveMetrics.totalActiveOrders}
                       icon={Package}
                       iconColor="text-secondary"
@@ -581,7 +581,7 @@ export default function Dashboard() {
                 <TooltipTrigger asChild>
                   <div onClick={() => setRevenueDialogOpen(true)} className="cursor-pointer">
                     <MetricCard
-                      title="This Month's Revenue"
+                      title="Collected $$ this month"
                       value={`$${reactiveMetrics.totalMonthlyRevenue > 0 ? (reactiveMetrics.totalMonthlyRevenue / 1000).toFixed(0) + 'k' : '0'}`}
                       icon={TrendingUp}
                       iconColor="text-primary"
@@ -601,7 +601,7 @@ export default function Dashboard() {
                 <TooltipTrigger asChild>
                   <div onClick={() => setOutstandingDialogOpen(true)} className="cursor-pointer">
                     <MetricCard
-                      title="Outstanding"
+                      title="Outstanding Payments"
                       value={`$${reactiveMetrics.totalOutstandingPayments > 0 ? (reactiveMetrics.totalOutstandingPayments / 1000).toFixed(0) + 'k' : '0'}`}
                       icon={CreditCard}
                       iconColor="text-secondary"
@@ -624,7 +624,7 @@ export default function Dashboard() {
                 <TooltipTrigger asChild>
                   <div onClick={() => setOnHoldDialogOpen(true)} className="cursor-pointer">
                     <MetricCard
-                      title={`On Hold (${onHoldOrders.length})`}
+                      title={`Contract Manufacturing ON HOLD Orders (${onHoldOrders.length})`}
                       value={`$${onHoldTotal > 0 ? (onHoldTotal / 1000).toFixed(0) + 'k' : '0'}`}
                       icon={PauseCircle}
                       iconColor="text-muted-foreground"
@@ -644,7 +644,7 @@ export default function Dashboard() {
                 <TooltipTrigger asChild>
                   <div onClick={() => setCommissionsDialogOpen(true)} className="cursor-pointer">
                     <MetricCard
-                      title="Commissions Due"
+                      title="Agent Commissions Due"
                       value={`$${reactiveMetrics.totalCommissionsDue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
                       icon={DollarSign}
                       iconColor="text-primary"
@@ -664,7 +664,7 @@ export default function Dashboard() {
                 <TooltipTrigger asChild>
                   <div onClick={() => setActiveProjectsDialogOpen(true)} className="cursor-pointer">
                     <MetricCard
-                      title="Active Projects"
+                      title="Active Development Projects"
                       value={reactiveMetrics.totalActiveProjects}
                       icon={FolderKanban}
                       iconColor="text-secondary"
