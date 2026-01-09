@@ -29,6 +29,17 @@ interface ExpectedCashFlowDialogProps {
 
 type MonthFilter = 'all' | 'this-month' | 'next-month' | 'month-after' | 'future';
 
+// Helper function to get the effective remaining due based on status
+// Status 1-11: use remainingDue field
+// Status 12: use finalPayment field (Final Payment Due)
+const getEffectiveRemainingDue = (order: Order): number => {
+  const statusNum = parseInt(order.currentStatus?.replace(/\D/g, '') || '0', 10);
+  if (statusNum === 12) {
+    return order.finalPayment || 0;
+  }
+  return order.remainingDue || 0;
+};
+
 export function ExpectedCashFlowDialog({ 
   open, 
   onOpenChange, 
@@ -104,7 +115,7 @@ export function ExpectedCashFlowDialog({
     const totalQuotedOrderTotal = filteredData.reduce((sum, o) => sum + (o.orderTotal || 0), 0);
     const totalDeposits = filteredData.reduce((sum, o) => sum + (o.depositAmount || 0), 0);
     const totalFinalPayment = filteredData.reduce((sum, o) => sum + (o.finalPayment || 0), 0);
-    const totalRemainingDue = filteredData.reduce((sum, o) => sum + (o.remainingDue || 0), 0);
+    const totalRemainingDue = filteredData.reduce((sum, o) => sum + getEffectiveRemainingDue(o), 0);
     return { totalQuotedOrderTotal, totalDeposits, totalFinalPayment, totalRemainingDue };
   }, [filteredData]);
 
@@ -293,7 +304,7 @@ export function ExpectedCashFlowDialog({
                       ${(order.finalPayment || 0).toLocaleString()}
                     </TableCell>
                     <TableCell className="text-right font-bold text-primary">
-                      ${(order.remainingDue || 0).toLocaleString()}
+                      ${getEffectiveRemainingDue(order).toLocaleString()}
                     </TableCell>
                     <TableCell>{order.agent || '-'}</TableCell>
                     <TableCell className="text-right">{commissionPercent}%</TableCell>
