@@ -101,8 +101,10 @@ export function RevenueDetailsDialog({ open, onOpenChange, orders }: RevenueDeta
             <TableHeader>
               <TableRow>
                 <TableHead>Order ID</TableHead>
+                <TableHead>Sales Order #</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead className="text-right">Quoted Order Total</TableHead>
+                <TableHead className="text-right">Gross Order Total</TableHead>
                 <TableHead className="text-right">Deposit</TableHead>
                 <TableHead className="text-right">Remaining</TableHead>
               </TableRow>
@@ -111,7 +113,11 @@ export function RevenueDetailsDialog({ open, onOpenChange, orders }: RevenueDeta
               {sortedOrders.map((order) => (
                 <TableRow key={order.id}>
                   <TableCell className="font-medium">{order.id}</TableCell>
+                  <TableCell>{order.salesOrderNumber || '-'}</TableCell>
                   <TableCell>{order.customer}</TableCell>
+                  <TableCell className="text-right font-medium">
+                    ${order.orderTotal?.toLocaleString() || '0'}
+                  </TableCell>
                   <TableCell className="text-right font-medium">
                     ${order.orderTotal?.toLocaleString() || '0'}
                   </TableCell>
@@ -125,7 +131,7 @@ export function RevenueDetailsDialog({ open, onOpenChange, orders }: RevenueDeta
               ))}
               {orders.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                     No payments received this month
                   </TableCell>
                 </TableRow>
