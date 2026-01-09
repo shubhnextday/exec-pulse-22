@@ -16,7 +16,7 @@ const FIELD_MAPPINGS = {
   remainingAmount: 'customfield_11569',
   finalPaymentDue: 'customfield_11650', // Final Payment Due field
   commissionDue: 'customfield_11577',
-  commissionPercent: 'customfield_11576', // Commission % field
+  commissionPercent: 'customfield_11574', // Commission % field
   quantityOrdered: 'customfield_10073',
   salesOrderNumber: 'customfield_10113',
   productName: 'customfield_10115',
