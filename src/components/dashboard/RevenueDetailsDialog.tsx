@@ -74,9 +74,7 @@ export function RevenueDetailsDialog({ open, onOpenChange, orders }: RevenueDeta
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[80vh]">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">
-            Revenue Details - ${totalCollected.toLocaleString()}
-          </DialogTitle>
+          <DialogTitle className="sr-only">Revenue Details</DialogTitle>
         </DialogHeader>
         
         <div className="grid grid-cols-3 gap-4 mb-4 p-4 bg-muted/50 rounded-lg">
