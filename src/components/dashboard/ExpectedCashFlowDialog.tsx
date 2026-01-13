@@ -30,14 +30,26 @@ interface ExpectedCashFlowDialogProps {
 type MonthFilter = 'all' | 'this-month' | 'next-month' | 'month-after' | 'future';
 
 // Helper function to get status number from order
-const getStatusNumber = (order: Order): number => {
-  return parseInt(order.currentStatus?.replace(/\D/g, '') || '0', 10);
+// JIRA statuses can be either "12 - Finished Goods Testing" or sometimes just the label.
+const getStatusNumber = (order: Order): number | null => {
+  const raw = (order.currentStatus || '').trim();
+  if (!raw) return null;
+
+  // Prefer an explicit numeric prefix like "12 - ..."
+  const m = raw.match(/^\s*(\d+)\s*-/);
+  if (m?.[1]) return Number(m[1]);
+
+  // Fallback to label match (covers cases where the number isn't present)
+  const normalized = raw.toLowerCase();
+  if (normalized.includes('finished goods testing')) return 12;
+
+  return null;
 };
 
 // Check if order is in status 1-11 (Ready to Start through In Packaging)
 const isStatus1to11 = (order: Order): boolean => {
   const statusNum = getStatusNumber(order);
-  return statusNum >= 1 && statusNum <= 11;
+  return statusNum != null && statusNum >= 1 && statusNum <= 11;
 };
 
 // Check if order is in status 12 (Finished Goods Testing)
@@ -51,9 +63,12 @@ const getRemainingDueValue = (order: Order): number => {
   return isStatus1to11(order) ? (order.remainingDue || 0) : 0;
 };
 
-// Get Final Payment value (only for status 12)
+// Get Final Payment Due value (only for status 12)
+// Prefer the explicit JIRA "Final Payment Due" field when present.
 const getFinalPaymentValue = (order: Order): number => {
-  return isStatus12(order) ? (order.finalPayment || 0) : 0;
+  if (!isStatus12(order)) return 0;
+  const anyOrder = order as any;
+  return (anyOrder.finalPaymentDue ?? order.finalPayment ?? 0) as number;
 };
 
 export function ExpectedCashFlowDialog({ 
@@ -134,12 +149,12 @@ export function ExpectedCashFlowDialog({
   const totals = useMemo(() => {
     const totalQuotedOrderTotal = filteredData.reduce((sum, o) => sum + (o.orderTotal || 0), 0);
     const totalDeposits = filteredData.reduce((sum, o) => sum + (o.depositAmount || 0), 0);
-    // Final Payments: sum only from status 12 orders (using finalPayment field)
+    // Final Payments: sum only from status 12 orders (using Final Payment Due when available)
     const totalFinalPayment = filteredData.reduce((sum, o) => sum + getFinalPaymentValue(o), 0);
-    // Remaining Due: sum from status 1-11 (remainingDue field) + status 12 (finalPayment field)
+    // Remaining Due: sum from status 1-11 (remainingDue field) + status 12 (Final Payment Due)
     const totalRemainingDue = filteredData.reduce((sum, o) => {
       if (isStatus1to11(o)) return sum + (o.remainingDue || 0);
-      if (isStatus12(o)) return sum + (o.finalPayment || 0);
+      if (isStatus12(o)) return sum + getFinalPaymentValue(o);
       return sum;
     }, 0);
     return { totalQuotedOrderTotal, totalDeposits, totalFinalPayment, totalRemainingDue };
@@ -327,15 +342,23 @@ export function ExpectedCashFlowDialog({
                       ${(order.depositAmount || 0).toLocaleString()}
                     </TableCell>
                     <TableCell className="text-right">
-                      {isStatus12(order) 
-                        ? (order.finalPayment != null ? `$${order.finalPayment.toLocaleString()}` : 'N/A')
+                      {isStatus12(order)
+                        ? (() => {
+                            const anyOrder = order as any;
+                            const v = anyOrder.finalPaymentDue ?? order.finalPayment;
+                            return v != null ? `$${Number(v).toLocaleString()}` : 'N/A';
+                          })()
                         : ''}
                     </TableCell>
                     <TableCell className="text-right font-bold text-orange-500">
-                      {isStatus1to11(order) 
+                      {isStatus1to11(order)
                         ? (order.remainingDue != null ? `$${order.remainingDue.toLocaleString()}` : 'N/A')
-                        : (isStatus12(order) 
-                            ? (order.finalPayment != null ? `$${order.finalPayment.toLocaleString()}` : 'N/A')
+                        : (isStatus12(order)
+                            ? (() => {
+                                const anyOrder = order as any;
+                                const v = anyOrder.finalPaymentDue ?? order.finalPayment;
+                                return v != null ? `$${Number(v).toLocaleString()}` : 'N/A';
+                              })()
                             : '')}
                     </TableCell>
                     <TableCell>{order.agent || '-'}</TableCell>

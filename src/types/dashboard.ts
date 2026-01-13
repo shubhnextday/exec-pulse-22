@@ -20,7 +20,10 @@ export interface Order {
   quantityOrdered: number;
   orderTotal: number;
   depositAmount: number;
+  /** Order Total - Deposit (legacy field used in some places) */
   finalPayment: number;
+  /** JIRA "Final Payment Due" (used for Status 12 calculations) */
+  finalPaymentDue?: number;
   remainingDue: number;
   commissionDue: number;
   commissionPercent?: number;
