@@ -29,20 +29,31 @@ interface ExpectedCashFlowDialogProps {
 
 type MonthFilter = 'all' | 'this-month' | 'next-month' | 'month-after' | 'future';
 
-// Helper function to get the effective remaining due based on status
-// Status 1-11 (Ready to Start through In Packaging): use remainingAmount field (Remaining Amount)
-// Status 12 (Finished Goods Testing): use finalPayment field (Final Payment Due)
-const getEffectiveRemainingDue = (order: Order): number => {
-  const statusNum = parseInt(order.currentStatus?.replace(/\D/g, '') || '0', 10);
-  if (statusNum >= 1 && statusNum <= 11) {
-    // Statuses 1-11: use Remaining Amount field
-    return order.remainingDue || 0;
-  } else if (statusNum === 12) {
-    // Status 12 (Finished Goods Testing): use Final Payment Due field
-    return order.finalPayment || 0;
-  }
-  // For any other status, return 0 or fallback
-  return order.remainingDue || 0;
+// Helper function to get status number from order
+const getStatusNumber = (order: Order): number => {
+  return parseInt(order.currentStatus?.replace(/\D/g, '') || '0', 10);
+};
+
+// Check if order is in status 1-11 (Ready to Start through In Packaging)
+const isStatus1to11 = (order: Order): boolean => {
+  const statusNum = getStatusNumber(order);
+  return statusNum >= 1 && statusNum <= 11;
+};
+
+// Check if order is in status 12 (Finished Goods Testing)
+const isStatus12 = (order: Order): boolean => {
+  const statusNum = getStatusNumber(order);
+  return statusNum === 12;
+};
+
+// Get Remaining Due value (only for status 1-11)
+const getRemainingDueValue = (order: Order): number => {
+  return isStatus1to11(order) ? (order.remainingDue || 0) : 0;
+};
+
+// Get Final Payment value (only for status 12)
+const getFinalPaymentValue = (order: Order): number => {
+  return isStatus12(order) ? (order.finalPayment || 0) : 0;
 };
 
 export function ExpectedCashFlowDialog({ 
@@ -115,12 +126,14 @@ export function ExpectedCashFlowDialog({
     initialSort: { key: 'estShipDate', direction: 'asc' },
   });
 
-  // Calculate totals
+  // Calculate totals - only sum visible values based on status
   const totals = useMemo(() => {
     const totalQuotedOrderTotal = filteredData.reduce((sum, o) => sum + (o.orderTotal || 0), 0);
     const totalDeposits = filteredData.reduce((sum, o) => sum + (o.depositAmount || 0), 0);
-    const totalFinalPayment = filteredData.reduce((sum, o) => sum + (o.finalPayment || 0), 0);
-    const totalRemainingDue = filteredData.reduce((sum, o) => sum + getEffectiveRemainingDue(o), 0);
+    // Final Payments: sum only from status 12 orders
+    const totalFinalPayment = filteredData.reduce((sum, o) => sum + getFinalPaymentValue(o), 0);
+    // Remaining Due: sum only from status 1-11 orders
+    const totalRemainingDue = filteredData.reduce((sum, o) => sum + getRemainingDueValue(o), 0);
     return { totalQuotedOrderTotal, totalDeposits, totalFinalPayment, totalRemainingDue };
   }, [filteredData]);
 
@@ -306,10 +319,10 @@ export function ExpectedCashFlowDialog({
                       ${(order.depositAmount || 0).toLocaleString()}
                     </TableCell>
                     <TableCell className="text-right">
-                      ${(order.finalPayment || 0).toLocaleString()}
+                      {isStatus12(order) ? `$${(order.finalPayment || 0).toLocaleString()}` : ''}
                     </TableCell>
-                    <TableCell className="text-right font-bold text-primary">
-                      ${getEffectiveRemainingDue(order).toLocaleString()}
+                    <TableCell className="text-right font-bold text-orange-500">
+                      {isStatus1to11(order) ? `$${(order.remainingDue || 0).toLocaleString()}` : ''}
                     </TableCell>
                     <TableCell>{order.agent || '-'}</TableCell>
                     <TableCell className="text-right">{commissionPercent}%</TableCell>
