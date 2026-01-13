@@ -24,6 +24,7 @@ interface ActiveProjectsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projects: WebProject[];
+  activeCount?: number; // Count from JQL: status NOT IN (Cancelled, Done, Open)
 }
 
 const STATUS_ORDER: Record<string, number> = {
@@ -42,7 +43,7 @@ const STATUS_ORDER: Record<string, number> = {
   Canceled: 12,
 };
 
-export function ActiveProjectsDialog({ open, onOpenChange, projects }: ActiveProjectsDialogProps) {
+export function ActiveProjectsDialog({ open, onOpenChange, projects, activeCount }: ActiveProjectsDialogProps) {
   const {
     filteredData,
     searchQuery,
@@ -58,7 +59,9 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects }: ActivePro
     searchableKeys: ['epicName', 'epicKey', 'status'],
   });
 
-  const activeProjects = projects.filter((p) => !['Done', 'Canceled', 'On Hold'].includes(p.status));
+  // Use activeCount prop if provided, otherwise calculate from projects
+  const displayActiveCount = activeCount ?? projects.filter((p) => !['Done', 'Canceled', 'On Hold', 'Open'].includes(p.status)).length;
+  const activeProjects = projects.filter((p) => !['Done', 'Canceled', 'On Hold', 'Open'].includes(p.status));
   const totalTasks = activeProjects.reduce((sum, p) => sum + p.totalTasks, 0);
   const completedTasks = activeProjects.reduce((sum, p) => sum + p.completed, 0);
 
@@ -114,7 +117,7 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects }: ActivePro
       <DialogContent className="max-w-5xl max-h-[80vh]">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">
-            Active Projects ({activeProjects.length})
+            Active Projects ({displayActiveCount})
           </DialogTitle>
         </DialogHeader>
 
