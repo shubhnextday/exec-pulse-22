@@ -65,9 +65,13 @@ export function ExpectedCashFlowDialog({
   const [monthFilter, setMonthFilter] = useState<MonthFilter>('this-month');
   const [selectedCustomer, setSelectedCustomer] = useState('All Customers');
   
-  // Filter orders to only those with EST Ship Date and remaining due > 0
+  // Filter orders to only those with EST Ship Date and remaining due > 0, excluding On Hold orders
   const activeOrdersWithShipDate = useMemo(() => {
     return orders.filter(order => {
+      // Exclude On Hold orders
+      if (order.orderHealth === 'on-hold' || order.currentStatus === 'On Hold') {
+        return false;
+      }
       const shipDate = order.estShipDate || order.dueDate;
       if (!shipDate) return false;
       // Include orders with remaining due > 0 OR orderTotal > 0 (to show expected revenue)
@@ -130,10 +134,14 @@ export function ExpectedCashFlowDialog({
   const totals = useMemo(() => {
     const totalQuotedOrderTotal = filteredData.reduce((sum, o) => sum + (o.orderTotal || 0), 0);
     const totalDeposits = filteredData.reduce((sum, o) => sum + (o.depositAmount || 0), 0);
-    // Final Payments: sum only from status 12 orders
+    // Final Payments: sum only from status 12 orders (using finalPayment field)
     const totalFinalPayment = filteredData.reduce((sum, o) => sum + getFinalPaymentValue(o), 0);
-    // Remaining Due: sum only from status 1-11 orders
-    const totalRemainingDue = filteredData.reduce((sum, o) => sum + getRemainingDueValue(o), 0);
+    // Remaining Due: sum from status 1-11 (remainingDue field) + status 12 (finalPayment field)
+    const totalRemainingDue = filteredData.reduce((sum, o) => {
+      if (isStatus1to11(o)) return sum + (o.remainingDue || 0);
+      if (isStatus12(o)) return sum + (o.finalPayment || 0);
+      return sum;
+    }, 0);
     return { totalQuotedOrderTotal, totalDeposits, totalFinalPayment, totalRemainingDue };
   }, [filteredData]);
 
@@ -326,7 +334,9 @@ export function ExpectedCashFlowDialog({
                     <TableCell className="text-right font-bold text-orange-500">
                       {isStatus1to11(order) 
                         ? (order.remainingDue != null ? `$${order.remainingDue.toLocaleString()}` : 'N/A')
-                        : ''}
+                        : (isStatus12(order) 
+                            ? (order.finalPayment != null ? `$${order.finalPayment.toLocaleString()}` : 'N/A')
+                            : '')}
                     </TableCell>
                     <TableCell>{order.agent || '-'}</TableCell>
                     <TableCell className="text-right">{commissionPercent}%</TableCell>
