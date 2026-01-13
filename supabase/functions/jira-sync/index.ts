@@ -12,7 +12,7 @@ const FIELD_MAPPINGS = {
   agent: 'customfield_11573',
   accountManager: 'customfield_11393',
   orderTotal: 'customfield_11567', // Quoted Order Total
-  grossOrderTotal: 'customfield_11663', // Gross Order Total $$
+  grossOrderTotal: 'customfield_11646', // Gross Order Total $$
   depositAmount: 'customfield_10074',
   remainingAmount: 'customfield_11569',
   finalPaymentDue: 'customfield_11650', // Final Payment Due field
