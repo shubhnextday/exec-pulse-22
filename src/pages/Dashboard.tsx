@@ -770,6 +770,7 @@ export default function Dashboard() {
           open={activeProjectsDialogOpen}
           onOpenChange={setActiveProjectsDialogOpen}
           projects={displayWebProjects}
+          activeCount={summary?.totalActiveProjects ?? reactiveMetrics.totalActiveProjects}
         />
         
         <ExpectedCashFlowDialog

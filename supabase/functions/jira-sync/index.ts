@@ -251,7 +251,7 @@ serve(async (req) => {
       }
       console.log(`Fetched ${activeCustomerIssues.length} active customers`);
       
-      // Fetch WEB epics
+      // Fetch ALL WEB epics (for popup display with all statuses)
       const webJql = 'project = "WEB" AND issuetype = Epic ORDER BY created DESC';
       const webFields = ['summary', 'status', 'created', 'duedate', 'subtasks'];
       
@@ -262,6 +262,16 @@ serve(async (req) => {
         console.log('WEB project fetch failed, continuing with empty:', e);
       }
       console.log(`Fetched ${webIssues.length} WEB epics`);
+      
+      // Fetch Active Development Projects for the dashboard count (excludes Cancelled, Done, Open)
+      const activeDevelopmentJql = 'project = WEB AND type = Epic AND status NOT IN (Cancelled, Done, Open) ORDER BY created DESC';
+      let activeDevelopmentIssues: any[] = [];
+      try {
+        activeDevelopmentIssues = await fetchAllIssues(jiraDomain, headers, activeDevelopmentJql, webFields);
+      } catch (e) {
+        console.log('Active development projects fetch failed, continuing with empty:', e);
+      }
+      console.log(`Fetched ${activeDevelopmentIssues.length} active development projects`);
 
       // Helper function to transform issue to order
       const transformIssueToOrder = (issue: any) => {
@@ -444,7 +454,7 @@ serve(async (req) => {
         totalOutstandingPayments: orderHealthOrders.reduce((sum: number, o: any) => sum + (o.remainingDue || 0), 0),
         allTimeOutstandingPayments: allTimeOutstanding,
         totalCommissionsDue: orderHealthOrders.reduce((sum: number, o: any) => sum + (o.commissionDue || 0), 0),
-        totalActiveProjects: webProjects.filter((p: any) => p.status === 'active').length,
+        totalActiveProjects: activeDevelopmentIssues.length, // Count from JQL: status NOT IN (Cancelled, Done, Open)
         // Order Health breakdown from orderHealthOrders (all non-cancelled orders)
         orderHealthBreakdown: {
           onTrack: orderHealthOrders.filter((o: any) => o.orderHealth === 'on-track').length,
