@@ -154,9 +154,10 @@ export function ExpectedCashFlowDialog({
     const totalDeposits = filteredData.reduce((sum, o) => sum + (o.depositAmount || 0), 0);
     // Final Payment Due: sum only from status 12 orders
     const totalFinalPaymentDue = filteredData.reduce((sum, o) => sum + getFinalPaymentValue(o), 0);
-    // Remaining Due: sum only from status 0-11 orders (NOT status 12)
+    // Remaining Due: status 0-11 use remainingDue, status 12 use finalPaymentDue
     const totalRemainingDue = filteredData.reduce((sum, o) => {
       if (isStatus0to11(o)) return sum + (o.remainingDue || 0);
+      if (isStatus12(o)) return sum + getFinalPaymentValue(o);
       return sum;
     }, 0);
     return { totalQuotedOrderTotal, totalDeposits, totalFinalPaymentDue, totalRemainingDue };
@@ -355,7 +356,13 @@ export function ExpectedCashFlowDialog({
                     <TableCell className="text-right font-bold text-orange-500">
                       {isStatus0to11(order)
                         ? (order.remainingDue != null ? `$${order.remainingDue.toLocaleString()}` : 'N/A')
-                        : ''}
+                        : isStatus12(order)
+                          ? (() => {
+                              const anyOrder = order as any;
+                              const v = anyOrder.finalPaymentDue ?? order.finalPayment;
+                              return v != null ? `$${Number(v).toLocaleString()}` : 'N/A';
+                            })()
+                          : ''}
                     </TableCell>
                     <TableCell>{order.agent || '-'}</TableCell>
                     <TableCell className="text-right">{commissionPercent}%</TableCell>
