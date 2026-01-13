@@ -319,10 +319,14 @@ export function ExpectedCashFlowDialog({
                       ${(order.depositAmount || 0).toLocaleString()}
                     </TableCell>
                     <TableCell className="text-right">
-                      {isStatus12(order) ? `$${(order.finalPayment || 0).toLocaleString()}` : ''}
+                      {isStatus12(order) 
+                        ? (order.finalPayment != null ? `$${order.finalPayment.toLocaleString()}` : 'N/A')
+                        : ''}
                     </TableCell>
                     <TableCell className="text-right font-bold text-orange-500">
-                      {isStatus1to11(order) ? `$${(order.remainingDue || 0).toLocaleString()}` : ''}
+                      {isStatus1to11(order) 
+                        ? (order.remainingDue != null ? `$${order.remainingDue.toLocaleString()}` : 'N/A')
+                        : ''}
                     </TableCell>
                     <TableCell>{order.agent || '-'}</TableCell>
                     <TableCell className="text-right">{commissionPercent}%</TableCell>
