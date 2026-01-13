@@ -232,10 +232,9 @@ export function ExpectedCashFlowDialog({
         </div>
         
         <div className="h-[50vh] overflow-auto">
-          <div className="min-w-[1200px]">
-          <Table>
-            <TableHeader className="sticky top-0 z-20 bg-background shadow-sm [&_th]:bg-background">
-              <TableRow>
+          <Table className="min-w-[1200px]">
+            <TableHeader className="sticky top-0 z-20 bg-background [&_th]:bg-background">
+              <TableRow className="border-b border-border">
                 <TableHead>Sales Order #</TableHead>
                 <TableHead>
                   <SortableHeader
@@ -364,7 +363,6 @@ export function ExpectedCashFlowDialog({
               )}
             </TableBody>
           </Table>
-          </div>
         </div>
         
         <div className="text-sm text-muted-foreground pt-2 border-t flex justify-between items-center">
