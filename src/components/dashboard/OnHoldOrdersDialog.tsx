@@ -43,7 +43,7 @@ export function OnHoldOrdersDialog({
         
         <ScrollArea className="h-[65vh]">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 z-10 bg-card">
               <TableRow>
                 <TableHead>Sales Order #</TableHead>
                 <TableHead>Customer</TableHead>
