@@ -195,7 +195,7 @@ export function ExpectedCashFlowDialog({
         </Tabs>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
+        <div className="grid grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg">
           <div className="text-center">
             <div className="text-xs text-muted-foreground">Quoted Order Total</div>
             <div className="text-lg font-bold text-foreground">${totals.totalQuotedOrderTotal.toLocaleString()}</div>
@@ -203,10 +203,6 @@ export function ExpectedCashFlowDialog({
           <div className="text-center">
             <div className="text-xs text-muted-foreground">Deposits Collected</div>
             <div className="text-lg font-bold text-green-600">${totals.totalDeposits.toLocaleString()}</div>
-          </div>
-          <div className="text-center">
-            <div className="text-xs text-muted-foreground">Final Payment Due</div>
-            <div className="text-lg font-bold text-foreground">${totals.totalFinalPaymentDue.toLocaleString()}</div>
           </div>
           <div className="text-center">
             <div className="text-xs text-muted-foreground">Remaining Due</div>
@@ -293,7 +289,6 @@ export function ExpectedCashFlowDialog({
                   </SortableHeader>
                 </TableHead>
                 <TableHead className="text-right">Deposit</TableHead>
-                <TableHead className="text-right">Final Payment Due</TableHead>
                 <TableHead className="text-right">
                   <SortableHeader
                     sortKey="remainingDue"
@@ -344,15 +339,6 @@ export function ExpectedCashFlowDialog({
                     <TableCell className="text-right text-green-600">
                       ${(order.depositAmount || 0).toLocaleString()}
                     </TableCell>
-                    <TableCell className="text-right">
-                      {isStatus12(order)
-                        ? (() => {
-                            const anyOrder = order as any;
-                            const v = anyOrder.finalPaymentDue ?? order.finalPayment;
-                            return v != null ? `$${Number(v).toLocaleString()}` : 'N/A';
-                          })()
-                        : ''}
-                    </TableCell>
                     <TableCell className="text-right font-bold text-orange-500">
                       {isStatus0to11(order)
                         ? (order.remainingDue != null ? `$${order.remainingDue.toLocaleString()}` : 'N/A')
@@ -371,7 +357,7 @@ export function ExpectedCashFlowDialog({
               })}
               {filteredData.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                     No orders found for the selected filters
                   </TableCell>
                 </TableRow>
