@@ -77,10 +77,9 @@ export function RevenueDetailsDialog({ open, onOpenChange, orders }: RevenueDeta
           <DialogTitle className="sr-only">Revenue Details</DialogTitle>
         </DialogHeader>
         
-        <div className="grid grid-cols-3 gap-4 mb-4 p-4 bg-muted/50 rounded-lg">
+        <div className="grid grid-cols-4 gap-4 mb-4 p-4 bg-muted/50 rounded-lg">
           <div className="text-center">
             <div className="text-sm text-muted-foreground">Total $ Collected This Month</div>
-            <div className="text-xs text-muted-foreground">Total Revenue</div>
             <div className="text-xl font-bold text-primary">${totalCollected.toLocaleString()}</div>
           </div>
           <div className="text-center">
@@ -89,7 +88,10 @@ export function RevenueDetailsDialog({ open, onOpenChange, orders }: RevenueDeta
           </div>
           <div className="text-center">
             <div className="text-sm text-muted-foreground">Final Payments Received</div>
-            <div className="text-xs text-muted-foreground">Remaining Due</div>
+            <div className="text-xl font-bold text-blue-600">${totals.finalPaymentsReceived.toLocaleString()}</div>
+          </div>
+          <div className="text-center">
+            <div className="text-sm text-muted-foreground">Remaining Due</div>
             <div className="text-xl font-bold text-amber-600">${totalRemainingDue.toLocaleString()}</div>
           </div>
         </div>
@@ -104,6 +106,7 @@ export function RevenueDetailsDialog({ open, onOpenChange, orders }: RevenueDeta
                 <TableHead className="text-right">Quoted Order Total</TableHead>
                 <TableHead className="text-right">Gross Order Total</TableHead>
                 <TableHead className="text-right">Deposit</TableHead>
+                <TableHead className="text-right">Final Payment Received</TableHead>
                 <TableHead className="text-right">Remaining</TableHead>
               </TableRow>
             </TableHeader>
@@ -122,6 +125,11 @@ export function RevenueDetailsDialog({ open, onOpenChange, orders }: RevenueDeta
                   <TableCell className="text-right text-emerald-600">
                     ${order.depositAmount?.toLocaleString() || '0'}
                   </TableCell>
+                  <TableCell className="text-right text-blue-600">
+                    {isInCurrentMonth(order.finalPaymentReceivedDate) 
+                      ? `$${(order.finalPayment || 0).toLocaleString()}` 
+                      : '$0'}
+                  </TableCell>
                   <TableCell className="text-right text-amber-600">
                     ${getEffectiveRemainingDue(order).toLocaleString()}
                   </TableCell>
@@ -129,7 +137,7 @@ export function RevenueDetailsDialog({ open, onOpenChange, orders }: RevenueDeta
               ))}
               {orders.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                     No payments received this month
                   </TableCell>
                 </TableRow>
