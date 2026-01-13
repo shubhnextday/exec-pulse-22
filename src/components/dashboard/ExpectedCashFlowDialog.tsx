@@ -42,25 +42,28 @@ const getStatusNumber = (order: Order): number | null => {
   // Fallback to label match (covers cases where the number isn't present)
   const normalized = raw.toLowerCase();
   if (normalized.includes('finished goods testing')) return 12;
+  if (normalized.includes('quote requirements')) return 0;
 
   return null;
 };
 
-// Check if order is in status 1-11 (Ready to Start through In Packaging)
-const isStatus1to11 = (order: Order): boolean => {
+// Check if order is in status 0-11 (Quote Requirements through In Packaging)
+// These orders show "Remaining Due" (remainingDue field)
+const isStatus0to11 = (order: Order): boolean => {
   const statusNum = getStatusNumber(order);
-  return statusNum != null && statusNum >= 1 && statusNum <= 11;
+  return statusNum != null && statusNum >= 0 && statusNum <= 11;
 };
 
 // Check if order is in status 12 (Finished Goods Testing)
+// These orders show "Final Payment Due" (finalPaymentDue field)
 const isStatus12 = (order: Order): boolean => {
   const statusNum = getStatusNumber(order);
   return statusNum === 12;
 };
 
-// Get Remaining Due value (only for status 1-11)
+// Get Remaining Due value (only for status 0-11)
 const getRemainingDueValue = (order: Order): number => {
-  return isStatus1to11(order) ? (order.remainingDue || 0) : 0;
+  return isStatus0to11(order) ? (order.remainingDue || 0) : 0;
 };
 
 // Get Final Payment Due value (only for status 12)
@@ -151,9 +154,9 @@ export function ExpectedCashFlowDialog({
     const totalDeposits = filteredData.reduce((sum, o) => sum + (o.depositAmount || 0), 0);
     // Final Payment Due: sum only from status 12 orders
     const totalFinalPaymentDue = filteredData.reduce((sum, o) => sum + getFinalPaymentValue(o), 0);
-    // Remaining Due: sum only from status 1-11 orders (NOT status 12)
+    // Remaining Due: sum only from status 0-11 orders (NOT status 12)
     const totalRemainingDue = filteredData.reduce((sum, o) => {
-      if (isStatus1to11(o)) return sum + (o.remainingDue || 0);
+      if (isStatus0to11(o)) return sum + (o.remainingDue || 0);
       return sum;
     }, 0);
     return { totalQuotedOrderTotal, totalDeposits, totalFinalPaymentDue, totalRemainingDue };
@@ -350,7 +353,7 @@ export function ExpectedCashFlowDialog({
                         : ''}
                     </TableCell>
                     <TableCell className="text-right font-bold text-orange-500">
-                      {isStatus1to11(order)
+                      {isStatus0to11(order)
                         ? (order.remainingDue != null ? `$${order.remainingDue.toLocaleString()}` : 'N/A')
                         : ''}
                     </TableCell>
