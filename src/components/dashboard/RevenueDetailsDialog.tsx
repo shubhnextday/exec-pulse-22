@@ -140,7 +140,7 @@ export function RevenueDetailsDialog({ open, onOpenChange, orders }: RevenueDeta
                 <TableHead className="text-right">Quoted Total</TableHead>
                 <TableHead className="text-right">Gross Total</TableHead>
                 <TableHead className="text-right">Deposit Received</TableHead>
-                <TableHead className="text-right">Final Received</TableHead>
+                <TableHead className="text-right">Final Payment Received</TableHead>
                 <TableHead className="text-right">Remaining</TableHead>
               </TableRow>
             </TableHeader>
