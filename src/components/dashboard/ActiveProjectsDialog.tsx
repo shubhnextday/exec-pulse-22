@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { TableControlsBar, SortableHeader, TableFilter } from '@/components/ui/table-controls';
 import { useTableFeatures } from '@/hooks/useTableFeatures';
 import type { WebProject } from '@/types/dashboard';
@@ -139,10 +139,10 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects, activeCount
           />
         </TableControlsBar>
 
-        <ScrollArea className="h-[40vh]">
+        <div className="h-[40vh] overflow-auto">
           <Table>
-            <TableHeader className="sticky top-0 z-10 bg-card">
-              <TableRow>
+            <TableHeader className="bg-background [&_th]:sticky [&_th]:top-0 [&_th]:z-20 [&_th]:bg-background">
+              <TableRow className="border-b border-border">
                 <TableHead>
                   <SortableHeader
                     sortKey="epicName"
@@ -221,7 +221,7 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects, activeCount
               )}
             </TableBody>
           </Table>
-        </ScrollArea>
+        </div>
 
         <div className="text-sm text-muted-foreground pt-2 border-t">
           Showing {sortedProjects.length} of {projects.length} projects

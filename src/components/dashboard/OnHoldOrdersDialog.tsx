@@ -43,7 +43,7 @@ export function OnHoldOrdersDialog({
         
         <div className="h-[65vh] overflow-auto">
           <Table>
-            <TableHeader className="sticky top-0 z-20 bg-background [&_th]:bg-background">
+            <TableHeader className="bg-background [&_th]:sticky [&_th]:top-0 [&_th]:z-20 [&_th]:bg-background">
               <TableRow className="border-b border-border">
                 <TableHead>Sales Order #</TableHead>
                 <TableHead>Customer</TableHead>
