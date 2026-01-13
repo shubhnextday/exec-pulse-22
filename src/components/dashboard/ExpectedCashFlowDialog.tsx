@@ -234,7 +234,7 @@ export function ExpectedCashFlowDialog({
         <div className="h-[50vh] overflow-auto">
           <div className="min-w-[1200px]">
           <Table>
-            <TableHeader className="sticky top-0 z-10 bg-card">
+            <TableHeader className="sticky top-0 z-20 bg-background shadow-sm [&_th]:bg-background">
               <TableRow>
                 <TableHead>Sales Order #</TableHead>
                 <TableHead>
