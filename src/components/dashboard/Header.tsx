@@ -5,10 +5,11 @@ import { format, parseISO } from 'date-fns';
 interface HeaderProps {
   lastSynced?: string | null;
   onRefresh?: () => void;
+  onExport?: () => void;
   isLoading?: boolean;
 }
 
-export function Header({ lastSynced, onRefresh, isLoading }: HeaderProps) {
+export function Header({ lastSynced, onRefresh, onExport, isLoading }: HeaderProps) {
   const syncTime = lastSynced ? parseISO(lastSynced) : new Date();
 
   return (
@@ -38,7 +39,12 @@ export function Header({ lastSynced, onRefresh, isLoading }: HeaderProps) {
           )}
           {isLoading ? 'Syncing...' : 'Sync'}
         </Button>
-        <Button variant="outline" size="sm" className="h-9 gap-2 bg-muted/30 border-border/30 hover:border-primary/50 hover:bg-primary/5 hover:text-[#F05323]">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="h-9 gap-2 bg-muted/30 border-border/30 hover:border-primary/50 hover:bg-primary/5 hover:text-[#F05323]"
+          onClick={onExport}
+        >
           <Download className="h-4 w-4" />
           Export
         </Button>
