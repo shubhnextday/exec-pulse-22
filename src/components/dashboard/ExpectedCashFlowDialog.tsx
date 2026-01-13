@@ -149,15 +149,14 @@ export function ExpectedCashFlowDialog({
   const totals = useMemo(() => {
     const totalQuotedOrderTotal = filteredData.reduce((sum, o) => sum + (o.orderTotal || 0), 0);
     const totalDeposits = filteredData.reduce((sum, o) => sum + (o.depositAmount || 0), 0);
-    // Final Payments: sum only from status 12 orders (using Final Payment Due when available)
-    const totalFinalPayment = filteredData.reduce((sum, o) => sum + getFinalPaymentValue(o), 0);
-    // Remaining Due: sum from status 1-11 (remainingDue field) + status 12 (Final Payment Due)
+    // Final Payment Due: sum only from status 12 orders
+    const totalFinalPaymentDue = filteredData.reduce((sum, o) => sum + getFinalPaymentValue(o), 0);
+    // Remaining Due: sum only from status 1-11 orders (NOT status 12)
     const totalRemainingDue = filteredData.reduce((sum, o) => {
       if (isStatus1to11(o)) return sum + (o.remainingDue || 0);
-      if (isStatus12(o)) return sum + getFinalPaymentValue(o);
       return sum;
     }, 0);
-    return { totalQuotedOrderTotal, totalDeposits, totalFinalPayment, totalRemainingDue };
+    return { totalQuotedOrderTotal, totalDeposits, totalFinalPaymentDue, totalRemainingDue };
   }, [filteredData]);
 
   // Get month labels
@@ -202,8 +201,8 @@ export function ExpectedCashFlowDialog({
             <div className="text-lg font-bold text-green-600">${totals.totalDeposits.toLocaleString()}</div>
           </div>
           <div className="text-center">
-            <div className="text-xs text-muted-foreground">Final Payments</div>
-            <div className="text-lg font-bold text-foreground">${totals.totalFinalPayment.toLocaleString()}</div>
+            <div className="text-xs text-muted-foreground">Final Payment Due</div>
+            <div className="text-lg font-bold text-foreground">${totals.totalFinalPaymentDue.toLocaleString()}</div>
           </div>
           <div className="text-center">
             <div className="text-xs text-muted-foreground">Remaining Due</div>
@@ -290,7 +289,7 @@ export function ExpectedCashFlowDialog({
                   </SortableHeader>
                 </TableHead>
                 <TableHead className="text-right">Deposit</TableHead>
-                <TableHead className="text-right">Final Payment</TableHead>
+                <TableHead className="text-right">Final Payment Due</TableHead>
                 <TableHead className="text-right">
                   <SortableHeader
                     sortKey="remainingDue"
@@ -353,13 +352,7 @@ export function ExpectedCashFlowDialog({
                     <TableCell className="text-right font-bold text-orange-500">
                       {isStatus1to11(order)
                         ? (order.remainingDue != null ? `$${order.remainingDue.toLocaleString()}` : 'N/A')
-                        : (isStatus12(order)
-                            ? (() => {
-                                const anyOrder = order as any;
-                                const v = anyOrder.finalPaymentDue ?? order.finalPayment;
-                                return v != null ? `$${Number(v).toLocaleString()}` : 'N/A';
-                              })()
-                            : '')}
+                        : ''}
                     </TableCell>
                     <TableCell>{order.agent || '-'}</TableCell>
                     <TableCell className="text-right">{commissionPercent}%</TableCell>
