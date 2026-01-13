@@ -49,10 +49,10 @@ export function OutstandingDetailsDialog({
           </DialogTitle>
         </DialogHeader>
         
-        <ScrollArea className="h-[65vh]">
+        <div className="h-[65vh] overflow-auto">
           <Table>
-            <TableHeader className="sticky top-0 z-10 bg-card">
-              <TableRow>
+            <TableHeader className="sticky top-0 z-20 bg-background [&_th]:bg-background">
+              <TableRow className="border-b border-border">
                 <TableHead>Sales Order #</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead>Product</TableHead>
@@ -105,7 +105,7 @@ export function OutstandingDetailsDialog({
               )}
             </TableBody>
           </Table>
-        </ScrollArea>
+        </div>
         
         <div className="border-t pt-4 mt-2">
           <div className="flex justify-between text-sm text-muted-foreground">
