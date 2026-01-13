@@ -439,6 +439,53 @@ export default function Dashboard() {
     return onHoldOrders.reduce((sum, o) => sum + (o.remainingDue || 0), 0);
   }, [onHoldOrders]);
 
+  // Export dashboard data to CSV
+  const handleExport = () => {
+    const headers = [
+      'Order ID',
+      'Sales Order Number',
+      'Customer',
+      'Product',
+      'Agent',
+      'Account Manager',
+      'Status',
+      'Order Total',
+      'Remaining Due',
+      'Commission Due',
+      'Start Date',
+      'Due Date',
+    ];
+
+    const rows = filteredOrders.map((order) => [
+      order.id || '',
+      order.salesOrderNumber || '',
+      order.customer || '',
+      order.productName || '',
+      order.agent || '',
+      order.accountManager || '',
+      order.currentStatus || '',
+      order.orderTotal?.toString() || '0',
+      order.remainingDue?.toString() || '0',
+      order.commissionDue?.toString() || '0',
+      order.startDate || '',
+      order.dueDate || '',
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row) =>
+        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+      ),
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `dashboard-export-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
   // Metric explanations for tooltips
   const metricExplanations = {
     activeCustomers: `Unique customers with on-track orders matching current filters.\n\nSource: JIRA CM Project → Customer field (customfield_10038)\n\nCalculation: COUNT(DISTINCT customer) from on-track orders\n\nExcludes: Customers with only at-risk/off-track orders`,
@@ -465,6 +512,7 @@ export default function Dashboard() {
           <Header 
             lastSynced={lastSynced} 
             onRefresh={refresh} 
+            onExport={handleExport}
             isLoading={isLoading} 
           />
           
