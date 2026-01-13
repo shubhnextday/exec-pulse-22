@@ -322,8 +322,9 @@ serve(async (req) => {
           customer: customerName,
           productName: fields[FIELD_MAPPINGS.productName] || fields.summary || 'Unknown Product',
           quantityOrdered: parseFloat(fields[FIELD_MAPPINGS.quantityOrdered]) || 0,
-          quotedOrderTotal: quotedOrderTotal, // Quoted Order Total from Jira
-          orderTotal, // Gross Order Total (or Quoted if Gross is 0)
+          quotedOrderTotal: quotedOrderTotal, // Quoted Order Total from Jira (customfield_11567)
+          grossOrderTotal: grossOrderTotal, // Gross Order Total from Jira (customfield_11663)
+          orderTotal, // Gross Order Total (or Quoted if Gross is 0) - used for calculations
           depositAmount,
           finalPayment: orderTotal - depositAmount,
           remainingDue,

@@ -156,10 +156,10 @@ export function RevenueDetailsDialog({ open, onOpenChange, orders }: RevenueDeta
                     <TableCell>{order.salesOrderNumber || '-'}</TableCell>
                     <TableCell>{order.customer}</TableCell>
                     <TableCell className="text-right">
-                      ${(anyOrder.quotedOrderTotal || order.orderTotal)?.toLocaleString() || '0'}
+                      ${(order.quotedOrderTotal ?? 0).toLocaleString()}
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      ${order.orderTotal?.toLocaleString() || '0'}
+                      ${(order.grossOrderTotal ?? 0).toLocaleString()}
                     </TableCell>
                     <TableCell className="text-right text-emerald-600">
                       ${depositThisMonth.toLocaleString()}
