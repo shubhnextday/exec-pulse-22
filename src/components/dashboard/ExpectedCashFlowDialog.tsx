@@ -30,13 +30,18 @@ interface ExpectedCashFlowDialogProps {
 type MonthFilter = 'all' | 'this-month' | 'next-month' | 'month-after' | 'future';
 
 // Helper function to get the effective remaining due based on status
-// Status 1-11: use remainingDue field
-// Status 12: use finalPayment field (Final Payment Due)
+// Status 1-11 (Ready to Start through In Packaging): use remainingAmount field (Remaining Amount)
+// Status 12 (Finished Goods Testing): use finalPayment field (Final Payment Due)
 const getEffectiveRemainingDue = (order: Order): number => {
   const statusNum = parseInt(order.currentStatus?.replace(/\D/g, '') || '0', 10);
-  if (statusNum === 12) {
+  if (statusNum >= 1 && statusNum <= 11) {
+    // Statuses 1-11: use Remaining Amount field
+    return order.remainingDue || 0;
+  } else if (statusNum === 12) {
+    // Status 12 (Finished Goods Testing): use Final Payment Due field
     return order.finalPayment || 0;
   }
+  // For any other status, return 0 or fallback
   return order.remainingDue || 0;
 };
 
