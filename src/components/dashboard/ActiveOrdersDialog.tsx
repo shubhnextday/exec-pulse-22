@@ -96,10 +96,10 @@ export function ActiveOrdersDialog({ open, onOpenChange, orders }: ActiveOrdersD
           />
         </TableControlsBar>
         
-        <ScrollArea className="h-[50vh]">
+        <div className="h-[50vh] overflow-auto">
           <Table>
-            <TableHeader className="sticky top-0 z-10 bg-card">
-              <TableRow>
+            <TableHeader className="sticky top-0 z-20 bg-background [&_th]:bg-background">
+              <TableRow className="border-b border-border">
                 <TableHead>
                   <SortableHeader
                     sortKey="id"
@@ -200,7 +200,7 @@ export function ActiveOrdersDialog({ open, onOpenChange, orders }: ActiveOrdersD
               )}
             </TableBody>
           </Table>
-        </ScrollArea>
+        </div>
         
         <div className="text-sm text-muted-foreground pt-2 border-t">
           Total Value: <span className="font-semibold text-foreground">

@@ -107,10 +107,10 @@ export function CommissionsDetailsDialog({ open, onOpenChange, orders }: Commiss
           />
         </TableControlsBar>
 
-        <ScrollArea className="h-[35vh]">
+        <div className="h-[35vh] overflow-auto">
           <Table>
-            <TableHeader className="sticky top-0 z-10 bg-card">
-              <TableRow>
+            <TableHeader className="sticky top-0 z-20 bg-background [&_th]:bg-background">
+              <TableRow className="border-b border-border">
                 <TableHead>
                   <SortableHeader
                     sortKey="id"
@@ -188,7 +188,7 @@ export function CommissionsDetailsDialog({ open, onOpenChange, orders }: Commiss
               )}
             </TableBody>
           </Table>
-        </ScrollArea>
+        </div>
         
         <div className="text-sm text-muted-foreground pt-2 border-t">
           {filteredData.length} orders have commissions due

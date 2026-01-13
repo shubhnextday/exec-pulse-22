@@ -83,10 +83,10 @@ export function OrderHealthDialog({ open, onOpenChange, orders }: OrderHealthDia
           searchPlaceholder="Search orders..."
           className="px-0 border-b-0 pb-3"
         />
-        <ScrollArea className="h-[35vh]">
+        <div className="h-[35vh] overflow-auto">
           <Table>
-            <TableHeader className="sticky top-0 z-10 bg-card">
-              <TableRow>
+            <TableHeader className="sticky top-0 z-20 bg-background [&_th]:bg-background">
+              <TableRow className="border-b border-border">
                 <TableHead>
                   <SortableHeader
                     sortKey="id"
@@ -191,7 +191,7 @@ export function OrderHealthDialog({ open, onOpenChange, orders }: OrderHealthDia
               )}
             </TableBody>
           </Table>
-        </ScrollArea>
+        </div>
       </>
     );
   };
