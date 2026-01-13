@@ -11,7 +11,8 @@ const FIELD_MAPPINGS = {
   customer: 'customfield_10038',
   agent: 'customfield_11573',
   accountManager: 'customfield_11393',
-  orderTotal: 'customfield_11567',
+  orderTotal: 'customfield_11567', // Quoted Order Total
+  grossOrderTotal: 'customfield_11663', // Gross Order Total $$
   depositAmount: 'customfield_10074',
   remainingAmount: 'customfield_11569',
   finalPaymentDue: 'customfield_11650', // Final Payment Due field
@@ -200,6 +201,7 @@ serve(async (req) => {
         FIELD_MAPPINGS.agent,
         FIELD_MAPPINGS.accountManager,
         FIELD_MAPPINGS.orderTotal,
+        FIELD_MAPPINGS.grossOrderTotal,
         FIELD_MAPPINGS.depositAmount,
         FIELD_MAPPINGS.remainingAmount,
         FIELD_MAPPINGS.finalPaymentDue,
@@ -266,7 +268,10 @@ serve(async (req) => {
         const fields = issue.fields || {};
         const issueType = fields.issuetype?.name || '';
         
-        const orderTotal = parseFloat(fields[FIELD_MAPPINGS.orderTotal]) || 0;
+        const quotedOrderTotal = parseFloat(fields[FIELD_MAPPINGS.orderTotal]) || 0;
+        const grossOrderTotal = parseFloat(fields[FIELD_MAPPINGS.grossOrderTotal]) || 0;
+        // Use Gross Order Total if available, otherwise fall back to Quoted Order Total
+        const orderTotal = grossOrderTotal || quotedOrderTotal;
         const depositAmount = parseFloat(fields[FIELD_MAPPINGS.depositAmount]) || 0;
         // Use JIRA's remainingAmount field directly - if it's 0 or not set, the order is paid
         const remainingAmountFromJira = parseFloat(fields[FIELD_MAPPINGS.remainingAmount]);
@@ -317,7 +322,8 @@ serve(async (req) => {
           customer: customerName,
           productName: fields[FIELD_MAPPINGS.productName] || fields.summary || 'Unknown Product',
           quantityOrdered: parseFloat(fields[FIELD_MAPPINGS.quantityOrdered]) || 0,
-          orderTotal,
+          quotedOrderTotal: quotedOrderTotal, // Quoted Order Total from Jira
+          orderTotal, // Gross Order Total (or Quoted if Gross is 0)
           depositAmount,
           finalPayment: orderTotal - depositAmount,
           remainingDue,

@@ -18,7 +18,8 @@ export interface Order {
   customer: string;
   productName: string;
   quantityOrdered: number;
-  orderTotal: number;
+  quotedOrderTotal?: number; // Quoted Order Total from Jira
+  orderTotal: number; // Gross Order Total (or Quoted if Gross is 0)
   depositAmount: number;
   /** Order Total - Deposit (legacy field used in some places) */
   finalPayment: number;

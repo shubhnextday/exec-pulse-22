@@ -72,8 +72,13 @@ const getEffectiveRemainingDue = (order: Order): number => {
 };
 
 export function RevenueDetailsDialog({ open, onOpenChange, orders }: RevenueDetailsDialogProps) {
+  // Filter to only orders that actually have payments received this month
+  const ordersWithPaymentsThisMonth = orders.filter(order => 
+    isInCurrentMonth(order.depositReceivedDate) || isInCurrentMonth(order.finalPaymentReceivedDate)
+  );
+
   // Calculate totals based on what was received this month
-  const totals = orders.reduce((acc, order) => {
+  const totals = ordersWithPaymentsThisMonth.reduce((acc, order) => {
     // Add deposit if received this month
     if (isInCurrentMonth(order.depositReceivedDate)) {
       acc.depositsReceived += order.depositAmount || 0;
@@ -87,11 +92,11 @@ export function RevenueDetailsDialog({ open, onOpenChange, orders }: RevenueDeta
 
   const totalCollected = totals.depositsReceived + totals.finalPaymentsReceived;
 
-  // Calculate remaining due for display
-  const totalRemainingDue = orders.reduce((sum, order) => sum + getEffectiveRemainingDue(order), 0);
+  // Calculate remaining due ONLY for orders that have payments this month
+  const totalRemainingDue = ordersWithPaymentsThisMonth.reduce((sum, order) => sum + getEffectiveRemainingDue(order), 0);
 
   // Sort orders by amount collected (deposit + final payment received this month) descending
-  const sortedOrders = [...orders].sort((a, b) => {
+  const sortedOrders = [...ordersWithPaymentsThisMonth].sort((a, b) => {
     const aAmount = (isInCurrentMonth(a.depositReceivedDate) ? (a.depositAmount || 0) : 0) +
                     (isInCurrentMonth(a.finalPaymentReceivedDate) ? (a.finalPayment || 0) : 0);
     const bAmount = (isInCurrentMonth(b.depositReceivedDate) ? (b.depositAmount || 0) : 0) +
@@ -120,7 +125,7 @@ export function RevenueDetailsDialog({ open, onOpenChange, orders }: RevenueDeta
             <div className="text-xl font-bold text-blue-600">${totals.finalPaymentsReceived.toLocaleString()}</div>
           </div>
           <div className="text-center">
-            <div className="text-sm text-muted-foreground">Remaining Due</div>
+            <div className="text-sm text-muted-foreground">Remaining Due (These Orders)</div>
             <div className="text-xl font-bold text-amber-600">${totalRemainingDue.toLocaleString()}</div>
           </div>
         </div>
@@ -132,39 +137,43 @@ export function RevenueDetailsDialog({ open, onOpenChange, orders }: RevenueDeta
                 <TableHead>Order ID</TableHead>
                 <TableHead>Sales Order #</TableHead>
                 <TableHead>Customer</TableHead>
-                <TableHead className="text-right">Quoted Order Total</TableHead>
-                <TableHead className="text-right">Gross Order Total</TableHead>
-                <TableHead className="text-right">Deposit</TableHead>
-                <TableHead className="text-right">Final Payment Received</TableHead>
+                <TableHead className="text-right">Quoted Total</TableHead>
+                <TableHead className="text-right">Gross Total</TableHead>
+                <TableHead className="text-right">Deposit Received</TableHead>
+                <TableHead className="text-right">Final Received</TableHead>
                 <TableHead className="text-right">Remaining</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedOrders.map((order) => (
-                <TableRow key={order.id}>
-                  <TableCell className="font-medium">{order.id}</TableCell>
-                  <TableCell>{order.salesOrderNumber || '-'}</TableCell>
-                  <TableCell>{order.customer}</TableCell>
-                  <TableCell className="text-right font-medium">
-                    ${order.orderTotal?.toLocaleString() || '0'}
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    ${order.orderTotal?.toLocaleString() || '0'}
-                  </TableCell>
-                  <TableCell className="text-right text-emerald-600">
-                    ${order.depositAmount?.toLocaleString() || '0'}
-                  </TableCell>
-                  <TableCell className="text-right text-blue-600">
-                    {isInCurrentMonth(order.finalPaymentReceivedDate) 
-                      ? `$${(order.finalPayment || 0).toLocaleString()}` 
-                      : '$0'}
-                  </TableCell>
-                  <TableCell className="text-right text-amber-600">
-                    ${getEffectiveRemainingDue(order).toLocaleString()}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {orders.length === 0 && (
+              {sortedOrders.map((order) => {
+                const depositThisMonth = isInCurrentMonth(order.depositReceivedDate) ? (order.depositAmount || 0) : 0;
+                const finalThisMonth = isInCurrentMonth(order.finalPaymentReceivedDate) ? (order.finalPayment || 0) : 0;
+                const anyOrder = order as any;
+                
+                return (
+                  <TableRow key={order.id}>
+                    <TableCell className="font-medium">{order.id}</TableCell>
+                    <TableCell>{order.salesOrderNumber || '-'}</TableCell>
+                    <TableCell>{order.customer}</TableCell>
+                    <TableCell className="text-right">
+                      ${(anyOrder.quotedOrderTotal || order.orderTotal)?.toLocaleString() || '0'}
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      ${order.orderTotal?.toLocaleString() || '0'}
+                    </TableCell>
+                    <TableCell className="text-right text-emerald-600">
+                      ${depositThisMonth.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right text-blue-600">
+                      ${finalThisMonth.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right text-amber-600">
+                      ${getEffectiveRemainingDue(order).toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {sortedOrders.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                     No payments received this month
@@ -176,7 +185,7 @@ export function RevenueDetailsDialog({ open, onOpenChange, orders }: RevenueDeta
         </ScrollArea>
         
         <div className="text-sm text-muted-foreground pt-2 border-t">
-          {orders.length} orders included in revenue calculation
+          {sortedOrders.length} orders with payments received this month
         </div>
       </DialogContent>
     </Dialog>
