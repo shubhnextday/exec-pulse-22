@@ -31,13 +31,42 @@ const isInCurrentMonth = (dateStr: string | undefined | null): boolean => {
   return date >= currentMonthStart && date <= currentMonthEnd;
 };
 
+// Helper to extract status number from currentStatus string
+const getStatusNumber = (order: Order): number | null => {
+  const raw = (order.currentStatus || '').trim();
+  if (!raw) return null;
+
+  // Prefer an explicit numeric prefix like "12 - ..."
+  const m = raw.match(/^\s*(\d+)\s*-/);
+  if (m?.[1]) return Number(m[1]);
+
+  // Fallback to label match
+  const normalized = raw.toLowerCase();
+  if (normalized.includes('finished goods testing')) return 12;
+  if (normalized.includes('quote requirements')) return 0;
+
+  return null;
+};
+
+// Check if order is in status 0-11 (uses remainingDue field)
+const isStatus0to11 = (order: Order): boolean => {
+  const statusNum = getStatusNumber(order);
+  return statusNum != null && statusNum >= 0 && statusNum <= 11;
+};
+
+// Check if order is in status 12 (uses finalPaymentDue field)
+const isStatus12 = (order: Order): boolean => {
+  const statusNum = getStatusNumber(order);
+  return statusNum === 12;
+};
+
 // Helper function to get the effective remaining due based on status
-// Status 1-11: use remainingDue field
-// Status 12: use finalPayment field (Final Payment Due)
+// Status 0-11: use remainingDue field
+// Status 12: use finalPaymentDue field (Final Payment Due from Jira)
 const getEffectiveRemainingDue = (order: Order): number => {
-  const statusNum = parseInt(order.currentStatus?.replace(/\D/g, '') || '0', 10);
-  if (statusNum === 12) {
-    return order.finalPayment || 0;
+  if (isStatus12(order)) {
+    const anyOrder = order as any;
+    return (anyOrder.finalPaymentDue ?? order.finalPayment ?? 0) as number;
   }
   return order.remainingDue || 0;
 };
