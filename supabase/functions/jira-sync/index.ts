@@ -269,7 +269,14 @@ serve(async (req) => {
         const issueType = fields.issuetype?.name || '';
         
         const quotedOrderTotal = parseFloat(fields[FIELD_MAPPINGS.orderTotal]) || 0;
-        const grossOrderTotal = parseFloat(fields[FIELD_MAPPINGS.grossOrderTotal]) || 0;
+        const rawGrossOrderTotal = fields[FIELD_MAPPINGS.grossOrderTotal];
+        const grossOrderTotal = parseFloat(rawGrossOrderTotal) || 0;
+        
+        // Debug log for CM-1297 to verify field is coming through
+        if (issue.key === 'CM-1297') {
+          console.log(`CM-1297 Debug: rawGrossOrderTotal=${JSON.stringify(rawGrossOrderTotal)}, parsed=${grossOrderTotal}, quotedOrderTotal=${quotedOrderTotal}`);
+        }
+        
         // Use Gross Order Total if available, otherwise fall back to Quoted Order Total
         const orderTotal = grossOrderTotal || quotedOrderTotal;
         const depositAmount = parseFloat(fields[FIELD_MAPPINGS.depositAmount]) || 0;
