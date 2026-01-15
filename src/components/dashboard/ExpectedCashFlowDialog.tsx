@@ -83,13 +83,28 @@ export function ExpectedCashFlowDialog({
   const [monthFilter, setMonthFilter] = useState<MonthFilter>('this-month');
   const [selectedCustomer, setSelectedCustomer] = useState('All Customers');
   
-  // Filter orders to only those with EST Ship Date and remaining due > 0, excluding On Hold orders
+  // Filter orders to only those with EST Ship Date and remaining due > 0
+  // Exclude: Partial Shipment, Final Product Shipped, Canceled, On Hold
   const activeOrdersWithShipDate = useMemo(() => {
+    const excludedStatuses = [
+      'partial shipment',
+      'final product shipped',
+      'canceled',
+      'on hold'
+    ];
+    
     return orders.filter(order => {
-      // Exclude On Hold orders
-      if (order.orderHealth === 'on-hold' || order.currentStatus === 'On Hold') {
+      // Exclude On Hold orders by orderHealth
+      if (order.orderHealth === 'on-hold') {
         return false;
       }
+      
+      // Exclude orders with specific statuses
+      const currentStatusLower = (order.currentStatus || '').toLowerCase();
+      if (excludedStatuses.some(status => currentStatusLower.includes(status))) {
+        return false;
+      }
+      
       const shipDate = order.estShipDate || order.dueDate;
       if (!shipDate) return false;
       // Include orders with remaining due > 0 OR orderTotal > 0 (to show expected revenue)
