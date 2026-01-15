@@ -427,10 +427,12 @@ export default function Dashboard() {
   }, [filteredOrders]);
 
   // Get ALL On Hold orders from orderHealthOrders (includes orders without financial data)
+  // Only include orders where currentStatus explicitly contains "On Hold"
   const onHoldOrders = useMemo(() => {
-    return displayOrderHealthOrders.filter(order => 
-      order.orderHealth === 'on-hold' || order.currentStatus === 'On Hold'
-    );
+    return displayOrderHealthOrders.filter(order => {
+      const status = (order.currentStatus || '').toLowerCase();
+      return status.includes('on hold');
+    });
   }, [displayOrderHealthOrders]);
 
   // Active outstanding orders (exclude On Hold from the outstanding list)
