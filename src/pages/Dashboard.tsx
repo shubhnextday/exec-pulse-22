@@ -426,11 +426,14 @@ export default function Dashboard() {
       .sort((a, b) => b.totalOrders - a.totalOrders);
   }, [filteredOrders]);
 
-  // Split outstanding orders: On Hold vs Active Outstanding
+  // Get ALL On Hold orders from orderHealthOrders (includes orders without financial data)
   const onHoldOrders = useMemo(() => {
-    return allTimeOutstandingOrders.filter(order => order.currentStatus === 'On Hold');
-  }, [allTimeOutstandingOrders]);
+    return displayOrderHealthOrders.filter(order => 
+      order.orderHealth === 'on-hold' || order.currentStatus === 'On Hold'
+    );
+  }, [displayOrderHealthOrders]);
 
+  // Active outstanding orders (exclude On Hold from the outstanding list)
   const activeOutstandingOrders = useMemo(() => {
     return allTimeOutstandingOrders.filter(order => order.currentStatus !== 'On Hold');
   }, [allTimeOutstandingOrders]);
