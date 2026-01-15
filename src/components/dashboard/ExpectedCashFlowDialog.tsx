@@ -86,7 +86,7 @@ export function ExpectedCashFlowDialog({
   // Filter orders to only those with EST Ship Date and remaining due > 0
   // Exclude: Partial Shipment, Final Product Shipped, Canceled, On Hold
   const activeOrdersWithShipDate = useMemo(() => {
-    const excludedStatuses = [
+    const excludedKeywords = [
       'partial shipment',
       'final product shipped',
       'canceled',
@@ -99,9 +99,10 @@ export function ExpectedCashFlowDialog({
         return false;
       }
       
-      // Exclude orders with specific statuses
+      // Exclude orders with specific statuses (handles formats like "13 - Partial Shipment")
       const currentStatusLower = (order.currentStatus || '').toLowerCase();
-      if (excludedStatuses.some(status => currentStatusLower.includes(status))) {
+      const isExcluded = excludedKeywords.some(keyword => currentStatusLower.includes(keyword));
+      if (isExcluded) {
         return false;
       }
       
