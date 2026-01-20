@@ -130,18 +130,18 @@ export function RevenueDetailsDialog({ open, onOpenChange, orders }: RevenueDeta
           </div>
         </div>
         
-        <ScrollArea className="h-[50vh]">
+        <div className="h-[50vh] overflow-auto">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 z-10 bg-background">
               <TableRow>
-                <TableHead>Order ID</TableHead>
-                <TableHead>Sales Order #</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead className="text-right">Quoted Total</TableHead>
-                <TableHead className="text-right">Gross Total</TableHead>
-                <TableHead className="text-right">Deposit Received</TableHead>
-                <TableHead className="text-right">Final Payment Received</TableHead>
-                <TableHead className="text-right">Remaining</TableHead>
+                <TableHead className="bg-background">Order ID</TableHead>
+                <TableHead className="bg-background">Sales Order #</TableHead>
+                <TableHead className="bg-background">Customer</TableHead>
+                <TableHead className="text-right bg-background">Quoted Total</TableHead>
+                <TableHead className="text-right bg-background">Gross Total</TableHead>
+                <TableHead className="text-right bg-background">Deposit Received</TableHead>
+                <TableHead className="text-right bg-background">Final Payment Received</TableHead>
+                <TableHead className="text-right bg-background">Remaining</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -182,7 +182,7 @@ export function RevenueDetailsDialog({ open, onOpenChange, orders }: RevenueDeta
               )}
             </TableBody>
           </Table>
-        </ScrollArea>
+        </div>
         
         <div className="text-sm text-muted-foreground pt-2 border-t">
           {sortedOrders.length} orders with payments received this month
