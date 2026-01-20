@@ -233,7 +233,8 @@ export default function Dashboard() {
     
     // Monthly Revenue: Sum of deposits received this month + final payments received this month
     // Uses depositReceivedDate and finalPaymentReceivedDate fields
-    const monthlyRevenue = displayOrders.reduce((sum, order) => {
+    // IMPORTANT: Use displayOrderHealthOrders (all non-cancelled orders) to include shipped orders with final payments
+    const monthlyRevenue = displayOrderHealthOrders.reduce((sum, order) => {
       let amount = 0;
       // Add deposit if received this month
       if (isInCurrentMonth(order.depositReceivedDate)) {
@@ -283,6 +284,7 @@ export default function Dashboard() {
   }, [displayWebProjects, displayOrders, filteredActiveOrders, filteredOrderHealthOrders, activeCustomers, summary, allTimeOutstandingOrders, filteredOrders]);
 
   // Orders that received money this month (deposit or final payment received this month)
+  // IMPORTANT: Use displayOrderHealthOrders to include shipped orders with final payments received
   const ordersReceivedThisMonth = useMemo(() => {
     const now = new Date();
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -294,10 +296,10 @@ export default function Dashboard() {
       return date >= currentMonthStart && date <= currentMonthEnd;
     };
     
-    return displayOrders.filter(order => 
+    return displayOrderHealthOrders.filter(order => 
       isInCurrentMonth(order.depositReceivedDate) || isInCurrentMonth(order.finalPaymentReceivedDate)
     );
-  }, [displayOrders]);
+  }, [displayOrderHealthOrders]);
 
   // Calculate cash flow projections from ALL active orders (not filtered by date)
   // Uses same logic as ExpectedCashFlowDialog for consistency
