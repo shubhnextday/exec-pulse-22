@@ -33,6 +33,7 @@ import {
   Info,
 } from 'lucide-react';
 import { useJiraData } from '@/hooks/useJiraData';
+import type { Order } from '@/types/dashboard';
 import {
   mockExecutiveSummary,
   mockOrders,
@@ -299,8 +300,49 @@ export default function Dashboard() {
   }, [displayOrders]);
 
   // Calculate cash flow projections from ALL active orders (not filtered by date)
+  // Uses same logic as ExpectedCashFlowDialog for consistency
   const cashFlowProjections = useMemo(() => {
-    // Group orders by EST Ship Date and sum remainingDue
+    // Helper to get status number from order (same logic as dialog)
+    const getStatusNumber = (order: Order): number | null => {
+      const raw = (order.currentStatus || '').trim();
+      if (!raw) return null;
+      const m = raw.match(/^\s*(\d+)\s*-/);
+      if (m?.[1]) return Number(m[1]);
+      const normalized = raw.toLowerCase();
+      if (normalized.includes('finished goods testing')) return 12;
+      if (normalized.includes('quote requirements')) return 0;
+      return null;
+    };
+
+    const isStatus0to11 = (order: Order): boolean => {
+      const statusNum = getStatusNumber(order);
+      return statusNum != null && statusNum >= 0 && statusNum <= 11;
+    };
+
+    const isStatus12 = (order: Order): boolean => {
+      const statusNum = getStatusNumber(order);
+      return statusNum === 12;
+    };
+
+    // Get effective remaining due based on status (same as dialog)
+    const getEffectiveRemainingDue = (order: Order): number => {
+      if (isStatus0to11(order)) return order.remainingDue || 0;
+      if (isStatus12(order)) {
+        const anyOrder = order as any;
+        return (anyOrder.finalPaymentDue ?? order.finalPayment ?? 0) as number;
+      }
+      return 0;
+    };
+
+    // Excluded statuses (same as dialog)
+    const excludedKeywords = [
+      'partial shipment',
+      'final product shipped',
+      'canceled',
+      'on hold'
+    ];
+
+    // Group orders by EST Ship Date and sum remaining due
     const projectionMap = new Map<string, { 
       amount: number; 
       customers: Set<string>; 
@@ -308,11 +350,22 @@ export default function Dashboard() {
       orders: { id: string; customer: string; productName: string; remainingDue: number; status: string }[];
     }>();
     
-    // Use displayOrderHealthOrders (all active non-cancelled orders) instead of filteredOrders
     displayOrderHealthOrders.forEach(order => {
+      // Exclude On Hold orders by orderHealth
+      if (order.orderHealth === 'on-hold') return;
+      
+      // Exclude orders with specific statuses
+      const currentStatusLower = (order.currentStatus || '').toLowerCase();
+      const isExcluded = excludedKeywords.some(keyword => currentStatusLower.includes(keyword));
+      if (isExcluded) return;
+      
       // Use estShipDate, fallback to dueDate if not available
       const shipDate = order.estShipDate || order.dueDate;
-      if (!shipDate || !order.remainingDue || order.remainingDue <= 0) return;
+      if (!shipDate) return;
+      
+      // Get effective remaining due based on status
+      const effectiveRemainingDue = getEffectiveRemainingDue(order);
+      if (effectiveRemainingDue <= 0) return;
       
       const dateKey = shipDate.substring(0, 10); // Get YYYY-MM-DD
       
@@ -320,19 +373,19 @@ export default function Dashboard() {
         id: order.id,
         customer: order.customer,
         productName: order.productName,
-        remainingDue: order.remainingDue,
+        remainingDue: effectiveRemainingDue,
         status: order.currentStatus,
       };
       
       if (projectionMap.has(dateKey)) {
         const existing = projectionMap.get(dateKey)!;
-        existing.amount += order.remainingDue;
+        existing.amount += effectiveRemainingDue;
         existing.customers.add(order.customer);
         existing.orderCount += 1;
         existing.orders.push(orderInfo);
       } else {
         projectionMap.set(dateKey, {
-          amount: order.remainingDue,
+          amount: effectiveRemainingDue,
           customers: new Set([order.customer]),
           orderCount: 1,
           orders: [orderInfo],
