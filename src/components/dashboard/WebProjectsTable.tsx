@@ -240,7 +240,7 @@ export function WebProjectsTable({ projects }: WebProjectsTableProps) {
         </div>
       ) : (
         <ScrollArea className="h-[500px]">
-          <div className="min-w-[1200px]">
+          <div className="min-w-[1400px]">
             <table className="data-table w-full">
               <thead className="sticky top-0 z-10">
                 <tr>
@@ -262,6 +262,29 @@ export function WebProjectsTable({ projects }: WebProjectsTableProps) {
                       onSort={() => handleSort('status')}
                     >
                       Status
+                    </SortableHeader>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 min-w-[70px]">
+                    <SortableHeader
+                      sortKey="totalTasks"
+                      currentSortKey={sortConfig.key as string}
+                      direction={sortConfig.direction}
+                      onSort={() => handleSort('totalTasks')}
+                    >
+                      Tasks
+                    </SortableHeader>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 min-w-[120px]">
+                    Progress
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 min-w-[90px]">
+                    <SortableHeader
+                      sortKey="percentComplete"
+                      currentSortKey={sortConfig.key as string}
+                      direction={sortConfig.direction}
+                      onSort={() => handleSort('percentComplete')}
+                    >
+                      % Complete
                     </SortableHeader>
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 min-w-[80px]">
@@ -337,6 +360,27 @@ export function WebProjectsTable({ projects }: WebProjectsTableProps) {
                     </td>
                     <td className="px-4 py-3.5 border-t border-border/30">
                       <StatusBadge status={project.status} isOffTrack={project.isOffTrack} />
+                    </td>
+                    <td className="px-4 py-3.5 border-t border-border/30 mono text-sm">
+                      {project.totalTasks}
+                    </td>
+                    <td className="px-4 py-3.5 border-t border-border/30">
+                      <ProgressBar 
+                        notStarted={project.notStarted}
+                        inProgress={project.inProgress}
+                        completed={project.completed}
+                        total={project.totalTasks}
+                      />
+                    </td>
+                    <td className="px-4 py-3.5 border-t border-border/30">
+                      <span className={cn(
+                        "mono font-medium",
+                        project.percentComplete >= 75 && "text-success",
+                        project.percentComplete >= 50 && project.percentComplete < 75 && "text-primary",
+                        project.percentComplete < 50 && "text-muted-foreground"
+                      )}>
+                        {project.percentComplete}%
+                      </span>
                     </td>
                     <td className="px-4 py-3.5 border-t border-border/30 mono text-sm">
                       {project.totalChildItems || 0}
