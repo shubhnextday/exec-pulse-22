@@ -69,6 +69,11 @@ export interface WebProject {
   startDate: string;
   dueDate: string;
   isOffTrack: boolean;
+  totalChildItems?: number;
+  totalBugs?: number;
+  devLead?: string;
+  projectLead?: string;
+  projectHealth?: string;
 }
 
 export interface TeamMember {

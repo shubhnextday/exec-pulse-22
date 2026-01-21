@@ -1,23 +1,24 @@
 import { WebProject, EpicStatus } from '@/types/dashboard';
 import { cn } from '@/lib/utils';
-import { AlertTriangle, CheckCircle2, Code2, PauseCircle, PlayCircle, Clock, Palette, Monitor, TestTube, RefreshCw, XCircle, FileText } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Code2, PauseCircle, PlayCircle, Clock, Palette, Monitor, TestTube, RefreshCw, XCircle, FileText, Bug, Users, User, Activity } from 'lucide-react';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { useMemo } from 'react';
 import { TableControlsBar, SortableHeader, TableFilter } from '@/components/ui/table-controls';
 import { useTableFeatures } from '@/hooks/useTableFeatures';
+import { Badge } from '@/components/ui/badge';
 
 interface WebProjectsTableProps {
   projects: WebProject[];
 }
 
-// Workflow order for sorting
+// Workflow order for sorting - Open comes after Continuous Dev and before Done
 const STATUS_ORDER: Record<string, number> = {
-  'Open': 1,
-  'In Requirements': 2,
-  'In Design': 3,
-  'In Website Development': 4,
-  'In Final QA Testing': 5,
-  'Continuous Development': 6,
+  'In Requirements': 1,
+  'In Design': 2,
+  'In Website Development': 3,
+  'In Final QA Testing': 4,
+  'Continuous Development': 5,
+  'Open': 6,
   'Done': 7,
   'On Hold': 8,
   'Canceled': 9,
@@ -100,7 +101,33 @@ function StatusBadge({ status, isOffTrack }: { status: EpicStatus; isOffTrack: b
   );
 }
 
-function ProgressBar({ 
+function ProjectHealthBadge({ health }: { health?: string | null }) {
+  if (!health) {
+    return <span className="text-muted-foreground text-sm">-</span>;
+  }
+  
+  const lower = health.toLowerCase();
+  let className = 'bg-muted text-muted-foreground';
+  
+  if (lower.includes('on track') || lower.includes('on-track') || lower.includes('healthy')) {
+    className = 'bg-success/15 text-success border-success/30';
+  } else if (lower.includes('at risk') || lower.includes('at-risk')) {
+    className = 'bg-warning/15 text-warning border-warning/30';
+  } else if (lower.includes('off track') || lower.includes('off-track') || lower.includes('critical')) {
+    className = 'bg-destructive/15 text-destructive border-destructive/30';
+  }
+  
+  return (
+    <span className={cn(
+      "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border",
+      className
+    )}>
+      {health}
+    </span>
+  );
+}
+
+function ProgressBar({
   notStarted, 
   inProgress, 
   completed, 
@@ -213,104 +240,133 @@ export function WebProjectsTable({ projects }: WebProjectsTableProps) {
         </div>
       ) : (
         <ScrollArea className="h-[500px]">
-          <table className="data-table w-full table-fixed">
-            <thead className="sticky top-0 z-10">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 w-[30%]">
-                  <SortableHeader
-                    sortKey="epicName"
-                    currentSortKey={sortConfig.key as string}
-                    direction={sortConfig.direction}
-                    onSort={() => handleSort('epicName')}
-                  >
-                    Epic
-                  </SortableHeader>
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 w-[18%]">
-                  <SortableHeader
-                    sortKey="status"
-                    currentSortKey={sortConfig.key as string}
-                    direction={sortConfig.direction}
-                    onSort={() => handleSort('status')}
-                  >
-                    Status
-                  </SortableHeader>
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 w-[10%]">
-                  <SortableHeader
-                    sortKey="totalTasks"
-                    currentSortKey={sortConfig.key as string}
-                    direction={sortConfig.direction}
-                    onSort={() => handleSort('totalTasks')}
-                  >
-                    Tasks
-                  </SortableHeader>
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 w-[18%]">
-                  Progress
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 w-[12%]">
-                  <SortableHeader
-                    sortKey="percentComplete"
-                    currentSortKey={sortConfig.key as string}
-                    direction={sortConfig.direction}
-                    onSort={() => handleSort('percentComplete')}
-                  >
-                    % Complete
-                  </SortableHeader>
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 w-[12%]">
-                  <SortableHeader
-                    sortKey="dueDate"
-                    currentSortKey={sortConfig.key as string}
-                    direction={sortConfig.direction}
-                    onSort={() => handleSort('dueDate')}
-                  >
-                    Due Date
-                  </SortableHeader>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedProjects.map((project) => (
-                <tr key={project.id} className="hover:bg-primary/5 transition-colors">
-                  <td className="px-4 py-3.5 border-t border-border/30">
-                    <div className="truncate">
-                      <p className="font-medium text-foreground truncate">{project.epicName}</p>
-                      <p className="text-[11px] text-muted-foreground mono truncate">{project.epicKey}</p>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3.5 border-t border-border/30">
-                    <StatusBadge status={project.status} isOffTrack={project.isOffTrack} />
-                  </td>
-                  <td className="px-4 py-3.5 border-t border-border/30 mono text-sm">
-                    {project.totalTasks}
-                  </td>
-                  <td className="px-4 py-3.5 border-t border-border/30">
-                    <ProgressBar 
-                      notStarted={project.notStarted}
-                      inProgress={project.inProgress}
-                      completed={project.completed}
-                      total={project.totalTasks}
-                    />
-                  </td>
-                  <td className="px-4 py-3.5 border-t border-border/30">
-                    <span className={cn(
-                      "mono font-medium",
-                      project.percentComplete >= 75 && "text-success",
-                      project.percentComplete >= 50 && project.percentComplete < 75 && "text-primary",
-                      project.percentComplete < 50 && "text-muted-foreground"
-                    )}>
-                      {project.percentComplete}%
-                    </span>
-                  </td>
-                  <td className="px-4 py-3.5 border-t border-border/30 text-sm truncate">
-                    {project.dueDate}
-                  </td>
+          <div className="min-w-[1200px]">
+            <table className="data-table w-full">
+              <thead className="sticky top-0 z-10">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 min-w-[200px]">
+                    <SortableHeader
+                      sortKey="epicName"
+                      currentSortKey={sortConfig.key as string}
+                      direction={sortConfig.direction}
+                      onSort={() => handleSort('epicName')}
+                    >
+                      Epic
+                    </SortableHeader>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 min-w-[140px]">
+                    <SortableHeader
+                      sortKey="status"
+                      currentSortKey={sortConfig.key as string}
+                      direction={sortConfig.direction}
+                      onSort={() => handleSort('status')}
+                    >
+                      Status
+                    </SortableHeader>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 min-w-[80px]">
+                    <SortableHeader
+                      sortKey="totalChildItems"
+                      currentSortKey={sortConfig.key as string}
+                      direction={sortConfig.direction}
+                      onSort={() => handleSort('totalChildItems')}
+                    >
+                      Items
+                    </SortableHeader>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 min-w-[70px]">
+                    <SortableHeader
+                      sortKey="totalBugs"
+                      currentSortKey={sortConfig.key as string}
+                      direction={sortConfig.direction}
+                      onSort={() => handleSort('totalBugs')}
+                    >
+                      Bugs
+                    </SortableHeader>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 min-w-[120px]">
+                    <SortableHeader
+                      sortKey="devLead"
+                      currentSortKey={sortConfig.key as string}
+                      direction={sortConfig.direction}
+                      onSort={() => handleSort('devLead')}
+                    >
+                      Dev Lead
+                    </SortableHeader>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 min-w-[120px]">
+                    <SortableHeader
+                      sortKey="projectLead"
+                      currentSortKey={sortConfig.key as string}
+                      direction={sortConfig.direction}
+                      onSort={() => handleSort('projectLead')}
+                    >
+                      Project Lead
+                    </SortableHeader>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 min-w-[100px]">
+                    <SortableHeader
+                      sortKey="projectHealth"
+                      currentSortKey={sortConfig.key as string}
+                      direction={sortConfig.direction}
+                      onSort={() => handleSort('projectHealth')}
+                    >
+                      Health
+                    </SortableHeader>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 min-w-[100px]">
+                    <SortableHeader
+                      sortKey="dueDate"
+                      currentSortKey={sortConfig.key as string}
+                      direction={sortConfig.direction}
+                      onSort={() => handleSort('dueDate')}
+                    >
+                      Due Date
+                    </SortableHeader>
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {sortedProjects.map((project) => (
+                  <tr key={project.id} className="hover:bg-primary/5 transition-colors">
+                    <td className="px-4 py-3.5 border-t border-border/30">
+                      <div className="truncate">
+                        <p className="font-medium text-foreground truncate">{project.epicName}</p>
+                        <p className="text-[11px] text-muted-foreground mono truncate">{project.epicKey}</p>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3.5 border-t border-border/30">
+                      <StatusBadge status={project.status} isOffTrack={project.isOffTrack} />
+                    </td>
+                    <td className="px-4 py-3.5 border-t border-border/30 mono text-sm">
+                      {project.totalChildItems || 0}
+                    </td>
+                    <td className="px-4 py-3.5 border-t border-border/30">
+                      <span className={cn(
+                        "mono text-sm",
+                        (project.totalBugs || 0) > 0 && "text-destructive font-medium"
+                      )}>
+                        {project.totalBugs || 0}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3.5 border-t border-border/30 text-sm truncate">
+                      {project.devLead || '-'}
+                    </td>
+                    <td className="px-4 py-3.5 border-t border-border/30 text-sm truncate">
+                      {project.projectLead || '-'}
+                    </td>
+                    <td className="px-4 py-3.5 border-t border-border/30">
+                      <ProjectHealthBadge health={project.projectHealth} />
+                    </td>
+                    <td className="px-4 py-3.5 border-t border-border/30 text-sm truncate">
+                      {project.dueDate || '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <ScrollBar orientation="horizontal" />
         </ScrollArea>
       )}
     </div>
