@@ -56,6 +56,9 @@ function getDateRangeFromSelection(range: string): { start: string; end: string 
   const today = now.toISOString().split('T')[0];
   
   switch (range) {
+    case 'all-time':
+      // Return a very old start date to include all historical data
+      return { start: '2000-01-01', end: today };
     case 'last-6-months': {
       const date = new Date(now);
       date.setMonth(date.getMonth() - 6);
