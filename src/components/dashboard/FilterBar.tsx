@@ -62,6 +62,7 @@ export function FilterBar({
             <SelectValue placeholder="Date Range" />
           </SelectTrigger>
           <SelectContent className="bg-card border-border z-[100]">
+            <SelectItem value="all-time">All Time</SelectItem>
             <SelectItem value="this-month">This Month</SelectItem>
             <SelectItem value="last-30-days">Last 30 Days</SelectItem>
             <SelectItem value="last-60-days">Last 60 Days</SelectItem>
