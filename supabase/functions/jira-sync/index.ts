@@ -442,7 +442,60 @@ serve(async (req) => {
       }, 0);
       console.log(`All-time outstanding from ${allTimeOutstandingOrders.length} orders: $${allTimeOutstanding}`);
 
-      // Transform WEB epics
+      // Fetch child issues for all WEB epics to calculate progress
+      console.log('Fetching child issues for WEB epics to calculate progress...');
+      const epicKeys = webIssues.map((issue: any) => issue.key);
+      const epicChildCounts: Record<string, { notStarted: number; inProgress: number; completed: number; total: number }> = {};
+      
+      // Batch fetch child issues for all epics (using "Epic Link" or parent field)
+      if (epicKeys.length > 0) {
+        // Fetch in batches to avoid query limits
+        const batchSize = 50;
+        for (let i = 0; i < epicKeys.length; i += batchSize) {
+          const batchKeys = epicKeys.slice(i, i + batchSize);
+          const epicKeysStr = batchKeys.map((k: string) => `"${k}"`).join(', ');
+          
+          // JQL to get all child issues of these epics
+          const childJql = `"Epic Link" IN (${epicKeysStr}) OR parent IN (${epicKeysStr})`;
+          
+          try {
+            const childIssues = await fetchAllIssues(jiraDomain, headers, childJql, ['status', 'parent', 'customfield_10014']); // customfield_10014 is Epic Link
+            
+            // Initialize counts for batch epics
+            for (const key of batchKeys) {
+              epicChildCounts[key] = { notStarted: 0, inProgress: 0, completed: 0, total: 0 };
+            }
+            
+            // Count issues by status category for each epic
+            for (const child of childIssues) {
+              // Determine which epic this child belongs to
+              const epicLink = child.fields?.customfield_10014 || child.fields?.parent?.key;
+              if (!epicLink || !epicChildCounts[epicLink]) continue;
+              
+              const statusCategory = child.fields?.status?.statusCategory?.key?.toLowerCase() || '';
+              const statusName = child.fields?.status?.name?.toLowerCase() || '';
+              
+              epicChildCounts[epicLink].total++;
+              
+              // Categorize by status category (JIRA standard categories)
+              if (statusCategory === 'done' || statusName.includes('done') || statusName.includes('closed') || statusName.includes('complete')) {
+                epicChildCounts[epicLink].completed++;
+              } else if (statusCategory === 'indeterminate' || statusName.includes('progress') || statusName.includes('review') || statusName.includes('testing')) {
+                epicChildCounts[epicLink].inProgress++;
+              } else {
+                // 'new' category or anything else = not started
+                epicChildCounts[epicLink].notStarted++;
+              }
+            }
+            
+            console.log(`Processed child issues for batch ${i / batchSize + 1}, found ${childIssues.length} children`);
+          } catch (e) {
+            console.log(`Error fetching child issues for batch: ${e}`);
+          }
+        }
+      }
+
+      // Transform WEB epics with progress data
       const webProjects = webIssues.map((issue: any) => {
         const fields = issue.fields || {};
         
@@ -458,13 +511,21 @@ serve(async (req) => {
         const projectHealthField = fields[FIELD_MAPPINGS.projectHealth];
         const projectHealth = projectHealthField?.value || projectHealthField?.name || projectHealthField || null;
         
+        // Get child issue counts for progress
+        const childCounts = epicChildCounts[issue.key] || { notStarted: 0, inProgress: 0, completed: 0, total: 0 };
+        const totalTasks = childCounts.total || fields.subtasks?.length || 0;
+        const percentComplete = totalTasks > 0 ? Math.round((childCounts.completed / totalTasks) * 100) : 0;
+        
         return {
           id: issue.key,
           epicName: fields.summary || 'Unknown Epic',
           epicKey: issue.key,
           status: mapEpicStatus(fields.status?.name),
-          totalTasks: fields.subtasks?.length || 0,
-          notStarted: 0, inProgress: 0, completed: 0, percentComplete: 0,
+          totalTasks,
+          notStarted: childCounts.notStarted,
+          inProgress: childCounts.inProgress,
+          completed: childCounts.completed,
+          percentComplete,
           startDate: fields.created?.substring(0, 10),
           dueDate: fields.duedate,
           isOffTrack: false,
