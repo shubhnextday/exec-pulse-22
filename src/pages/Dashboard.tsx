@@ -818,7 +818,10 @@ export default function Dashboard() {
           {/* Operations (Orders) Section */}
           <section id="section-operations" className="mb-8 scroll-mt-8">
             <h2 className="text-lg font-semibold mb-4 text-foreground">Operations (Orders)</h2>
-            <TopCustomers customers={realTopCustomers.length > 0 ? realTopCustomers : mockTopCustomers} />
+            <TopCustomers 
+              customers={realTopCustomers.length > 0 ? realTopCustomers : mockTopCustomers} 
+              onCustomerSelect={setSelectedCustomer}
+            />
           </section>
 
           {/* Needs Attention Section */}

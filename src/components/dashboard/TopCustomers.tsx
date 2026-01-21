@@ -8,9 +8,10 @@ interface TopCustomersProps {
     totalOrders: number;
     orderCount: number;
   }>;
+  onCustomerSelect?: (customerName: string) => void;
 }
 
-export function TopCustomers({ customers }: TopCustomersProps) {
+export function TopCustomers({ customers, onCustomerSelect }: TopCustomersProps) {
   const totalRevenue = customers.reduce((sum, c) => sum + c.totalOrders, 0);
   const totalOrderCount = customers.reduce((sum, c) => sum + c.orderCount, 0);
   
@@ -21,6 +22,12 @@ export function TopCustomers({ customers }: TopCustomersProps) {
     revenue: c.totalOrders,
     orders: c.orderCount,
   }));
+
+  const handleBarClick = (data: { fullName: string }) => {
+    if (onCustomerSelect && data?.fullName) {
+      onCustomerSelect(data.fullName);
+    }
+  };
 
   const formatCurrency = (value: number) => {
     if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
@@ -93,11 +100,14 @@ export function TopCustomers({ customers }: TopCustomersProps) {
                 dataKey="revenue" 
                 radius={[0, 4, 4, 0]}
                 maxBarSize={24}
+                onClick={(data) => handleBarClick(data)}
+                cursor="pointer"
               >
                 {chartData.map((_, index) => (
                   <Cell 
                     key={`cell-${index}`} 
                     fill={index === 0 ? 'hsl(var(--primary))' : `hsl(var(--primary) / ${1 - (index * 0.08)})`}
+                    className="hover:opacity-80 transition-opacity"
                   />
                 ))}
               </Bar>
@@ -116,7 +126,11 @@ export function TopCustomers({ customers }: TopCustomersProps) {
         <ScrollArea className="h-[150px]">
           <div className="space-y-1.5 pr-2">
             {customers.map((customer, index) => (
-              <div key={customer.name} className="flex items-center justify-between py-1 text-sm">
+              <div 
+                key={customer.name} 
+                className="flex items-center justify-between py-1 text-sm cursor-pointer hover:bg-muted/50 rounded px-1 transition-colors"
+                onClick={() => onCustomerSelect?.(customer.name)}
+              >
                 <div className="flex items-center gap-2">
                   <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center">
                     {index + 1}
