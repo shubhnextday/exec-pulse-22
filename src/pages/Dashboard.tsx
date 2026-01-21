@@ -113,7 +113,7 @@ export default function Dashboard() {
   const [selectedCustomer, setSelectedCustomer] = useState('All Customers');
   const [selectedAgent, setSelectedAgent] = useState('All Agents');
   const [selectedAccountManager, setSelectedAccountManager] = useState('All Account Managers');
-  const [dateRange, setDateRange] = useState('this-month'); // Default to current month for fast load
+  const [dateRange, setDateRange] = useState('all-time'); // Default to all time for complete data view
   
   // Dialog states
   const [outstandingDialogOpen, setOutstandingDialogOpen] = useState(false);
