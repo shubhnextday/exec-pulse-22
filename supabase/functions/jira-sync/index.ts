@@ -276,6 +276,54 @@ serve(async (req) => {
       }
       console.log(`Fetched ${webIssues.length} WEB epics`);
       
+      // Fetch ALL child issues for WEB project to calculate progress
+      // This gets all non-Epic issues that have a parent Epic
+      const webChildIssuesJql = 'project = "WEB" AND issuetype != Epic AND "Parent Link" IS NOT EMPTY ORDER BY created DESC';
+      const childIssueFields = ['summary', 'status', 'parent', 'issuetype'];
+      
+      let webChildIssues: any[] = [];
+      try {
+        webChildIssues = await fetchAllIssues(jiraDomain, headers, webChildIssuesJql, childIssueFields);
+      } catch (e) {
+        console.log('WEB child issues fetch failed, trying alternative query:', e);
+        // Try alternative query without Parent Link
+        try {
+          const altJql = 'project = "WEB" AND issuetype != Epic ORDER BY created DESC';
+          webChildIssues = await fetchAllIssues(jiraDomain, headers, altJql, childIssueFields);
+        } catch (e2) {
+          console.log('Alternative WEB child issues fetch also failed:', e2);
+        }
+      }
+      console.log(`Fetched ${webChildIssues.length} WEB child issues for progress calculation`);
+      
+      // Group child issues by parent Epic and count statuses
+      const epicProgressMap: Record<string, { notStarted: number; inProgress: number; completed: number; total: number }> = {};
+      
+      for (const childIssue of webChildIssues) {
+        const parentKey = childIssue.fields?.parent?.key;
+        if (!parentKey) continue;
+        
+        if (!epicProgressMap[parentKey]) {
+          epicProgressMap[parentKey] = { notStarted: 0, inProgress: 0, completed: 0, total: 0 };
+        }
+        
+        const statusName = childIssue.fields?.status?.name?.toLowerCase() || '';
+        const statusCategory = childIssue.fields?.status?.statusCategory?.name?.toLowerCase() || '';
+        
+        epicProgressMap[parentKey].total++;
+        
+        // Categorize by status category or status name
+        if (statusCategory === 'done' || statusName.includes('done') || statusName.includes('complete') || statusName.includes('closed')) {
+          epicProgressMap[parentKey].completed++;
+        } else if (statusCategory === 'in progress' || statusName.includes('progress') || statusName.includes('development') || statusName.includes('review') || statusName.includes('testing')) {
+          epicProgressMap[parentKey].inProgress++;
+        } else {
+          epicProgressMap[parentKey].notStarted++;
+        }
+      }
+      
+      console.log(`Calculated progress for ${Object.keys(epicProgressMap).length} epics`);
+      
       // Fetch Active Development Projects for the dashboard count (excludes Cancelled, Done, Open)
       const activeDevelopmentJql = 'project = WEB AND type = Epic AND status NOT IN (Cancelled, Done, Open) ORDER BY created DESC';
       let activeDevelopmentIssues: any[] = [];
@@ -445,6 +493,7 @@ serve(async (req) => {
       // Transform WEB epics
       const webProjects = webIssues.map((issue: any) => {
         const fields = issue.fields || {};
+        const epicKey = issue.key;
         
         // Extract dev lead name
         const devLeadField = fields[FIELD_MAPPINGS.devLead];
@@ -458,17 +507,25 @@ serve(async (req) => {
         const projectHealthField = fields[FIELD_MAPPINGS.projectHealth];
         const projectHealth = projectHealthField?.value || projectHealthField?.name || projectHealthField || null;
         
+        // Get progress from child issues calculation
+        const progress = epicProgressMap[epicKey] || { notStarted: 0, inProgress: 0, completed: 0, total: 0 };
+        const totalTasks = progress.total || fields.subtasks?.length || 0;
+        const percentComplete = totalTasks > 0 ? Math.round((progress.completed / totalTasks) * 100) : 0;
+        
         return {
-          id: issue.key,
+          id: epicKey,
           epicName: fields.summary || 'Unknown Epic',
-          epicKey: issue.key,
+          epicKey: epicKey,
           status: mapEpicStatus(fields.status?.name),
-          totalTasks: fields.subtasks?.length || 0,
-          notStarted: 0, inProgress: 0, completed: 0, percentComplete: 0,
+          totalTasks: totalTasks,
+          notStarted: progress.notStarted,
+          inProgress: progress.inProgress,
+          completed: progress.completed,
+          percentComplete: percentComplete,
           startDate: fields.created?.substring(0, 10),
           dueDate: fields.duedate,
           isOffTrack: false,
-          totalChildItems: parseFloat(fields[FIELD_MAPPINGS.totalChildItems]) || 0,
+          totalChildItems: parseFloat(fields[FIELD_MAPPINGS.totalChildItems]) || totalTasks,
           totalBugs: parseFloat(fields[FIELD_MAPPINGS.totalBugs]) || 0,
           devLead,
           projectLead,
