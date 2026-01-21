@@ -31,6 +31,7 @@ import {
   Loader2,
   AlertCircle,
   Info,
+  RotateCcw,
 } from 'lucide-react';
 import { useJiraData } from '@/hooks/useJiraData';
 import type { Order } from '@/types/dashboard';
@@ -181,10 +182,19 @@ export default function Dashboard() {
     });
   }, [displayOrders, selectedCustomer, selectedAgent, selectedAccountManager, dateRange]);
 
-  // Check if any filters are applied
+  // Check if any filters are applied (including date range not being default)
   const hasFiltersApplied = selectedCustomer !== 'All Customers' || 
     selectedAgent !== 'All Agents' || 
-    selectedAccountManager !== 'All Account Managers';
+    selectedAccountManager !== 'All Account Managers' ||
+    dateRange !== 'all-time';
+
+  // Reset all filters to default
+  const resetAllFilters = () => {
+    setSelectedCustomer('All Customers');
+    setSelectedAgent('All Agents');
+    setSelectedAccountManager('All Account Managers');
+    setDateRange('all-time');
+  };
 
   // Filter order health orders when filters are applied
   const filteredOrderHealthOrders = useMemo(() => {
@@ -620,6 +630,21 @@ export default function Dashboard() {
             onAccountManagerChange={setSelectedAccountManager}
             onDateRangeChange={setDateRange}
           />
+
+          {/* Sticky Reset Filters Button */}
+          {hasFiltersApplied && (
+            <div className="fixed right-8 top-1/2 -translate-y-1/2 z-50">
+              <Button
+                onClick={resetAllFilters}
+                variant="default"
+                size="sm"
+                className="shadow-lg flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-4 py-2"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Reset Filters
+              </Button>
+            </div>
+          )}
 
           {/* Data Source Indicator */}
           <div className="mb-6 flex items-center justify-between">
