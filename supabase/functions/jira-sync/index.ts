@@ -32,6 +32,12 @@ const FIELD_MAPPINGS = {
   healthField: 'customfield_10083',
   depositReceivedDate: 'customfield_10039', // Deposit Received Date
   finalPaymentReceivedDate: 'customfield_10051', // Final Payment Received Date
+  // WEB project fields
+  totalChildItems: 'customfield_11834',
+  totalBugs: 'customfield_11836',
+  devLead: 'customfield_11683',
+  projectLead: 'customfield_11756',
+  projectHealth: 'customfield_11903',
 };
 
 const CANCELLED_STATUSES = ['cancelled', 'canceled', 'done', 'shipped', 'complete', 'completed', 'closed', 'final product shipped'];
@@ -253,7 +259,14 @@ serve(async (req) => {
       
       // Fetch ALL WEB epics (for popup display with all statuses)
       const webJql = 'project = "WEB" AND issuetype = Epic ORDER BY created DESC';
-      const webFields = ['summary', 'status', 'created', 'duedate', 'subtasks'];
+      const webFields = [
+        'summary', 'status', 'created', 'duedate', 'subtasks',
+        FIELD_MAPPINGS.totalChildItems,
+        FIELD_MAPPINGS.totalBugs,
+        FIELD_MAPPINGS.devLead,
+        FIELD_MAPPINGS.projectLead,
+        FIELD_MAPPINGS.projectHealth,
+      ];
       
       let webIssues: any[] = [];
       try {
@@ -430,17 +443,38 @@ serve(async (req) => {
       console.log(`All-time outstanding from ${allTimeOutstandingOrders.length} orders: $${allTimeOutstanding}`);
 
       // Transform WEB epics
-      const webProjects = webIssues.map((issue: any) => ({
-        id: issue.key,
-        epicName: issue.fields?.summary || 'Unknown Epic',
-        epicKey: issue.key,
-        status: mapEpicStatus(issue.fields?.status?.name),
-        totalTasks: issue.fields?.subtasks?.length || 0,
-        notStarted: 0, inProgress: 0, completed: 0, percentComplete: 0,
-        startDate: issue.fields?.created?.substring(0, 10),
-        dueDate: issue.fields?.duedate,
-        isOffTrack: false,
-      }));
+      const webProjects = webIssues.map((issue: any) => {
+        const fields = issue.fields || {};
+        
+        // Extract dev lead name
+        const devLeadField = fields[FIELD_MAPPINGS.devLead];
+        const devLead = devLeadField?.displayName || devLeadField?.name || devLeadField?.value || null;
+        
+        // Extract project lead name
+        const projectLeadField = fields[FIELD_MAPPINGS.projectLead];
+        const projectLead = projectLeadField?.displayName || projectLeadField?.name || projectLeadField?.value || null;
+        
+        // Extract project health
+        const projectHealthField = fields[FIELD_MAPPINGS.projectHealth];
+        const projectHealth = projectHealthField?.value || projectHealthField?.name || projectHealthField || null;
+        
+        return {
+          id: issue.key,
+          epicName: fields.summary || 'Unknown Epic',
+          epicKey: issue.key,
+          status: mapEpicStatus(fields.status?.name),
+          totalTasks: fields.subtasks?.length || 0,
+          notStarted: 0, inProgress: 0, completed: 0, percentComplete: 0,
+          startDate: fields.created?.substring(0, 10),
+          dueDate: fields.duedate,
+          isOffTrack: false,
+          totalChildItems: parseFloat(fields[FIELD_MAPPINGS.totalChildItems]) || 0,
+          totalBugs: parseFloat(fields[FIELD_MAPPINGS.totalBugs]) || 0,
+          devLead,
+          projectLead,
+          projectHealth: typeof projectHealth === 'string' ? projectHealth : null,
+        };
+      });
 
       // Get unique customers from active orders for dropdown filters
       const uniqueCustomersFromOrders = [...new Set(activeOrders.map((o: any) => o.customer).filter((c: string) => c && c !== 'Unknown'))];
