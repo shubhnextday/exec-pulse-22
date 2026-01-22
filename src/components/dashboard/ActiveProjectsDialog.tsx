@@ -112,6 +112,21 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects, activeCount
     }
   };
 
+  const getHealthColor = (health?: string | null) => {
+    if (!health) return 'bg-muted text-muted-foreground border-muted-foreground/30';
+    const h = health.toLowerCase();
+    if (h.includes('on track') || h.includes('on-track') || h === 'good') {
+      return 'bg-emerald-500/20 text-emerald-600 border-emerald-500/30';
+    }
+    if (h.includes('at risk') || h.includes('at-risk') || h === 'warning') {
+      return 'bg-warning/20 text-warning border-warning/30';
+    }
+    if (h.includes('off track') || h.includes('off-track') || h === 'critical') {
+      return 'bg-destructive/20 text-destructive border-destructive/30';
+    }
+    return 'bg-muted text-muted-foreground border-muted-foreground/30';
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[80vh]">
@@ -143,6 +158,16 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects, activeCount
           <Table>
             <TableHeader className="bg-background [&_th]:sticky [&_th]:top-0 [&_th]:z-20 [&_th]:bg-background">
               <TableRow className="border-b border-border">
+                <TableHead className="w-[100px]">
+                  <SortableHeader
+                    sortKey="projectHealth"
+                    currentSortKey={sortConfig.key as string}
+                    direction={sortConfig.direction}
+                    onSort={() => handleSort('projectHealth')}
+                  >
+                    Health
+                  </SortableHeader>
+                </TableHead>
                 <TableHead>
                   <SortableHeader
                     sortKey="epicName"
@@ -150,7 +175,7 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects, activeCount
                     direction={sortConfig.direction}
                     onSort={() => handleSort('epicName')}
                   >
-                    Project
+                    Epic Name (Project)
                   </SortableHeader>
                 </TableHead>
                 <TableHead>
@@ -171,7 +196,7 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects, activeCount
                     direction={sortConfig.direction}
                     onSort={() => handleSort('totalTasks')}
                   >
-                    Tasks
+                    Total Tasks
                   </SortableHeader>
                 </TableHead>
                 <TableHead>
@@ -190,6 +215,11 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects, activeCount
               {sortedProjects.map((project) => (
                 <TableRow key={project.id}>
                   <TableCell>
+                    <Badge variant="outline" className={getHealthColor(project.projectHealth)}>
+                      {project.projectHealth || '-'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
                     <div className="font-medium">{project.epicName}</div>
                     <div className="text-xs text-muted-foreground">{project.epicKey}</div>
                   </TableCell>
@@ -205,7 +235,7 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects, activeCount
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
-                    {project.completed}/{project.totalTasks}
+                    {project.totalTasks}
                   </TableCell>
                   <TableCell>
                     {project.dueDate ? new Date(project.dueDate).toLocaleDateString() : '-'}
@@ -214,7 +244,7 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects, activeCount
               ))}
               {sortedProjects.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                     No projects found
                   </TableCell>
                 </TableRow>
