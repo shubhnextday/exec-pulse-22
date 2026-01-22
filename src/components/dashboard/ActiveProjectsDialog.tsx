@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -13,8 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 
 import { TableControlsBar, SortableHeader, TableFilter } from '@/components/ui/table-controls';
@@ -25,8 +25,15 @@ interface ActiveProjectsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projects: WebProject[];
-  activeCount?: number; // Count from JQL: status NOT IN (Cancelled, Done, Open)
+  activeCount?: number;
 }
+
+// Status categories for tabs
+const STATUS_CATEGORIES = {
+  coming_soon: ['Open', 'In Requirements', 'Technical Discovery', 'In Technical Discovery', 'Ready for Scheduling'],
+  active: ['In Design', 'In Website Development', 'In Final QA Testing', 'Continuous Development', 'Customer Handover'],
+  non_active: ['On Hold', 'Done', 'Canceled'],
+};
 
 const STATUS_ORDER: Record<string, number> = {
   Open: 1,
@@ -45,6 +52,8 @@ const STATUS_ORDER: Record<string, number> = {
 };
 
 export function ActiveProjectsDialog({ open, onOpenChange, projects, activeCount }: ActiveProjectsDialogProps) {
+  const [activeTab, setActiveTab] = useState('active');
+  
   const {
     filteredData,
     searchQuery,
@@ -60,21 +69,30 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects, activeCount
     searchableKeys: ['epicName', 'epicKey', 'status'],
   });
 
-  // Use activeCount prop if provided, otherwise calculate from projects
-  const displayActiveCount = activeCount ?? projects.filter((p) => !['Done', 'Canceled', 'On Hold', 'Open'].includes(p.status)).length;
-  const activeProjects = projects.filter((p) => !['Done', 'Canceled', 'On Hold', 'Open'].includes(p.status));
-  const totalTasks = activeProjects.reduce((sum, p) => sum + p.totalTasks, 0);
-  const completedTasks = activeProjects.reduce((sum, p) => sum + p.completed, 0);
+  // Filter projects by current tab
+  const tabFilteredProjects = useMemo(() => {
+    if (activeTab === 'all') return filteredData;
+    const categoryStatuses = STATUS_CATEGORIES[activeTab as keyof typeof STATUS_CATEGORIES] || [];
+    return filteredData.filter(p => categoryStatuses.includes(p.status));
+  }, [filteredData, activeTab]);
 
   const sortedProjects = useMemo(() => {
-    if (sortConfig.key) return filteredData;
-    return [...filteredData].sort((a, b) => {
+    if (sortConfig.key) return tabFilteredProjects;
+    return [...tabFilteredProjects].sort((a, b) => {
       const orderA = STATUS_ORDER[a.status] ?? 99;
       const orderB = STATUS_ORDER[b.status] ?? 99;
       if (orderA !== orderB) return orderA - orderB;
       return (a.dueDate || '').localeCompare(b.dueDate || '');
     });
-  }, [filteredData, sortConfig.key]);
+  }, [tabFilteredProjects, sortConfig.key]);
+
+  // Count projects per tab
+  const tabCounts = useMemo(() => ({
+    coming_soon: projects.filter(p => STATUS_CATEGORIES.coming_soon.includes(p.status)).length,
+    active: projects.filter(p => STATUS_CATEGORIES.active.includes(p.status)).length,
+    non_active: projects.filter(p => STATUS_CATEGORIES.non_active.includes(p.status)).length,
+    all: projects.length,
+  }), [projects]);
 
   const statusOptions = [...new Set(projects.map(p => p.status))].map(s => ({
     label: s,
@@ -128,165 +146,196 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects, activeCount
     return 'bg-muted text-muted-foreground border-muted-foreground/30';
   };
 
+  const renderTable = () => (
+    <div className="h-[40vh] overflow-auto">
+      <Table>
+        <TableHeader className="bg-background [&_th]:sticky [&_th]:top-0 [&_th]:z-20 [&_th]:bg-background">
+          <TableRow className="border-b border-border">
+            <TableHead className="w-[100px]">
+              <SortableHeader
+                sortKey="projectHealth"
+                currentSortKey={sortConfig.key as string}
+                direction={sortConfig.direction}
+                onSort={() => handleSort('projectHealth')}
+              >
+                Health
+              </SortableHeader>
+            </TableHead>
+            <TableHead>
+              <SortableHeader
+                sortKey="epicName"
+                currentSortKey={sortConfig.key as string}
+                direction={sortConfig.direction}
+                onSort={() => handleSort('epicName')}
+              >
+                Epic Name (Project)
+              </SortableHeader>
+            </TableHead>
+            <TableHead>
+              <SortableHeader
+                sortKey="status"
+                currentSortKey={sortConfig.key as string}
+                direction={sortConfig.direction}
+                onSort={() => handleSort('status')}
+              >
+                Status
+              </SortableHeader>
+            </TableHead>
+            <TableHead colSpan={2}>Progress</TableHead>
+            <TableHead className="text-center">
+              <SortableHeader
+                sortKey="totalTasks"
+                currentSortKey={sortConfig.key as string}
+                direction={sortConfig.direction}
+                onSort={() => handleSort('totalTasks')}
+              >
+                Total Tasks
+              </SortableHeader>
+            </TableHead>
+            <TableHead>
+              <SortableHeader
+                sortKey="dueDate"
+                currentSortKey={sortConfig.key as string}
+                direction={sortConfig.direction}
+                onSort={() => handleSort('dueDate')}
+              >
+                Due Date
+              </SortableHeader>
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {sortedProjects.map((project) => (
+            <TableRow key={project.id}>
+              <TableCell>
+                <Badge variant="outline" className={getHealthColor(project.projectHealth)}>
+                  {project.projectHealth || '-'}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                <div className="font-medium">{project.epicName}</div>
+                <div className="text-xs text-muted-foreground">{project.epicKey}</div>
+              </TableCell>
+              <TableCell>
+                <Badge variant="outline" className={getStatusColor(project.status)}>
+                  {project.status}
+                </Badge>
+              </TableCell>
+              <TableCell className="min-w-[120px]">
+                {['Open', 'In Requirements', 'Technical Discovery', 'In Technical Discovery', 'Ready for Scheduling'].includes(project.status) ? (
+                  <span className="text-muted-foreground text-sm">-</span>
+                ) : (
+                  (() => {
+                    const safeTotal = project.totalTasks || 1;
+                    return (
+                      <div className="flex h-2 rounded-full overflow-hidden bg-muted/50 min-w-[100px] w-[120px]">
+                        {project.completed > 0 && (
+                          <div 
+                            className="bg-success transition-all duration-500 first:rounded-l-full last:rounded-r-full" 
+                            style={{ width: `${(project.completed / safeTotal) * 100}%` }}
+                          />
+                        )}
+                        {project.inProgress > 0 && (
+                          <div 
+                            className="bg-blue-500 transition-all duration-500 first:rounded-l-full last:rounded-r-full" 
+                            style={{ width: `${(project.inProgress / safeTotal) * 100}%` }}
+                          />
+                        )}
+                        {project.notStarted > 0 && (
+                          <div 
+                            className="bg-muted-foreground/30 transition-all duration-500 first:rounded-l-full last:rounded-r-full" 
+                            style={{ width: `${(project.notStarted / safeTotal) * 100}%` }}
+                          />
+                        )}
+                      </div>
+                    );
+                  })()
+                )}
+              </TableCell>
+              <TableCell>
+                {['Open', 'In Requirements', 'Technical Discovery', 'In Technical Discovery', 'Ready for Scheduling'].includes(project.status) ? (
+                  <span className="text-muted-foreground text-sm">-</span>
+                ) : (
+                  <span className="mono font-medium text-sm text-blue-500">
+                    {project.percentComplete}%
+                  </span>
+                )}
+              </TableCell>
+              <TableCell className="text-center">
+                {project.totalTasks}
+              </TableCell>
+              <TableCell>
+                {project.dueDate ? new Date(project.dueDate).toLocaleDateString() : '-'}
+              </TableCell>
+            </TableRow>
+          ))}
+          {sortedProjects.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                No projects found
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[80vh]">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">
-            Active Projects ({displayActiveCount})
+            Web Development Projects ({projects.length})
           </DialogTitle>
         </DialogHeader>
 
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="coming_soon" className="text-xs">
+              Coming Soon ({tabCounts.coming_soon})
+            </TabsTrigger>
+            <TabsTrigger value="active" className="text-xs">
+              Active ({tabCounts.active})
+            </TabsTrigger>
+            <TabsTrigger value="non_active" className="text-xs">
+              Non-Active ({tabCounts.non_active})
+            </TabsTrigger>
+            <TabsTrigger value="all" className="text-xs">
+              All ({tabCounts.all})
+            </TabsTrigger>
+          </TabsList>
 
-        <TableControlsBar
-          searchValue={searchQuery}
-          onSearchChange={setSearchQuery}
-          searchPlaceholder="Search projects..."
-          filters={filters}
-          onRemoveFilter={removeFilter}
-          onClearFilters={clearFilters}
-          className="px-0 border-b-0"
-        >
-          <TableFilter
-            label="Status"
-            options={statusOptions}
-            value={filters.find(f => f.key === 'status')?.value || ''}
-            onChange={(value) => value ? addFilter('status', value) : removeFilter('status')}
-          />
-        </TableControlsBar>
+          <TableControlsBar
+            searchValue={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchPlaceholder="Search projects..."
+            filters={filters}
+            onRemoveFilter={removeFilter}
+            onClearFilters={clearFilters}
+            className="px-0 border-b-0 mt-4"
+          >
+            <TableFilter
+              label="Status"
+              options={statusOptions}
+              value={filters.find(f => f.key === 'status')?.value || ''}
+              onChange={(value) => value ? addFilter('status', value) : removeFilter('status')}
+            />
+          </TableControlsBar>
 
-        <div className="h-[40vh] overflow-auto">
-          <Table>
-            <TableHeader className="bg-background [&_th]:sticky [&_th]:top-0 [&_th]:z-20 [&_th]:bg-background">
-              <TableRow className="border-b border-border">
-                <TableHead className="w-[100px]">
-                  <SortableHeader
-                    sortKey="projectHealth"
-                    currentSortKey={sortConfig.key as string}
-                    direction={sortConfig.direction}
-                    onSort={() => handleSort('projectHealth')}
-                  >
-                    Health
-                  </SortableHeader>
-                </TableHead>
-                <TableHead>
-                  <SortableHeader
-                    sortKey="epicName"
-                    currentSortKey={sortConfig.key as string}
-                    direction={sortConfig.direction}
-                    onSort={() => handleSort('epicName')}
-                  >
-                    Epic Name (Project)
-                  </SortableHeader>
-                </TableHead>
-                <TableHead>
-                  <SortableHeader
-                    sortKey="status"
-                    currentSortKey={sortConfig.key as string}
-                    direction={sortConfig.direction}
-                    onSort={() => handleSort('status')}
-                  >
-                    Status
-                  </SortableHeader>
-                </TableHead>
-                <TableHead colSpan={2}>Progress</TableHead>
-                <TableHead className="text-center">
-                  <SortableHeader
-                    sortKey="totalTasks"
-                    currentSortKey={sortConfig.key as string}
-                    direction={sortConfig.direction}
-                    onSort={() => handleSort('totalTasks')}
-                  >
-                    Total Tasks
-                  </SortableHeader>
-                </TableHead>
-                <TableHead>
-                  <SortableHeader
-                    sortKey="dueDate"
-                    currentSortKey={sortConfig.key as string}
-                    direction={sortConfig.direction}
-                    onSort={() => handleSort('dueDate')}
-                  >
-                    Due Date
-                  </SortableHeader>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedProjects.map((project) => (
-                <TableRow key={project.id}>
-                  <TableCell>
-                    <Badge variant="outline" className={getHealthColor(project.projectHealth)}>
-                      {project.projectHealth || '-'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="font-medium">{project.epicName}</div>
-                    <div className="text-xs text-muted-foreground">{project.epicKey}</div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={getStatusColor(project.status)}>
-                      {project.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="min-w-[120px]">
-                    {['Open', 'In Requirements', 'Technical Discovery', 'In Technical Discovery'].includes(project.status) ? (
-                      <span className="text-muted-foreground text-sm">-</span>
-                    ) : (
-                      (() => {
-                        const safeTotal = project.totalTasks || 1;
-                        return (
-                          <div className="flex h-2 rounded-full overflow-hidden bg-muted/50 min-w-[100px] w-[120px]">
-                            {project.completed > 0 && (
-                              <div 
-                                className="bg-success transition-all duration-500 first:rounded-l-full last:rounded-r-full" 
-                                style={{ width: `${(project.completed / safeTotal) * 100}%` }}
-                              />
-                            )}
-                            {project.inProgress > 0 && (
-                              <div 
-                                className="bg-blue-500 transition-all duration-500 first:rounded-l-full last:rounded-r-full" 
-                                style={{ width: `${(project.inProgress / safeTotal) * 100}%` }}
-                              />
-                            )}
-                            {project.notStarted > 0 && (
-                              <div 
-                                className="bg-muted-foreground/30 transition-all duration-500 first:rounded-l-full last:rounded-r-full" 
-                                style={{ width: `${(project.notStarted / safeTotal) * 100}%` }}
-                              />
-                            )}
-                          </div>
-                        );
-                      })()
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {['Open', 'In Requirements', 'Technical Discovery', 'In Technical Discovery'].includes(project.status) ? (
-                      <span className="text-muted-foreground text-sm">-</span>
-                    ) : (
-                      <span className="mono font-medium text-sm text-blue-500">
-                        {project.percentComplete}%
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {project.totalTasks}
-                  </TableCell>
-                  <TableCell>
-                    {project.dueDate ? new Date(project.dueDate).toLocaleDateString() : '-'}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {sortedProjects.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                    No projects found
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+          <TabsContent value="coming_soon" className="mt-0">
+            {renderTable()}
+          </TabsContent>
+          <TabsContent value="active" className="mt-0">
+            {renderTable()}
+          </TabsContent>
+          <TabsContent value="non_active" className="mt-0">
+            {renderTable()}
+          </TabsContent>
+          <TabsContent value="all" className="mt-0">
+            {renderTable()}
+          </TabsContent>
+        </Tabs>
 
         <div className="text-sm text-muted-foreground pt-2 border-t">
           Showing {sortedProjects.length} of {projects.length} projects
