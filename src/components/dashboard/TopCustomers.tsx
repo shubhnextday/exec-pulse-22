@@ -1,4 +1,4 @@
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, ExternalLink } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
@@ -55,10 +55,16 @@ export function TopCustomers({ customers, onCustomerSelect, onTotalOrdersClick }
           <p className="text-xl font-bold mono text-foreground">{formatCurrency(totalRevenue)}</p>
         </div>
         <div 
-          className="p-3 rounded-xl bg-muted/40 border border-border/50 cursor-pointer hover:bg-muted/60 transition-colors"
-          onClick={onTotalOrdersClick}
+          className="p-3 rounded-xl bg-muted/40 border border-border/50 cursor-pointer hover:bg-muted/60 transition-colors group"
+          onClick={(e) => {
+            e.stopPropagation();
+            onTotalOrdersClick?.();
+          }}
         >
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Total Orders</p>
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Total Orders</p>
+            <ExternalLink className="h-3 w-3 text-muted-foreground group-hover:text-primary transition-colors" />
+          </div>
           <p className="text-xl font-bold mono text-foreground">{totalOrderCount}</p>
         </div>
       </div>
