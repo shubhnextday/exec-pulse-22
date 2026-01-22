@@ -16,14 +16,16 @@ export interface UseTableFeaturesOptions<T> {
   data: T[];
   searchableKeys?: (keyof T)[];
   initialSort?: SortConfig<T>;
+  initialSearchQuery?: string;
 }
 
 export function useTableFeatures<T extends Record<string, any>>({
   data,
   searchableKeys = [],
   initialSort = { key: null, direction: null },
+  initialSearchQuery = '',
 }: UseTableFeaturesOptions<T>) {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
   const [sortConfig, setSortConfig] = useState<SortConfig<T>>(initialSort);
   const [filters, setFilters] = useState<FilterConfig[]>([]);
 

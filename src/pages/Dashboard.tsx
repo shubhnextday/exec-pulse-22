@@ -119,6 +119,7 @@ export default function Dashboard() {
   // Dialog states
   const [outstandingDialogOpen, setOutstandingDialogOpen] = useState(false);
   const [activeOrdersDialogOpen, setActiveOrdersDialogOpen] = useState(false);
+  const [activeOrdersInitialSearch, setActiveOrdersInitialSearch] = useState('');
   const [activeCustomersDialogOpen, setActiveCustomersDialogOpen] = useState(false);
   const [revenueDialogOpen, setRevenueDialogOpen] = useState(false);
   const [commissionsDialogOpen, setCommissionsDialogOpen] = useState(false);
@@ -126,6 +127,12 @@ export default function Dashboard() {
   const [cashFlowDialogOpen, setCashFlowDialogOpen] = useState(false);
   const [orderHealthDialogOpen, setOrderHealthDialogOpen] = useState(false);
   const [onHoldDialogOpen, setOnHoldDialogOpen] = useState(false);
+
+  // Handler to open Active Orders dialog with optional customer filter
+  const openActiveOrdersDialog = (customerName?: string) => {
+    setActiveOrdersInitialSearch(customerName || '');
+    setActiveOrdersDialogOpen(true);
+  };
 
   // JIRA data hook
   const {
@@ -845,7 +852,8 @@ export default function Dashboard() {
             <h2 className="text-lg font-semibold mb-4 text-foreground">Operations (Orders)</h2>
             <TopCustomers 
               customers={realTopCustomers.length > 0 ? realTopCustomers : mockTopCustomers} 
-              onCustomerSelect={setSelectedCustomer}
+              onCustomerSelect={(customerName) => openActiveOrdersDialog(customerName)}
+              onTotalOrdersClick={() => openActiveOrdersDialog()}
             />
           </section>
 
@@ -883,8 +891,12 @@ export default function Dashboard() {
         
         <ActiveOrdersDialog
           open={activeOrdersDialogOpen}
-          onOpenChange={setActiveOrdersDialogOpen}
+          onOpenChange={(open) => {
+            setActiveOrdersDialogOpen(open);
+            if (!open) setActiveOrdersInitialSearch('');
+          }}
           orders={filteredActiveOrders}
+          initialSearchQuery={activeOrdersInitialSearch}
         />
         
         <ActiveCustomersDialog

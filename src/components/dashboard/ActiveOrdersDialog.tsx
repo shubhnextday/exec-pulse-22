@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -22,9 +23,10 @@ interface ActiveOrdersDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   orders: Order[];
+  initialSearchQuery?: string;
 }
 
-export function ActiveOrdersDialog({ open, onOpenChange, orders }: ActiveOrdersDialogProps) {
+export function ActiveOrdersDialog({ open, onOpenChange, orders, initialSearchQuery = '' }: ActiveOrdersDialogProps) {
   const {
     filteredData,
     searchQuery,
@@ -39,6 +41,13 @@ export function ActiveOrdersDialog({ open, onOpenChange, orders }: ActiveOrdersD
     data: orders,
     searchableKeys: ['customer', 'productName', 'salesOrderNumber', 'currentStatus'],
   });
+
+  // Sync search query when dialog opens with initialSearchQuery
+  useEffect(() => {
+    if (open) {
+      setSearchQuery(initialSearchQuery);
+    }
+  }, [open, initialSearchQuery, setSearchQuery]);
 
   const getHealthColor = (health: string) => {
     switch (health) {
