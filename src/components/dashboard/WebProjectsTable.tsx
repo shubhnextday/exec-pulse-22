@@ -294,11 +294,8 @@ export function WebProjectsTable({ projects }: WebProjectsTableProps) {
                       Due Date
                     </SortableHeader>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 min-w-[100px]">
+                  <th colSpan={2} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 min-w-[160px]">
                     Progress
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 min-w-[60px]">
-                    %
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 min-w-[90px]">
                     <SortableHeader
@@ -379,12 +376,7 @@ export function WebProjectsTable({ projects }: WebProjectsTableProps) {
                       {['Open', 'In Requirements', 'Technical Discovery', 'In Technical Discovery'].includes(project.status) ? (
                         <span className="text-muted-foreground text-sm">-</span>
                       ) : (
-                        <span className={cn(
-                          "mono font-medium text-sm",
-                          project.percentComplete >= 75 && "text-success",
-                          project.percentComplete >= 50 && project.percentComplete < 75 && "text-primary",
-                          project.percentComplete < 50 && "text-primary"
-                        )}>
+                        <span className="mono font-medium text-sm text-blue-500">
                           {project.percentComplete}%
                         </span>
                       )}
