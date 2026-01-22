@@ -145,7 +145,7 @@ function ProgressBar({
         style={{ width: `${(completed / total) * 100}%` }}
       />
       <div 
-        className="bg-primary transition-all duration-500" 
+        className="bg-blue-500 transition-all duration-500" 
         style={{ width: `${(inProgress / total) * 100}%` }}
       />
       <div 
@@ -213,7 +213,7 @@ export function WebProjectsTable({ projects }: WebProjectsTableProps) {
               Complete
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-primary" />
+              <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
               In Progress
             </div>
             <div className="flex items-center gap-1.5">
