@@ -36,7 +36,7 @@ const STATUS_CATEGORIES = {
 };
 
 const STATUS_ORDER: Record<string, number> = {
-  Open: 1,
+  'Open': 1,
   'In Requirements': 2,
   'In Technical Discovery': 3,
   'Technical Discovery': 3,
@@ -46,9 +46,9 @@ const STATUS_ORDER: Record<string, number> = {
   'In Final QA Testing': 7,
   'Continuous Development': 8,
   'Customer Handover': 9,
-  Done: 10,
-  'On Hold': 11,
-  Canceled: 12,
+  'On Hold': 10,
+  'Done': 11,
+  'Canceled': 12,
 };
 
 export function ActiveProjectsDialog({ open, onOpenChange, projects, activeCount }: ActiveProjectsDialogProps) {
