@@ -54,8 +54,9 @@ export function TopCustomers({ customers, onCustomerSelect, onTotalOrdersClick }
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Quoted Orders Total</p>
           <p className="text-xl font-bold mono text-foreground">{formatCurrency(totalRevenue)}</p>
         </div>
-        <div 
-          className="p-3 rounded-xl bg-muted/40 border border-border/50 cursor-pointer hover:bg-muted/60 transition-colors group"
+        <button 
+          type="button"
+          className="p-3 rounded-xl bg-muted/40 border border-border/50 cursor-pointer hover:bg-muted/60 transition-colors group text-left w-full focus:outline-none focus:ring-2 focus:ring-primary/50"
           onClick={(e) => {
             e.stopPropagation();
             onTotalOrdersClick?.();
@@ -66,7 +67,7 @@ export function TopCustomers({ customers, onCustomerSelect, onTotalOrdersClick }
             <ExternalLink className="h-3 w-3 text-muted-foreground group-hover:text-primary transition-colors" />
           </div>
           <p className="text-xl font-bold mono text-foreground">{totalOrderCount}</p>
-        </div>
+        </button>
       </div>
 
       {/* Bar Chart */}
