@@ -138,20 +138,27 @@ function ProgressBar({
   completed: number;
   total: number;
 }) {
+  const safeTotal = total || 1;
   return (
-    <div className="flex gap-0.5 h-2 rounded-full overflow-hidden bg-muted/50 min-w-[100px] w-[120px]">
-      <div 
-        className="bg-success transition-all duration-500" 
-        style={{ width: `${(completed / total) * 100}%` }}
-      />
-      <div 
-        className="bg-blue-500 transition-all duration-500" 
-        style={{ width: `${(inProgress / total) * 100}%` }}
-      />
-      <div 
-        className="bg-muted-foreground/30 transition-all duration-500" 
-        style={{ width: `${(notStarted / total) * 100}%` }}
-      />
+    <div className="flex h-2 rounded-full overflow-hidden bg-muted/50 min-w-[100px] w-[120px]">
+      {completed > 0 && (
+        <div 
+          className="bg-success transition-all duration-500 first:rounded-l-full last:rounded-r-full" 
+          style={{ width: `${(completed / safeTotal) * 100}%` }}
+        />
+      )}
+      {inProgress > 0 && (
+        <div 
+          className="bg-blue-500 transition-all duration-500 first:rounded-l-full last:rounded-r-full" 
+          style={{ width: `${(inProgress / safeTotal) * 100}%` }}
+        />
+      )}
+      {notStarted > 0 && (
+        <div 
+          className="bg-muted-foreground/30 transition-all duration-500 first:rounded-l-full last:rounded-r-full" 
+          style={{ width: `${(notStarted / safeTotal) * 100}%` }}
+        />
+      )}
     </div>
   );
 }
