@@ -189,7 +189,7 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects, activeCount
                     Status
                   </SortableHeader>
                 </TableHead>
-                <TableHead>Progress</TableHead>
+                <TableHead colSpan={2}>Progress</TableHead>
                 <TableHead className="text-center">
                   <SortableHeader
                     sortKey="totalTasks"
@@ -233,17 +233,29 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects, activeCount
                     {['Open', 'In Requirements', 'Technical Discovery', 'In Technical Discovery'].includes(project.status) ? (
                       <span className="text-muted-foreground text-sm">-</span>
                     ) : (
-                      <div className="flex items-center gap-2">
-                        <Progress value={project.percentComplete} className="h-2 flex-1" />
-                        <span className={cn(
-                          "text-xs w-10",
-                          project.percentComplete >= 75 && "text-success",
-                          project.percentComplete >= 50 && project.percentComplete < 75 && "text-primary",
-                          project.percentComplete < 50 && "text-blue-500"
-                        )}>
-                          {project.percentComplete}%
-                        </span>
+                      <div className="flex gap-0.5 h-2 rounded-full overflow-hidden bg-muted/50 min-w-[100px] w-[120px]">
+                        <div 
+                          className="bg-success transition-all duration-500" 
+                          style={{ width: `${(project.completed / project.totalTasks) * 100}%` }}
+                        />
+                        <div 
+                          className="bg-blue-500 transition-all duration-500" 
+                          style={{ width: `${(project.inProgress / project.totalTasks) * 100}%` }}
+                        />
+                        <div 
+                          className="bg-muted-foreground/30 transition-all duration-500" 
+                          style={{ width: `${(project.notStarted / project.totalTasks) * 100}%` }}
+                        />
                       </div>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {['Open', 'In Requirements', 'Technical Discovery', 'In Technical Discovery'].includes(project.status) ? (
+                      <span className="text-muted-foreground text-sm">-</span>
+                    ) : (
+                      <span className="mono font-medium text-sm text-blue-500">
+                        {project.percentComplete}%
+                      </span>
                     )}
                   </TableCell>
                   <TableCell className="text-center">
