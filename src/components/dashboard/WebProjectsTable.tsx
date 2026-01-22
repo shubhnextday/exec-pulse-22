@@ -139,7 +139,7 @@ function ProgressBar({
   total: number;
 }) {
   return (
-    <div className="flex gap-0.5 h-2 rounded-full overflow-hidden bg-muted/50">
+    <div className="flex gap-0.5 h-2 rounded-full overflow-hidden bg-muted/50 min-w-[100px] w-[120px]">
       <div 
         className="bg-success transition-all duration-500" 
         style={{ width: `${(completed / total) * 100}%` }}
