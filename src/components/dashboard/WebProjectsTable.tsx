@@ -294,7 +294,10 @@ export function WebProjectsTable({ projects }: WebProjectsTableProps) {
                       Due Date
                     </SortableHeader>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 min-w-[120px]">
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 min-w-[60px]">
+                    %
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 min-w-[100px]">
                     Progress
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 min-w-[90px]">
@@ -360,26 +363,30 @@ export function WebProjectsTable({ projects }: WebProjectsTableProps) {
                     <td className="px-4 py-3.5 border-t border-border/30 text-sm truncate">
                       {project.dueDate || '-'}
                     </td>
+                    <td className="px-4 py-3.5 border-t border-border/30 text-center">
+                      {['Open', 'In Requirements', 'Technical Discovery', 'In Technical Discovery'].includes(project.status) ? (
+                        <span className="text-muted-foreground text-sm">-</span>
+                      ) : (
+                        <span className={cn(
+                          "mono font-medium text-sm",
+                          project.percentComplete >= 75 && "text-success",
+                          project.percentComplete >= 50 && project.percentComplete < 75 && "text-primary",
+                          project.percentComplete < 50 && "text-blue-500"
+                        )}>
+                          {project.percentComplete}%
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3.5 border-t border-border/30">
                       {['Open', 'In Requirements', 'Technical Discovery', 'In Technical Discovery'].includes(project.status) ? (
                         <span className="text-muted-foreground text-sm">-</span>
                       ) : (
-                        <div className="flex items-center gap-2">
-                          <ProgressBar 
-                            notStarted={project.notStarted}
-                            inProgress={project.inProgress}
-                            completed={project.completed}
-                            total={project.totalTasks}
-                          />
-                          <span className={cn(
-                            "mono font-medium text-xs min-w-[40px]",
-                            project.percentComplete >= 75 && "text-success",
-                            project.percentComplete >= 50 && project.percentComplete < 75 && "text-primary",
-                            project.percentComplete < 50 && "text-blue-500"
-                          )}>
-                            {project.percentComplete}%
-                          </span>
-                        </div>
+                        <ProgressBar 
+                          notStarted={project.notStarted}
+                          inProgress={project.inProgress}
+                          completed={project.completed}
+                          total={project.totalTasks}
+                        />
                       )}
                     </td>
                     <td className="px-4 py-3.5 border-t border-border/30 mono text-sm text-center">
