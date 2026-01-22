@@ -38,15 +38,25 @@ export function TopCustomers({ customers, onCustomerSelect, onTotalOrdersClick }
 
   return (
     <div className="metric-card opacity-0 animate-slide-up" style={{ animationDelay: '900ms' }}>
-      <div className="flex items-center gap-3 mb-5">
-        <div className="icon-container icon-container-primary">
+      <button 
+        type="button"
+        className="flex items-center gap-3 mb-5 w-full text-left cursor-pointer group focus:outline-none"
+        onClick={(e) => {
+          e.stopPropagation();
+          onTotalOrdersClick?.();
+        }}
+      >
+        <div className="icon-container icon-container-primary group-hover:scale-105 transition-transform">
           <TrendingUp className="h-5 w-5" />
         </div>
-        <div>
-          <h3 className="text-base font-semibold text-foreground">Customer Orders</h3>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <h3 className="text-base font-semibold text-foreground group-hover:text-primary transition-colors">Customer Orders</h3>
+            <ExternalLink className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
+          </div>
           <p className="text-xs text-muted-foreground">Top customers by order value</p>
         </div>
-      </div>
+      </button>
 
       {/* Summary */}
       <div className="grid grid-cols-2 gap-3 mb-5">
