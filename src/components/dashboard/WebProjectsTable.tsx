@@ -19,17 +19,21 @@ const STATUS_CATEGORIES = {
   non_active: ['On Hold', 'Done', 'Canceled'],
 };
 
-// Workflow order for sorting - Open comes after Continuous Dev and before Done
+// Workflow order for sorting - matches tab order
 const STATUS_ORDER: Record<string, number> = {
-  'In Requirements': 1,
-  'In Design': 2,
-  'In Website Development': 3,
-  'In Final QA Testing': 4,
-  'Continuous Development': 5,
-  'Open': 6,
-  'Done': 7,
-  'On Hold': 8,
-  'Canceled': 9,
+  'Open': 1,
+  'In Requirements': 2,
+  'Technical Discovery': 3,
+  'In Technical Discovery': 3,
+  'Ready for Scheduling': 4,
+  'In Design': 5,
+  'In Website Development': 6,
+  'In Final QA Testing': 7,
+  'Continuous Development': 8,
+  'Customer Handover': 9,
+  'On Hold': 10,
+  'Done': 11,
+  'Canceled': 12,
 };
 
 function StatusBadge({ status, isOffTrack }: { status: EpicStatus; isOffTrack: boolean }) {
