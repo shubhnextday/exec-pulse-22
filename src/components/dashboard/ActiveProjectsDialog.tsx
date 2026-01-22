@@ -233,20 +233,31 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects, activeCount
                     {['Open', 'In Requirements', 'Technical Discovery', 'In Technical Discovery'].includes(project.status) ? (
                       <span className="text-muted-foreground text-sm">-</span>
                     ) : (
-                      <div className="flex gap-0.5 h-2 rounded-full overflow-hidden bg-muted/50 min-w-[100px] w-[120px]">
-                        <div 
-                          className="bg-success transition-all duration-500" 
-                          style={{ width: `${(project.completed / project.totalTasks) * 100}%` }}
-                        />
-                        <div 
-                          className="bg-blue-500 transition-all duration-500" 
-                          style={{ width: `${(project.inProgress / project.totalTasks) * 100}%` }}
-                        />
-                        <div 
-                          className="bg-muted-foreground/30 transition-all duration-500" 
-                          style={{ width: `${(project.notStarted / project.totalTasks) * 100}%` }}
-                        />
-                      </div>
+                      (() => {
+                        const safeTotal = project.totalTasks || 1;
+                        return (
+                          <div className="flex h-2 rounded-full overflow-hidden bg-muted/50 min-w-[100px] w-[120px]">
+                            {project.completed > 0 && (
+                              <div 
+                                className="bg-success transition-all duration-500 first:rounded-l-full last:rounded-r-full" 
+                                style={{ width: `${(project.completed / safeTotal) * 100}%` }}
+                              />
+                            )}
+                            {project.inProgress > 0 && (
+                              <div 
+                                className="bg-blue-500 transition-all duration-500 first:rounded-l-full last:rounded-r-full" 
+                                style={{ width: `${(project.inProgress / safeTotal) * 100}%` }}
+                              />
+                            )}
+                            {project.notStarted > 0 && (
+                              <div 
+                                className="bg-muted-foreground/30 transition-all duration-500 first:rounded-l-full last:rounded-r-full" 
+                                style={{ width: `${(project.notStarted / safeTotal) * 100}%` }}
+                              />
+                            )}
+                          </div>
+                        );
+                      })()
                     )}
                   </TableCell>
                   <TableCell>
