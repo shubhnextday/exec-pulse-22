@@ -16,6 +16,7 @@ const FIELD_MAPPINGS = {
   depositAmount: 'customfield_10074',
   remainingAmount: 'customfield_11569',
   finalPaymentDue: 'customfield_11650', // Final Payment Due field
+  finalPayment: 'customfield_11612', // Final Payment field
   commissionDue: 'customfield_11577',
   commissionPercent: 'customfield_11574', // Commission % field
   quantityOrdered: 'customfield_10073',
@@ -211,6 +212,7 @@ serve(async (req) => {
         FIELD_MAPPINGS.depositAmount,
         FIELD_MAPPINGS.remainingAmount,
         FIELD_MAPPINGS.finalPaymentDue,
+        FIELD_MAPPINGS.finalPayment,
         FIELD_MAPPINGS.commissionDue,
         FIELD_MAPPINGS.commissionPercent,
         FIELD_MAPPINGS.quantityOrdered,
@@ -356,7 +358,7 @@ serve(async (req) => {
           grossOrderTotal: grossOrderTotal, // Gross Order Total from Jira (customfield_11663)
           orderTotal, // Gross Order Total (or Quoted if Gross is 0) - used for calculations
           depositAmount,
-          finalPayment: orderTotal - depositAmount,
+          finalPayment: parseFloat(fields[FIELD_MAPPINGS.finalPayment]) || 0,
           remainingDue,
           finalPaymentDue,
           commissionDue: parseFloat(fields[FIELD_MAPPINGS.commissionDue]) || 0,
