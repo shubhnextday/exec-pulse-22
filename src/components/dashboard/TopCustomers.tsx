@@ -9,9 +9,10 @@ interface TopCustomersProps {
     orderCount: number;
   }>;
   onCustomerSelect?: (customerName: string) => void;
+  onTotalOrdersClick?: () => void;
 }
 
-export function TopCustomers({ customers, onCustomerSelect }: TopCustomersProps) {
+export function TopCustomers({ customers, onCustomerSelect, onTotalOrdersClick }: TopCustomersProps) {
   const totalRevenue = customers.reduce((sum, c) => sum + c.totalOrders, 0);
   const totalOrderCount = customers.reduce((sum, c) => sum + c.orderCount, 0);
   
@@ -53,7 +54,10 @@ export function TopCustomers({ customers, onCustomerSelect }: TopCustomersProps)
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Quoted Orders Total</p>
           <p className="text-xl font-bold mono text-foreground">{formatCurrency(totalRevenue)}</p>
         </div>
-        <div className="p-3 rounded-xl bg-muted/40 border border-border/50">
+        <div 
+          className="p-3 rounded-xl bg-muted/40 border border-border/50 cursor-pointer hover:bg-muted/60 transition-colors"
+          onClick={onTotalOrdersClick}
+        >
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Total Orders</p>
           <p className="text-xl font-bold mono text-foreground">{totalOrderCount}</p>
         </div>
