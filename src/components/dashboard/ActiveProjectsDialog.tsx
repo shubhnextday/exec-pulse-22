@@ -251,8 +251,10 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects, activeCount
                 {['Open', 'In Requirements', 'Technical Discovery', 'In Technical Discovery', 'Ready for Scheduling'].includes(project.status) ? (
                   <span className="text-muted-foreground text-sm">-</span>
                 ) : (
-                  <span className="mono font-medium text-sm text-blue-500">
-                    {project.percentComplete}%
+                  <span className="mono font-medium text-sm text-primary">
+                    {Number.isInteger(project.percentComplete) 
+                      ? `${project.percentComplete}%` 
+                      : `${project.percentComplete.toFixed(2)}%`}
                   </span>
                 )}
               </TableCell>

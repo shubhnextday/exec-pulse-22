@@ -518,9 +518,11 @@ serve(async (req) => {
         
         // Get progress percentage from custom field (customfield_11870)
         const progressField = fields[FIELD_MAPPINGS.progressPercent];
-        const percentComplete = typeof progressField === 'number' 
-          ? Math.round(progressField) 
+        const rawPercent = typeof progressField === 'number' 
+          ? progressField 
           : (parseFloat(progressField) || 0);
+        // Keep 2 decimal places if fractional, otherwise integer
+        const percentComplete = Number.isInteger(rawPercent) ? rawPercent : parseFloat(rawPercent.toFixed(2));
         
         // Get child issue counts for task breakdown display
         const childCounts = epicChildCounts[issue.key] || { notStarted: 0, inProgress: 0, completed: 0, total: 0 };
