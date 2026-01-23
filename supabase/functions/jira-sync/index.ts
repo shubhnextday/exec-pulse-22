@@ -529,7 +529,7 @@ serve(async (req) => {
           inProgress: childCounts.inProgress,
           completed: childCounts.completed,
           percentComplete,
-          startDate: fields[FIELD_MAPPINGS.startDate] || fields.created?.substring(0, 10),
+          startDate: fields[FIELD_MAPPINGS.startDate] || null,
           dueDate: fields.duedate,
           isOffTrack: false,
           totalChildItems: parseFloat(fields[FIELD_MAPPINGS.totalChildItems]) || 0,
