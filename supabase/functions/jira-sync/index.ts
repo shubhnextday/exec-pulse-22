@@ -263,6 +263,7 @@ serve(async (req) => {
       const webJql = 'project = "WEB" AND issuetype = Epic ORDER BY created DESC';
       const webFields = [
         'summary', 'status', 'created', 'duedate', 'subtasks',
+        FIELD_MAPPINGS.startDate,
         FIELD_MAPPINGS.totalChildItems,
         FIELD_MAPPINGS.totalBugs,
         FIELD_MAPPINGS.devLead,
@@ -528,7 +529,7 @@ serve(async (req) => {
           inProgress: childCounts.inProgress,
           completed: childCounts.completed,
           percentComplete,
-          startDate: fields.created?.substring(0, 10),
+          startDate: fields[FIELD_MAPPINGS.startDate] || fields.created?.substring(0, 10),
           dueDate: fields.duedate,
           isOffTrack: false,
           totalChildItems: parseFloat(fields[FIELD_MAPPINGS.totalChildItems]) || 0,
