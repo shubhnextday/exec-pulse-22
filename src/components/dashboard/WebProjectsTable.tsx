@@ -140,35 +140,25 @@ function ProjectHealthBadge({ health }: { health?: string | null }) {
 }
 
 function ProgressBar({
-  notStarted, 
-  inProgress, 
-  completed, 
-  total 
+  percentComplete 
 }: { 
-  notStarted: number;
-  inProgress: number;
-  completed: number;
-  total: number;
+  percentComplete: number;
 }) {
-  const safeTotal = total || 1;
+  const safePercent = Math.min(100, Math.max(0, percentComplete || 0));
+  const remaining = 100 - safePercent;
+  
   return (
     <div className="flex h-2 rounded-full overflow-hidden bg-muted/50 min-w-[100px] w-[120px]">
-      {completed > 0 && (
+      {safePercent > 0 && (
         <div 
-          className="bg-success transition-all duration-500 first:rounded-l-full last:rounded-r-full" 
-          style={{ width: `${(completed / safeTotal) * 100}%` }}
+          className="bg-success transition-all duration-500 rounded-l-full" 
+          style={{ width: `${safePercent}%` }}
         />
       )}
-      {inProgress > 0 && (
+      {remaining > 0 && (
         <div 
-          className="bg-blue-500 transition-all duration-500 first:rounded-l-full last:rounded-r-full" 
-          style={{ width: `${(inProgress / safeTotal) * 100}%` }}
-        />
-      )}
-      {notStarted > 0 && (
-        <div 
-          className="bg-muted-foreground/30 transition-all duration-500 first:rounded-l-full last:rounded-r-full" 
-          style={{ width: `${(notStarted / safeTotal) * 100}%` }}
+          className="bg-muted-foreground/30 transition-all duration-500 rounded-r-full" 
+          style={{ width: `${remaining}%` }}
         />
       )}
     </div>
@@ -353,10 +343,7 @@ export function WebProjectsTable({ projects }: WebProjectsTableProps) {
                       <span className="text-muted-foreground text-sm">-</span>
                     ) : (
                       <ProgressBar 
-                        notStarted={project.notStarted}
-                        inProgress={project.inProgress}
-                        completed={project.completed}
-                        total={project.totalTasks}
+                        percentComplete={project.percentComplete}
                       />
                     )}
                   </td>
@@ -417,12 +404,8 @@ export function WebProjectsTable({ projects }: WebProjectsTableProps) {
               Complete
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-              In Progress
-            </div>
-            <div className="flex items-center gap-1.5">
               <div className="w-2.5 h-2.5 rounded-full bg-muted-foreground/30" />
-              Not Started
+              Remaining
             </div>
           </div>
         </div>
