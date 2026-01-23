@@ -351,8 +351,10 @@ export function WebProjectsTable({ projects }: WebProjectsTableProps) {
                     {STATUS_CATEGORIES.coming_soon.includes(project.status) ? (
                       <span className="text-muted-foreground text-sm">-</span>
                     ) : (
-                      <span className="mono font-medium text-sm text-blue-500">
-                        {project.percentComplete}%
+                      <span className="mono font-medium text-sm text-primary">
+                        {Number.isInteger(project.percentComplete) 
+                          ? `${project.percentComplete}%` 
+                          : `${project.percentComplete.toFixed(2)}%`}
                       </span>
                     )}
                   </td>
