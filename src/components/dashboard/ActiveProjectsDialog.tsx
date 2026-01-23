@@ -226,25 +226,20 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects, activeCount
                   <span className="text-muted-foreground text-sm">-</span>
                 ) : (
                   (() => {
-                    const safeTotal = project.totalTasks || 1;
+                    const safePercent = Math.min(100, Math.max(0, project.percentComplete || 0));
+                    const remaining = 100 - safePercent;
                     return (
                       <div className="flex h-2 rounded-full overflow-hidden bg-muted/50 min-w-[100px] w-[120px]">
-                        {project.completed > 0 && (
+                        {safePercent > 0 && (
                           <div 
-                            className="bg-success transition-all duration-500 first:rounded-l-full last:rounded-r-full" 
-                            style={{ width: `${(project.completed / safeTotal) * 100}%` }}
+                            className="bg-success transition-all duration-500 rounded-l-full" 
+                            style={{ width: `${safePercent}%` }}
                           />
                         )}
-                        {project.inProgress > 0 && (
+                        {remaining > 0 && (
                           <div 
-                            className="bg-blue-500 transition-all duration-500 first:rounded-l-full last:rounded-r-full" 
-                            style={{ width: `${(project.inProgress / safeTotal) * 100}%` }}
-                          />
-                        )}
-                        {project.notStarted > 0 && (
-                          <div 
-                            className="bg-muted-foreground/30 transition-all duration-500 first:rounded-l-full last:rounded-r-full" 
-                            style={{ width: `${(project.notStarted / safeTotal) * 100}%` }}
+                            className="bg-muted-foreground/30 transition-all duration-500 rounded-r-full" 
+                            style={{ width: `${remaining}%` }}
                           />
                         )}
                       </div>

@@ -39,6 +39,7 @@ const FIELD_MAPPINGS = {
   devLead: 'customfield_11683',
   projectLead: 'customfield_11756',
   projectHealth: 'customfield_11903',
+  progressPercent: 'customfield_11870', // Progress percentage field
 };
 
 const CANCELLED_STATUSES = ['cancelled', 'canceled', 'done', 'shipped', 'complete', 'completed', 'closed', 'final product shipped'];
@@ -269,6 +270,7 @@ serve(async (req) => {
         FIELD_MAPPINGS.devLead,
         FIELD_MAPPINGS.projectLead,
         FIELD_MAPPINGS.projectHealth,
+        FIELD_MAPPINGS.progressPercent,
       ];
       
       let webIssues: any[] = [];
@@ -514,10 +516,15 @@ serve(async (req) => {
         const projectHealthField = fields[FIELD_MAPPINGS.projectHealth];
         const projectHealth = projectHealthField?.value || projectHealthField?.name || projectHealthField || null;
         
-        // Get child issue counts for progress
+        // Get progress percentage from custom field (customfield_11870)
+        const progressField = fields[FIELD_MAPPINGS.progressPercent];
+        const percentComplete = typeof progressField === 'number' 
+          ? Math.round(progressField) 
+          : (parseFloat(progressField) || 0);
+        
+        // Get child issue counts for task breakdown display
         const childCounts = epicChildCounts[issue.key] || { notStarted: 0, inProgress: 0, completed: 0, total: 0 };
         const totalTasks = childCounts.total || fields.subtasks?.length || 0;
-        const percentComplete = totalTasks > 0 ? Math.round((childCounts.completed / totalTasks) * 100) : 0;
         
         return {
           id: issue.key,
