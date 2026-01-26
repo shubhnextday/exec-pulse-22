@@ -30,17 +30,17 @@ interface ActiveProjectsDialogProps {
 
 // Status categories for tabs
 const STATUS_CATEGORIES = {
-  coming_soon: ['Open', 'In Requirements', 'Technical Discovery', 'In Technical Discovery', 'Ready for Scheduling'],
-  active: ['In Design', 'In Website Development', 'In Final QA Testing', 'Continuous Development', 'Customer Handover'],
+  coming_soon: ['Open', 'In Requirements', 'Ready for Scheduling'],
+  active: ['Technical Discovery', 'In Technical Discovery', 'In Design', 'In Website Development', 'In Final QA Testing', 'Continuous Development', 'Customer Handover'],
   non_active: ['On Hold', 'Done', 'Canceled'],
 };
 
 const STATUS_ORDER: Record<string, number> = {
   'Open': 1,
   'In Requirements': 2,
-  'In Technical Discovery': 3,
-  'Technical Discovery': 3,
-  'Ready for Scheduling': 4,
+  'Ready for Scheduling': 3,
+  'Technical Discovery': 4,
+  'In Technical Discovery': 4,
   'In Design': 5,
   'In Website Development': 6,
   'In Final QA Testing': 7,
