@@ -278,8 +278,8 @@ export default function Dashboard() {
     const commissionsDue = displayOrders.reduce((sum, order) => sum + (order.commissionDue || 0), 0);
     
     // Active Projects: Count only projects in "Active" status category (matches Active tab in dialog)
-    // Active statuses: In Design, In Website Development, In Final QA Testing, Continuous Development, Customer Handover
-    const ACTIVE_STATUSES = ['In Design', 'In Website Development', 'In Final QA Testing', 'Continuous Development', 'Customer Handover'];
+    // Active statuses: Technical Discovery, In Design, In Website Development, In Final QA Testing, Continuous Development, Customer Handover
+    const ACTIVE_STATUSES = ['Technical Discovery', 'In Technical Discovery', 'In Design', 'In Website Development', 'In Final QA Testing', 'Continuous Development', 'Customer Handover'];
     const activeProjects = displayWebProjects.filter(p => ACTIVE_STATUSES.includes(p.status)).length;
     
     // Order Health Breakdown: Use filtered order health orders when filters applied
