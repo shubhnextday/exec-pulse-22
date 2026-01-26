@@ -277,9 +277,10 @@ export default function Dashboard() {
     // Commissions Due: Sum of commissionDue field from ALL orders (not just active)
     const commissionsDue = displayOrders.reduce((sum, order) => sum + (order.commissionDue || 0), 0);
     
-    // Active Projects: Count from web projects (not filtered by order filters)
-    // Exclude "Open" status from count - they're in queue, not yet active until "In Requirements"
-    const activeProjects = displayWebProjects.filter(p => !['Done', 'Canceled', 'On Hold', 'Open'].includes(p.status)).length;
+    // Active Projects: Count only projects in "Active" status category (matches Active tab in dialog)
+    // Active statuses: In Design, In Website Development, In Final QA Testing, Continuous Development, Customer Handover
+    const ACTIVE_STATUSES = ['In Design', 'In Website Development', 'In Final QA Testing', 'Continuous Development', 'Customer Handover'];
+    const activeProjects = displayWebProjects.filter(p => ACTIVE_STATUSES.includes(p.status)).length;
     
     // Order Health Breakdown: Use filtered order health orders when filters applied
     const orderHealthBreakdown = {
