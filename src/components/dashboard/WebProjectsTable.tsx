@@ -14,8 +14,8 @@ interface WebProjectsTableProps {
 
 // Status categories for tabs
 const STATUS_CATEGORIES = {
-  coming_soon: ['Open', 'In Requirements', 'Technical Discovery', 'In Technical Discovery', 'Ready for Scheduling'],
-  active: ['In Design', 'In Website Development', 'In Final QA Testing', 'Continuous Development', 'Customer Handover'],
+  coming_soon: ['Open', 'In Requirements', 'Ready for Scheduling'],
+  active: ['Technical Discovery', 'In Technical Discovery', 'In Design', 'In Website Development', 'In Final QA Testing', 'Continuous Development', 'Customer Handover'],
   non_active: ['On Hold', 'Done', 'Canceled'],
 };
 
@@ -23,9 +23,9 @@ const STATUS_CATEGORIES = {
 const STATUS_ORDER: Record<string, number> = {
   'Open': 1,
   'In Requirements': 2,
-  'Technical Discovery': 3,
-  'In Technical Discovery': 3,
-  'Ready for Scheduling': 4,
+  'Ready for Scheduling': 3,
+  'Technical Discovery': 4,
+  'In Technical Discovery': 4,
   'In Design': 5,
   'In Website Development': 6,
   'In Final QA Testing': 7,
@@ -394,7 +394,7 @@ export function WebProjectsTable({ projects }: WebProjectsTableProps) {
               <Code2 className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-base font-semibold text-foreground">Web Development Projects</h3>
+              <h3 className="text-base font-semibold text-foreground">Design and Development Projects</h3>
               <p className="text-xs text-muted-foreground">
                 {tabCounts.active} active • {offTrackCount} need attention
               </p>

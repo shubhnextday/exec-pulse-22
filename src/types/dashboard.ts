@@ -120,6 +120,8 @@ export interface ActiveCustomer {
   status: string;
   totalOrders?: number;
   activeOrders?: number;
+  hasActiveOrder?: boolean;  // Has at least one active order (not On Hold, Cancelled, Final Product Shipped)
+  hasRecentOrder?: boolean;  // Has placed an order in the last 90 days
 }
 
 export interface OutstandingOrder {

@@ -245,8 +245,9 @@ export default function Dashboard() {
       return date >= currentMonthStart && date <= currentMonthEnd;
     };
     
-    // Active Customers: Count from CUS project (activeCustomers from API)
-    const totalActiveCustomers = activeCustomers.length;
+    // Active Customers: Count only customers with active orders or recent orders (last 90 days)
+    // This matches the "Active Customers" tab in the dialog
+    const totalActiveCustomers = activeCustomers.filter(c => c.hasActiveOrder || c.hasRecentOrder).length;
     
     // Active Orders: Use filtered when filters applied, all when default
     const activeOrdersCount = filteredActiveOrders.length;
@@ -663,7 +664,7 @@ export default function Dashboard() {
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                   </span>
-                  <span>Live JIRA Data • {filteredActiveOrders.length} orders displayed</span>
+                  <span>Live Data • {filteredActiveOrders.length} orders displayed</span>
                   {hasFiltersApplied && (
                     <span className="text-primary font-medium">(filtered from {displayOrders.length} total)</span>
                   )}
@@ -746,7 +747,7 @@ export default function Dashboard() {
                 <TooltipTrigger asChild>
                   <div onClick={() => setOutstandingDialogOpen(true)} className="cursor-pointer">
                     <MetricCard
-                      title="Outstanding Payments"
+                      title="Cash Receivables"
                       value={`$${reactiveMetrics.totalOutstandingPayments > 0 ? (reactiveMetrics.totalOutstandingPayments / 1000).toFixed(0) + 'k' : '0'}`}
                       icon={CreditCard}
                       iconColor="text-secondary"
