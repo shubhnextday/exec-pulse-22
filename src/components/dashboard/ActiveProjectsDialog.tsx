@@ -262,7 +262,7 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects, activeCount
                 {project.totalTasks}
               </TableCell>
               <TableCell>
-                {project.dueDate ? new Date(project.dueDate).toLocaleDateString() : '-'}
+                {project.dueDate || '-'}
               </TableCell>
             </TableRow>
           ))}
@@ -283,7 +283,7 @@ export function ActiveProjectsDialog({ open, onOpenChange, projects, activeCount
       <DialogContent className="max-w-5xl max-h-[80vh]">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">
-            Web Development Projects ({projects.length})
+            Design and Development Projects ({projects.length})
           </DialogTitle>
         </DialogHeader>
 

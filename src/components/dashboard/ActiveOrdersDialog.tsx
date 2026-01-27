@@ -14,7 +14,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { TableControlsBar, SortableHeader, TableFilter } from '@/components/ui/table-controls';
 import { useTableFeatures } from '@/hooks/useTableFeatures';
 import type { Order } from '@/types/dashboard';
@@ -111,12 +110,12 @@ export function ActiveOrdersDialog({ open, onOpenChange, orders, initialSearchQu
               <TableRow className="border-b border-border">
                 <TableHead>
                   <SortableHeader
-                    sortKey="id"
+                    sortKey="salesOrderNumber"
                     currentSortKey={sortConfig.key as string}
                     direction={sortConfig.direction}
-                    onSort={() => handleSort('id')}
+                    onSort={() => handleSort('salesOrderNumber')}
                   >
-                    Order ID
+                    Sales Order #
                   </SortableHeader>
                 </TableHead>
                 <TableHead>
@@ -127,16 +126,6 @@ export function ActiveOrdersDialog({ open, onOpenChange, orders, initialSearchQu
                     onSort={() => handleSort('customer')}
                   >
                     Customer
-                  </SortableHeader>
-                </TableHead>
-                <TableHead>
-                  <SortableHeader
-                    sortKey="salesOrderNumber"
-                    currentSortKey={sortConfig.key as string}
-                    direction={sortConfig.direction}
-                    onSort={() => handleSort('salesOrderNumber')}
-                  >
-                    Sales Order #
                   </SortableHeader>
                 </TableHead>
                 <TableHead>
@@ -185,9 +174,8 @@ export function ActiveOrdersDialog({ open, onOpenChange, orders, initialSearchQu
             <TableBody>
               {filteredData.map((order) => (
                 <TableRow key={order.id}>
-                  <TableCell className="font-medium">{order.id}</TableCell>
+                  <TableCell className="font-medium">{order.salesOrderNumber || '-'}</TableCell>
                   <TableCell>{order.customer}</TableCell>
-                  <TableCell>{order.salesOrderNumber || '-'}</TableCell>
                   <TableCell className="max-w-[200px] truncate">{order.productName}</TableCell>
                   <TableCell>{order.currentStatus}</TableCell>
                   <TableCell>
@@ -202,7 +190,7 @@ export function ActiveOrdersDialog({ open, onOpenChange, orders, initialSearchQu
               ))}
               {filteredData.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                     No orders found
                   </TableCell>
                 </TableRow>

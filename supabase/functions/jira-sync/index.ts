@@ -393,18 +393,35 @@ serve(async (req) => {
       console.log(`Order health orders transformed: ${orderHealthOrders.length}`);
 
       // Extract Active Customers from CUS project with order counts
+      const now = new Date();
+      const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      
       const activeCustomers = activeCustomerIssues.map((issue: any) => {
         const customerName = issue.fields?.summary || 'Unknown Customer';
         
-        // Count total orders (from orderHealthOrders - all non-cancelled orders)
-        const totalOrders = orderHealthOrders.filter((o: any) => 
+        // Get all orders for this customer
+        const customerOrders = orderHealthOrders.filter((o: any) => 
           o.customer?.toLowerCase() === customerName.toLowerCase()
-        ).length;
+        );
         
-        // Count active orders (from activeOrders - excludes completed/cancelled)
+        // Count total orders (from orderHealthOrders - all non-cancelled orders)
+        const totalOrders = customerOrders.length;
+        
+        // Count active orders (from activeOrders - excludes completed/cancelled/on-hold)
         const activeOrdersCount = activeOrders.filter((o: any) => 
           o.customer?.toLowerCase() === customerName.toLowerCase()
         ).length;
+        
+        // Check if customer has at least one active order
+        const hasActiveOrder = activeOrdersCount > 0;
+        
+        // Check if customer has placed an order in the last 90 days
+        const hasRecentOrder = customerOrders.some((order: any) => {
+          const orderDate = order.startDate || order.dueDate;
+          if (!orderDate) return false;
+          const orderDateObj = new Date(orderDate);
+          return orderDateObj >= ninetyDaysAgo;
+        });
         
         return {
           id: issue.key,
@@ -412,6 +429,8 @@ serve(async (req) => {
           status: issue.fields?.status?.name || 'Unknown',
           totalOrders,
           activeOrders: activeOrdersCount,
+          hasActiveOrder,
+          hasRecentOrder,
         };
       });
       console.log(`Active customers from CUS project: ${activeCustomers.length}`);

@@ -42,7 +42,7 @@ export function OutstandingDetailsDialog({
       <DialogContent className="max-w-5xl max-h-[85vh] w-[95vw]">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
-            <span>Outstanding Payments Details</span>
+            <span>Cash Receivables Details</span>
             <Badge variant="secondary" className="text-lg px-3 py-1">
               Total: ${totalOutstanding.toLocaleString()}
             </Badge>
@@ -109,7 +109,7 @@ export function OutstandingDetailsDialog({
         
         <div className="border-t pt-4 mt-2">
           <div className="flex justify-between text-sm text-muted-foreground">
-            <span>{orders.length} orders with outstanding payments</span>
+            <span>{orders.length} orders with receivables</span>
             <span>
               Showing all-time outstanding (all orders)
             </span>
