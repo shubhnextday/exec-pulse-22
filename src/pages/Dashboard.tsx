@@ -50,7 +50,6 @@ function getDateRangeFromSelection(range: string): { start: string; end: string 
   
   switch (range) {
     case 'all-time':
-      // Return a very old start date to include all historical data
       return { start: '2000-01-01', end: today };
     case 'last-6-months': {
       const date = new Date(now);
@@ -77,14 +76,12 @@ function getDateRangeFromSelection(range: string): { start: string; end: string 
     case 'dec-2025':
       return { start: '2025-12-01', end: '2025-12-31' };
     default:
-      // Default to 6 months ago
       const defaultDate = new Date(now);
       defaultDate.setMonth(defaultDate.getMonth() - 6);
       return { start: defaultDate.toISOString().split('T')[0], end: today };
   }
 }
 
-// Helper to get just dateFrom for API call
 function getDateFromRange(range: string): string {
   return getDateRangeFromSelection(range).start;
 }
@@ -93,7 +90,6 @@ export default function Dashboard() {
   const [activeSection, setActiveSection] = useState('overview');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
-  // Handle section navigation - scroll to section
   const handleSectionChange = (section: string) => {
     setActiveSection(section);
     const element = document.getElementById(`section-${section}`);
@@ -106,7 +102,7 @@ export default function Dashboard() {
   const [selectedCustomer, setSelectedCustomer] = useState('All Customers');
   const [selectedAgent, setSelectedAgent] = useState('All Agents');
   const [selectedAccountManager, setSelectedAccountManager] = useState('All Account Managers');
-  const [dateRange, setDateRange] = useState('all-time'); // Default to all time for complete data view
+  const [dateRange, setDateRange] = useState('all-time');
   
   // Dialog states
   const [outstandingDialogOpen, setOutstandingDialogOpen] = useState(false);
@@ -120,13 +116,11 @@ export default function Dashboard() {
   const [orderHealthDialogOpen, setOrderHealthDialogOpen] = useState(false);
   const [onHoldDialogOpen, setOnHoldDialogOpen] = useState(false);
 
-  // Handler to open Active Orders dialog with optional customer filter
   const openActiveOrdersDialog = (customerName?: string) => {
     setActiveOrdersInitialSearch(customerName || '');
     setActiveOrdersDialogOpen(true);
   };
 
-  // JIRA data hook
   const {
     summary,
     orders,
@@ -144,13 +138,11 @@ export default function Dashboard() {
     refresh,
   } = useJiraData();
 
-  // Fetch data when date range changes
   useEffect(() => {
     const dateFrom = getDateFromRange(dateRange);
     fetchDashboardData({ dateFrom });
   }, [fetchDashboardData, dateRange]);
 
-  // Use JIRA data if available, otherwise fall back to mock data
   const displayOrders = orders.length > 0 ? orders : mockOrders;
   const displayOrderHealthOrders = orderHealthOrders.length > 0 ? orderHealthOrders : mockOrders;
   const displayWebProjects = webProjects.length > 0 ? webProjects : mockWebProjects;
@@ -158,19 +150,14 @@ export default function Dashboard() {
   const displayAgents = agents.length > 1 ? agents : ['All Agents'];
   const displayAccountManagers = accountManagers.length > 1 ? accountManagers : ['All Account Managers'];
 
-  // Filter orders based on selections - ALL STATS ARE DERIVED FROM THIS
   const filteredOrders = useMemo(() => {
     const { start, end } = getDateRangeFromSelection(dateRange);
     
     return displayOrders.filter(order => {
-      // Filter by customer
       if (selectedCustomer !== 'All Customers' && order.customer !== selectedCustomer) return false;
-      // Filter by agent
       if (selectedAgent !== 'All Agents' && order.agent !== selectedAgent) return false;
-      // Filter by account manager
       if (selectedAccountManager !== 'All Account Managers' && order.accountManager !== selectedAccountManager) return false;
       
-      // Filter by date range - use startDate or dueDate
       const orderDate = order.startDate || order.dueDate;
       if (orderDate) {
         const orderDateStr = orderDate.substring(0, 10);
@@ -181,13 +168,11 @@ export default function Dashboard() {
     });
   }, [displayOrders, selectedCustomer, selectedAgent, selectedAccountManager, dateRange]);
 
-  // Check if any filters are applied (including date range not being default)
   const hasFiltersApplied = selectedCustomer !== 'All Customers' || 
     selectedAgent !== 'All Agents' || 
     selectedAccountManager !== 'All Account Managers' ||
     dateRange !== 'all-time';
 
-  // Reset all filters to default
   const resetAllFilters = () => {
     setSelectedCustomer('All Customers');
     setSelectedAgent('All Agents');
@@ -195,7 +180,6 @@ export default function Dashboard() {
     setDateRange('all-time');
   };
 
-  // Filter order health orders when filters are applied
   const filteredOrderHealthOrders = useMemo(() => {
     if (!hasFiltersApplied) {
       return displayOrderHealthOrders;
@@ -209,7 +193,6 @@ export default function Dashboard() {
     });
   }, [displayOrderHealthOrders, selectedCustomer, selectedAgent, selectedAccountManager, hasFiltersApplied]);
 
-  // Filter active orders when filters are applied
   const filteredActiveOrders = useMemo(() => {
     if (!hasFiltersApplied) {
       return displayOrders;
@@ -223,59 +206,42 @@ export default function Dashboard() {
     });
   }, [displayOrders, selectedCustomer, selectedAgent, selectedAccountManager, hasFiltersApplied]);
 
-  // REACTIVE METRICS - Use proper data sources
   const reactiveMetrics = useMemo(() => {
-    // Get current month boundaries
     const now = new Date();
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     
-    // Helper to check if a date is in current month
     const isInCurrentMonth = (dateStr: string | undefined | null): boolean => {
       if (!dateStr) return false;
       const date = new Date(dateStr);
       return date >= currentMonthStart && date <= currentMonthEnd;
     };
     
-    // Active Customers: Count only customers with active orders or recent orders (last 90 days)
-    // This matches the "Active Customers" tab in the dialog
     const totalActiveCustomers = activeCustomers.filter(c => c.hasActiveOrder || c.hasRecentOrder).length;
-    
-    // Active Orders: Use filtered when filters applied, all when default
     const activeOrdersCount = filteredActiveOrders.length;
     
-    // Monthly Revenue: Sum of deposits received this month + final payments received this month
-    // Uses depositReceivedDate and finalPaymentReceivedDate fields
-    // IMPORTANT: Use displayOrderHealthOrders (all non-cancelled orders) to include shipped orders with final payments
     const monthlyRevenue = displayOrderHealthOrders.reduce((sum, order) => {
       let amount = 0;
-      // Add deposit if received this month
       if (isInCurrentMonth(order.depositReceivedDate)) {
         amount += order.depositAmount || 0;
       }
-      // Add final payment if received this month
       if (isInCurrentMonth(order.finalPaymentReceivedDate)) {
         amount += order.finalPayment || 0;
       }
       return sum + amount;
     }, 0);
     
-    // Outstanding Payments: Use all-time outstanding from summary, excluding On Hold orders
     const onHoldTotal = allTimeOutstandingOrders
       .filter(order => order.currentStatus === 'On Hold')
       .reduce((sum, o) => sum + (o.remainingDue || 0), 0);
     const outstandingPayments = (summary?.allTimeOutstandingPayments ?? 
       filteredOrders.reduce((sum, order) => sum + (order.remainingDue || 0), 0)) - onHoldTotal;
     
-    // Commissions Due: Sum of commissionDue field from ALL orders (not just active)
     const commissionsDue = displayOrders.reduce((sum, order) => sum + (order.commissionDue || 0), 0);
     
-    // Active Projects: Count only projects in "Active" status category (matches Active tab in dialog)
-    // Active statuses: Technical Discovery, In Design, In Website Development, In Final QA Testing, Continuous Development, Customer Handover
     const ACTIVE_STATUSES = ['Technical Discovery', 'In Technical Discovery', 'In Design', 'In Website Development', 'In Final QA Testing', 'Continuous Development', 'Customer Handover'];
     const activeProjects = displayWebProjects.filter(p => ACTIVE_STATUSES.includes(p.status)).length;
     
-    // Order Health Breakdown: Use filtered order health orders when filters applied
     const orderHealthBreakdown = {
       onTrack: filteredOrderHealthOrders.filter(o => o.orderHealth === 'on-track').length,
       atRisk: filteredOrderHealthOrders.filter(o => o.orderHealth === 'at-risk').length,
@@ -297,8 +263,6 @@ export default function Dashboard() {
     };
   }, [displayWebProjects, displayOrders, filteredActiveOrders, filteredOrderHealthOrders, activeCustomers, summary, allTimeOutstandingOrders, filteredOrders]);
 
-  // Orders that received money this month (deposit or final payment received this month)
-  // IMPORTANT: Use displayOrderHealthOrders to include shipped orders with final payments received
   const ordersReceivedThisMonth = useMemo(() => {
     const now = new Date();
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -315,10 +279,7 @@ export default function Dashboard() {
     );
   }, [displayOrderHealthOrders]);
 
-  // Calculate cash flow projections from ALL active orders (not filtered by date)
-  // Uses same logic as ExpectedCashFlowDialog for consistency
   const cashFlowProjections = useMemo(() => {
-    // Helper to get status number from order (same logic as dialog)
     const getStatusNumber = (order: Order): number | null => {
       const raw = (order.currentStatus || '').trim();
       if (!raw) return null;
@@ -340,7 +301,6 @@ export default function Dashboard() {
       return statusNum === 12;
     };
 
-    // Get effective remaining due based on status (same as dialog)
     const getEffectiveRemainingDue = (order: Order): number => {
       if (isStatus0to11(order)) return order.remainingDue || 0;
       if (isStatus12(order)) {
@@ -350,15 +310,8 @@ export default function Dashboard() {
       return 0;
     };
 
-    // Excluded statuses (same as dialog)
-    const excludedKeywords = [
-      'partial shipment',
-      'final product shipped',
-      'canceled',
-      'on hold'
-    ];
+    const excludedKeywords = ['partial shipment', 'final product shipped', 'canceled', 'on hold'];
 
-    // Group orders by EST Ship Date and sum remaining due
     const projectionMap = new Map<string, { 
       amount: number; 
       customers: Set<string>; 
@@ -367,23 +320,19 @@ export default function Dashboard() {
     }>();
     
     displayOrderHealthOrders.forEach(order => {
-      // Exclude On Hold orders by orderHealth
       if (order.orderHealth === 'on-hold') return;
       
-      // Exclude orders with specific statuses
       const currentStatusLower = (order.currentStatus || '').toLowerCase();
       const isExcluded = excludedKeywords.some(keyword => currentStatusLower.includes(keyword));
       if (isExcluded) return;
       
-      // Use estShipDate, fallback to dueDate if not available
       const shipDate = order.estShipDate || order.dueDate;
       if (!shipDate) return;
       
-      // Get effective remaining due based on status
       const effectiveRemainingDue = getEffectiveRemainingDue(order);
       if (effectiveRemainingDue <= 0) return;
       
-      const dateKey = shipDate.substring(0, 10); // Get YYYY-MM-DD
+      const dateKey = shipDate.substring(0, 10);
       
       const orderInfo = {
         id: order.id,
@@ -409,12 +358,11 @@ export default function Dashboard() {
       }
     });
 
-    // Convert to array and sort by date, then get next 12 dates from today onwards
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
     
     return Array.from(projectionMap.entries())
-      .filter(([date]) => date >= todayStr) // Only show future/today dates
+      .filter(([date]) => date >= todayStr)
       .map(([date, data]) => ({
         date,
         expectedAmount: data.amount,
@@ -423,12 +371,10 @@ export default function Dashboard() {
         orders: data.orders,
       }))
       .sort((a, b) => a.date.localeCompare(b.date))
-      .slice(0, 12); // Show next 12 dates for readability
+      .slice(0, 12);
   }, [displayOrderHealthOrders]);
 
-  // Calculate commissions from real order data - ACCURATE from JIRA
   const realCommissions = useMemo(() => {
-    // Group by agent and aggregate commission data from filtered orders
     const agentMap = new Map<string, { 
       orders: { customer: string; orderTotal: number; commissionDue: number; commissionPercent: number; orderId: string }[];
       totalCommission: number;
@@ -450,7 +396,6 @@ export default function Dashboard() {
       data.totalCommission += order.commissionDue || 0;
     });
 
-    // Convert to commission records - include ALL with commissions
     return Array.from(agentMap.entries())
       .filter(([agent]) => agent !== 'Unassigned')
       .flatMap(([agent, data]) => 
@@ -463,16 +408,14 @@ export default function Dashboard() {
             orderTotal: order.orderTotal,
             commissionPercent: order.commissionPercent,
             commissionDue: order.commissionDue,
-            commissionPaid: 0, // JIRA doesn't track paid status yet
+            commissionPaid: 0,
           }))
       );
   }, [filteredOrders]);
 
-  // Calculate top customers from filtered orders - ACCURATE from JIRA
   const realTopCustomers = useMemo(() => {
     const customerMap = new Map<string, { totalOrders: number; orderCount: number }>();
     
-    // Use filtered orders for consistency with other metrics
     filteredOrders.forEach(order => {
       const customer = order.customer;
       if (!customer || customer === 'Unknown') return;
@@ -485,7 +428,6 @@ export default function Dashboard() {
       data.orderCount += 1;
     });
 
-    // Return ALL customers sorted by revenue (no limit)
     return Array.from(customerMap.entries())
       .map(([name, data]) => ({
         name,
@@ -495,8 +437,6 @@ export default function Dashboard() {
       .sort((a, b) => b.totalOrders - a.totalOrders);
   }, [filteredOrders]);
 
-  // Get ALL On Hold orders from orderHealthOrders (includes orders without financial data)
-  // Only include orders where currentStatus explicitly contains "On Hold"
   const onHoldOrders = useMemo(() => {
     return displayOrderHealthOrders.filter(order => {
       const status = (order.currentStatus || '').toLowerCase();
@@ -504,7 +444,6 @@ export default function Dashboard() {
     });
   }, [displayOrderHealthOrders]);
 
-  // Active outstanding orders (exclude On Hold from the outstanding list)
   const activeOutstandingOrders = useMemo(() => {
     return allTimeOutstandingOrders.filter(order => order.currentStatus !== 'On Hold');
   }, [allTimeOutstandingOrders]);
@@ -513,7 +452,6 @@ export default function Dashboard() {
     return onHoldOrders.reduce((sum, o) => sum + (o.remainingDue || 0), 0);
   }, [onHoldOrders]);
 
-  // Export dashboard data to CSV
   const handleExport = () => {
     const headers = [
       'Order ID',
@@ -560,296 +498,281 @@ export default function Dashboard() {
     URL.revokeObjectURL(link.href);
   };
 
-
   return (
     <div className="min-h-screen bg-background">
-        <Sidebar 
-          activeSection={activeSection} 
-          onSectionChange={handleSectionChange}
+      <Sidebar 
+        activeSection={activeSection} 
+        onSectionChange={handleSectionChange}
+      />
+      
+      <main className={cn(
+        "transition-all duration-300 p-8",
+        sidebarCollapsed ? "ml-16" : "ml-64"
+      )}>
+        <Header 
+          lastSynced={lastSynced} 
+          onRefresh={refresh} 
+          onExport={handleExport}
+          isLoading={isLoading} 
         />
         
-        <main className={cn(
-          "transition-all duration-300 p-8",
-          sidebarCollapsed ? "ml-16" : "ml-64"
-        )}>
-          <Header 
-            lastSynced={lastSynced} 
-            onRefresh={refresh} 
-            onExport={handleExport}
-            isLoading={isLoading} 
-          />
-          
-          {/* Error Banner */}
-          {error && (
-            <div className="mb-6 p-4 rounded-2xl bg-danger/10 border border-danger/30 flex items-center gap-3">
-              <AlertCircle className="h-5 w-5 text-danger" />
-              <div className="flex-1">
-                <p className="font-medium text-danger">Failed to sync with JIRA</p>
-                <p className="text-sm text-muted-foreground">{error}</p>
+        {error && (
+          <div className="mb-6 p-4 rounded-2xl bg-danger/10 border border-danger/30 flex items-center gap-3">
+            <AlertCircle className="h-5 w-5 text-danger" />
+            <div className="flex-1">
+              <p className="font-medium text-danger">Failed to sync with JIRA</p>
+              <p className="text-sm text-muted-foreground">{error}</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={refresh} disabled={isLoading}>
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Retry'}
+            </Button>
+          </div>
+        )}
+
+        {isLoading && !summary && (
+          <div className="fixed inset-0 bg-background/90 backdrop-blur-sm flex items-center justify-center z-50 ml-64">
+            <div className="text-center">
+              <div className="relative">
+                <Loader2 className="h-14 w-14 animate-spin text-primary mx-auto mb-4" />
+                <div className="absolute inset-0 h-14 w-14 mx-auto rounded-full bg-primary/20 blur-xl" />
               </div>
-              <Button variant="outline" size="sm" onClick={refresh} disabled={isLoading}>
-                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Retry'}
-              </Button>
+              <p className="text-lg font-semibold text-foreground">Syncing with JIRA...</p>
+              <p className="text-sm text-muted-foreground mt-1">Fetching orders and projects</p>
             </div>
-          )}
+          </div>
+        )}
+        
+        <FilterBar
+          customers={displayCustomers}
+          agents={displayAgents}
+          accountManagers={displayAccountManagers}
+          selectedCustomer={selectedCustomer}
+          selectedAgent={selectedAgent}
+          selectedAccountManager={selectedAccountManager}
+          dateRange={dateRange}
+          onCustomerChange={setSelectedCustomer}
+          onAgentChange={setSelectedAgent}
+          onAccountManagerChange={setSelectedAccountManager}
+          onDateRangeChange={setDateRange}
+        />
 
-          {/* Loading Overlay */}
-          {isLoading && !summary && (
-            <div className="fixed inset-0 bg-background/90 backdrop-blur-sm flex items-center justify-center z-50 ml-64">
-              <div className="text-center">
-                <div className="relative">
-                  <Loader2 className="h-14 w-14 animate-spin text-primary mx-auto mb-4" />
-                  <div className="absolute inset-0 h-14 w-14 mx-auto rounded-full bg-primary/20 blur-xl" />
-                </div>
-                <p className="text-lg font-semibold text-foreground">Syncing with JIRA...</p>
-                <p className="text-sm text-muted-foreground mt-1">Fetching orders and projects</p>
-              </div>
-            </div>
-          )}
-          
-          <FilterBar
-            customers={displayCustomers}
-            agents={displayAgents}
-            accountManagers={displayAccountManagers}
-            selectedCustomer={selectedCustomer}
-            selectedAgent={selectedAgent}
-            selectedAccountManager={selectedAccountManager}
-            dateRange={dateRange}
-            onCustomerChange={setSelectedCustomer}
-            onAgentChange={setSelectedAgent}
-            onAccountManagerChange={setSelectedAccountManager}
-            onDateRangeChange={setDateRange}
-          />
+        {hasFiltersApplied && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+            <Button
+              onClick={resetAllFilters}
+              variant="default"
+              size="sm"
+              className="shadow-lg flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-4 py-2"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Reset Filters
+            </Button>
+          </div>
+        )}
 
-          {/* Sticky Reset Filters Button */}
-          {hasFiltersApplied && (
-            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
-              <Button
-                onClick={resetAllFilters}
-                variant="default"
-                size="sm"
-                className="shadow-lg flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-4 py-2"
-              >
-                <RotateCcw className="h-4 w-4" />
-                Reset Filters
-              </Button>
-            </div>
-          )}
-
-          {/* Data Source Indicator */}
-          <div className="mb-6 flex items-center justify-between">
-            <div className="text-xs text-muted-foreground">
-              {summary || orders.length > 0 ? (
-                <span className="inline-flex items-center gap-2">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                  </span>
-                  <span>Live Data • {filteredActiveOrders.length} orders displayed</span>
-                  {hasFiltersApplied && (
-                    <span className="text-primary font-medium">(filtered from {displayOrders.length} total)</span>
-                  )}
+        <div className="mb-6 flex items-center justify-between">
+          <div className="text-xs text-muted-foreground">
+            {summary || orders.length > 0 ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                 </span>
-              ) : (
-                <span className="inline-flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-warning" />
-                  Showing demo data • Connect to JIRA for live data
-                </span>
-              )}
+                <span>Live Data • {filteredActiveOrders.length} orders displayed</span>
+                {hasFiltersApplied && (
+                  <span className="text-primary font-medium">(filtered from {displayOrders.length} total)</span>
+                )}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-warning" />
+                Showing demo data • Connect to JIRA for live data
+              </span>
+            )}
+          </div>
+        </div>
+
+        <section id="section-overview" className="mb-8 scroll-mt-8">
+          <h2 className="text-lg font-semibold mb-4 text-foreground">Executive Summary</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <div onClick={() => setActiveCustomersDialogOpen(true)} className="cursor-pointer">
+              <MetricCard
+                title="Active Contract Manufacturing Customers"
+                value={reactiveMetrics.totalActiveCustomers}
+                icon={Users}
+                iconColor="text-primary"
+                delay={100}
+              />
+            </div>
+
+            <div onClick={() => setActiveOrdersDialogOpen(true)} className="cursor-pointer">
+              <MetricCard
+                title="Active Contract Manufacturing Orders"
+                value={reactiveMetrics.totalActiveOrders}
+                icon={Package}
+                iconColor="text-secondary"
+                delay={150}
+              />
+            </div>
+
+            <div onClick={() => setRevenueDialogOpen(true)} className="cursor-pointer">
+              <MetricCard
+                title="Collected $$ this month"
+                value={`$${reactiveMetrics.totalMonthlyRevenue > 0 ? (reactiveMetrics.totalMonthlyRevenue / 1000).toFixed(0) + 'k' : '0'}`}
+                icon={TrendingUp}
+                iconColor="text-primary"
+                delay={200}
+              />
+            </div>
+
+            <div onClick={() => setOutstandingDialogOpen(true)} className="cursor-pointer">
+              <MetricCard
+                title="Cash Receivables"
+                value={`$${reactiveMetrics.totalOutstandingPayments > 0 ? (reactiveMetrics.totalOutstandingPayments / 1000).toFixed(0) + 'k' : '0'}`}
+                icon={CreditCard}
+                iconColor="text-secondary"
+                delay={250}
+              />
             </div>
           </div>
 
-          {/* Executive Summary Section */}
-          <section id="section-overview" className="mb-8 scroll-mt-8">
-            <h2 className="text-lg font-semibold mb-4 text-foreground">Executive Summary</h2>
-            {/* First row - 4 cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-              <div onClick={() => setActiveCustomersDialogOpen(true)} className="cursor-pointer">
-                <MetricCard
-                  title="Active Contract Manufacturing Customers"
-                  value={reactiveMetrics.totalActiveCustomers}
-                  icon={Users}
-                  iconColor="text-primary"
-                  delay={100}
-                />
-              </div>
-
-              <div onClick={() => setActiveOrdersDialogOpen(true)} className="cursor-pointer">
-                <MetricCard
-                  title="Active Contract Manufacturing Orders"
-                  value={reactiveMetrics.totalActiveOrders}
-                  icon={Package}
-                  iconColor="text-secondary"
-                  delay={150}
-                />
-              </div>
-
-              <div onClick={() => setRevenueDialogOpen(true)} className="cursor-pointer">
-                <MetricCard
-                  title="Collected $$ this month"
-                  value={`$${reactiveMetrics.totalMonthlyRevenue > 0 ? (reactiveMetrics.totalMonthlyRevenue / 1000).toFixed(0) + 'k' : '0'}`}
-                  icon={TrendingUp}
-                  iconColor="text-primary"
-                  delay={200}
-                />
-              </div>
-
-              <div onClick={() => setOutstandingDialogOpen(true)} className="cursor-pointer">
-                <MetricCard
-                  title="Cash Receivables"
-                  value={`$${reactiveMetrics.totalOutstandingPayments > 0 ? (reactiveMetrics.totalOutstandingPayments / 1000).toFixed(0) + 'k' : '0'}`}
-                  icon={CreditCard}
-                  iconColor="text-secondary"
-                  delay={250}
-                />
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div onClick={() => setOnHoldDialogOpen(true)} className="cursor-pointer">
+              <MetricCard
+                title={`Contract Manufacturing ON HOLD Orders (${onHoldOrders.length})`}
+                value={`$${onHoldTotal > 0 ? (onHoldTotal / 1000).toFixed(0) + 'k' : '0'}`}
+                icon={PauseCircle}
+                iconColor="text-muted-foreground"
+                delay={275}
+              />
             </div>
 
-            {/* Second row - 3 cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div onClick={() => setOnHoldDialogOpen(true)} className="cursor-pointer">
-                <MetricCard
-                  title={`Contract Manufacturing ON HOLD Orders (${onHoldOrders.length})`}
-                  value={`$${onHoldTotal > 0 ? (onHoldTotal / 1000).toFixed(0) + 'k' : '0'}`}
-                  icon={PauseCircle}
-                  iconColor="text-muted-foreground"
-                  delay={275}
-                />
-              </div>
-
-              <div onClick={() => setCommissionsDialogOpen(true)} className="cursor-pointer">
-                <MetricCard
-                  title="Agent Commissions Due"
-                  value={`$${reactiveMetrics.totalCommissionsDue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
-                  icon={DollarSign}
-                  iconColor="text-primary"
-                  delay={300}
-                />
-              </div>
-
-              <div onClick={() => setActiveProjectsDialogOpen(true)} className="cursor-pointer">
-                <MetricCard
-                  title="Active Development Projects"
-                  value={reactiveMetrics.totalActiveProjects}
-                  icon={FolderKanban}
-                  iconColor="text-secondary"
-                  delay={350}
-                />
-              </div>
+            <div onClick={() => setCommissionsDialogOpen(true)} className="cursor-pointer">
+              <MetricCard
+                title="Agent Commissions Due"
+                value={`$${reactiveMetrics.totalCommissionsDue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                icon={DollarSign}
+                iconColor="text-primary"
+                delay={300}
+              />
             </div>
-          </section>
 
-          {/* Charts Section - Financial Overview */}
-          <section id="section-financial" className="mb-8 scroll-mt-8">
-            <h2 className="text-lg font-semibold mb-4 text-foreground">Financial Overview</h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div onClick={() => setCashFlowDialogOpen(true)} className="cursor-pointer h-full">
-                <CashFlowChart data={cashFlowProjections} />
-              </div>
-              <div onClick={() => setOrderHealthDialogOpen(true)} className="cursor-pointer h-full">
-                <OrderHealthChart
-                  onTrack={reactiveMetrics.orderHealthBreakdown.onTrack}
-                  atRisk={reactiveMetrics.orderHealthBreakdown.atRisk}
-                  offTrack={reactiveMetrics.orderHealthBreakdown.offTrack}
-                  complete={reactiveMetrics.orderHealthBreakdown.complete}
-                  pendingDeposit={reactiveMetrics.orderHealthBreakdown.pendingDeposit}
-                  onHold={reactiveMetrics.orderHealthBreakdown.onHold}
-                  whiteLabel={reactiveMetrics.orderHealthBreakdown.whiteLabel}
-                />
-              </div>
+            <div onClick={() => setActiveProjectsDialogOpen(true)} className="cursor-pointer">
+              <MetricCard
+                title="Active Development Projects"
+                value={reactiveMetrics.totalActiveProjects}
+                icon={FolderKanban}
+                iconColor="text-secondary"
+                delay={350}
+              />
             </div>
-          </section>
+          </div>
+        </section>
 
-          {/* Operations (Orders) Section */}
-          <section id="section-operations" className="mb-8 scroll-mt-8">
-            <h2 className="text-lg font-semibold mb-4 text-foreground">Operations (Orders)</h2>
-            <TopCustomers 
-              customers={realTopCustomers.length > 0 ? realTopCustomers : mockTopCustomers} 
-              onCustomerSelect={(customerName) => openActiveOrdersDialog(customerName)}
-              onTotalOrdersClick={() => openActiveOrdersDialog()}
-            />
-          </section>
+        <section id="section-financial" className="mb-8 scroll-mt-8">
+          <h2 className="text-lg font-semibold mb-4 text-foreground">Financial Overview</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div onClick={() => setCashFlowDialogOpen(true)} className="cursor-pointer h-full">
+              <CashFlowChart data={cashFlowProjections} />
+            </div>
+            <div onClick={() => setOrderHealthDialogOpen(true)} className="cursor-pointer h-full">
+              <OrderHealthChart
+                onTrack={reactiveMetrics.orderHealthBreakdown.onTrack}
+                atRisk={reactiveMetrics.orderHealthBreakdown.atRisk}
+                offTrack={reactiveMetrics.orderHealthBreakdown.offTrack}
+                complete={reactiveMetrics.orderHealthBreakdown.complete}
+                pendingDeposit={reactiveMetrics.orderHealthBreakdown.pendingDeposit}
+                onHold={reactiveMetrics.orderHealthBreakdown.onHold}
+                whiteLabel={reactiveMetrics.orderHealthBreakdown.whiteLabel}
+              />
+            </div>
+          </div>
+        </section>
 
-          {/* Needs Attention Section */}
-          <section id="section-attention" className="mb-8 scroll-mt-8">
-            <h2 className="text-lg font-semibold mb-4 text-foreground">Needs Attention</h2>
-            <NeedsAttentionTable orders={filteredOrderHealthOrders} />
-          </section>
+        <section id="section-operations" className="mb-8 scroll-mt-8">
+          <h2 className="text-lg font-semibold mb-4 text-foreground">Operations (Orders)</h2>
+          <TopCustomers 
+            customers={realTopCustomers.length > 0 ? realTopCustomers : mockTopCustomers} 
+            onCustomerSelect={(customerName) => openActiveOrdersDialog(customerName)}
+            onTotalOrdersClick={() => openActiveOrdersDialog()}
+          />
+        </section>
 
-          {/* Web Development Section */}
-          <section id="section-web-dev" className="mb-8 scroll-mt-8">
-            <h2 className="text-lg font-semibold mb-4 text-foreground">Web Development</h2>
-            <WebProjectsTable projects={displayWebProjects} />
-          </section>
+        <section id="section-attention" className="mb-8 scroll-mt-8">
+          <h2 className="text-lg font-semibold mb-4 text-foreground">Needs Attention</h2>
+          <NeedsAttentionTable orders={filteredOrderHealthOrders} />
+        </section>
 
-          {/* Agent Commissions Section */}
-          <section id="section-commissions" className="mb-8 scroll-mt-8">
-            <h2 className="text-lg font-semibold mb-4 text-foreground">Agent Commissions</h2>
-            <CommissionsTable commissions={realCommissions} />
-          </section>
-        </main>
-        
-        {/* Detail Dialogs */}
-        <OutstandingDetailsDialog
-          open={outstandingDialogOpen}
-          onOpenChange={setOutstandingDialogOpen}
-          orders={activeOutstandingOrders}
-        />
-        
-        <OnHoldOrdersDialog
-          open={onHoldDialogOpen}
-          onOpenChange={setOnHoldDialogOpen}
-          orders={onHoldOrders}
-        />
-        
-        <ActiveOrdersDialog
-          open={activeOrdersDialogOpen}
-          onOpenChange={(open) => {
-            setActiveOrdersDialogOpen(open);
-            if (!open) setActiveOrdersInitialSearch('');
-          }}
-          orders={filteredActiveOrders}
-          initialSearchQuery={activeOrdersInitialSearch}
-        />
-        
-        <ActiveCustomersDialog
-          open={activeCustomersDialogOpen}
-          onOpenChange={setActiveCustomersDialogOpen}
-          customers={activeCustomers}
-        />
-        
-        <RevenueDetailsDialog
-          open={revenueDialogOpen}
-          onOpenChange={setRevenueDialogOpen}
-          orders={ordersReceivedThisMonth}
-        />
-        
-        <CommissionsDetailsDialog
-          open={commissionsDialogOpen}
-          onOpenChange={setCommissionsDialogOpen}
-          orders={displayOrders}
-        />
-        
-        <ActiveProjectsDialog
-          open={activeProjectsDialogOpen}
-          onOpenChange={setActiveProjectsDialogOpen}
-          projects={displayWebProjects}
-          activeCount={reactiveMetrics.totalActiveProjects}
-        />
-        
-        <ExpectedCashFlowDialog
-          open={cashFlowDialogOpen}
-          onOpenChange={setCashFlowDialogOpen}
-          orders={displayOrderHealthOrders}
-          customers={displayCustomers}
-        />
-        
-        <OrderHealthDialog
-          open={orderHealthDialogOpen}
-          onOpenChange={setOrderHealthDialogOpen}
-          orders={filteredOrderHealthOrders}
-        />
-      </div>
+        <section id="section-web-dev" className="mb-8 scroll-mt-8">
+          <h2 className="text-lg font-semibold mb-4 text-foreground">Web Development</h2>
+          <WebProjectsTable projects={displayWebProjects} />
+        </section>
+
+        <section id="section-commissions" className="mb-8 scroll-mt-8">
+          <h2 className="text-lg font-semibold mb-4 text-foreground">Agent Commissions</h2>
+          <CommissionsTable commissions={realCommissions} />
+        </section>
+      </main>
+      
+      <OutstandingDetailsDialog
+        open={outstandingDialogOpen}
+        onOpenChange={setOutstandingDialogOpen}
+        orders={activeOutstandingOrders}
+      />
+      
+      <OnHoldOrdersDialog
+        open={onHoldDialogOpen}
+        onOpenChange={setOnHoldDialogOpen}
+        orders={onHoldOrders}
+      />
+      
+      <ActiveOrdersDialog
+        open={activeOrdersDialogOpen}
+        onOpenChange={(open) => {
+          setActiveOrdersDialogOpen(open);
+          if (!open) setActiveOrdersInitialSearch('');
+        }}
+        orders={filteredActiveOrders}
+        initialSearchQuery={activeOrdersInitialSearch}
+      />
+      
+      <ActiveCustomersDialog
+        open={activeCustomersDialogOpen}
+        onOpenChange={setActiveCustomersDialogOpen}
+        customers={activeCustomers}
+      />
+      
+      <RevenueDetailsDialog
+        open={revenueDialogOpen}
+        onOpenChange={setRevenueDialogOpen}
+        orders={ordersReceivedThisMonth}
+      />
+      
+      <CommissionsDetailsDialog
+        open={commissionsDialogOpen}
+        onOpenChange={setCommissionsDialogOpen}
+        orders={displayOrders}
+      />
+      
+      <ActiveProjectsDialog
+        open={activeProjectsDialogOpen}
+        onOpenChange={setActiveProjectsDialogOpen}
+        projects={displayWebProjects}
+        activeCount={reactiveMetrics.totalActiveProjects}
+      />
+      
+      <ExpectedCashFlowDialog
+        open={cashFlowDialogOpen}
+        onOpenChange={setCashFlowDialogOpen}
+        orders={displayOrderHealthOrders}
+        customers={displayCustomers}
+      />
+      
+      <OrderHealthDialog
+        open={orderHealthDialogOpen}
+        onOpenChange={setOrderHealthDialogOpen}
+        orders={filteredOrderHealthOrders}
+      />
     </div>
   );
 }
