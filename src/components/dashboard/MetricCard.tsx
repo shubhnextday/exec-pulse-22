@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { LucideIcon, Info } from 'lucide-react';
+import { LucideIcon } from 'lucide-react';
 
 interface MetricCardProps {
   title: string;
@@ -12,7 +12,6 @@ interface MetricCardProps {
   iconColor?: string;
   className?: string;
   delay?: number;
-  showInfo?: boolean;
 }
 
 export function MetricCard({ 
@@ -23,7 +22,6 @@ export function MetricCard({
   iconColor = 'text-primary',
   className,
   delay = 0,
-  showInfo = false
 }: MetricCardProps) {
   return (
     <div 
@@ -42,9 +40,6 @@ export function MetricCard({
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
-            {showInfo && (
-              <Info className="h-3 w-3 text-muted-foreground/40 group-hover:text-primary transition-colors" />
-            )}
           </div>
           <p className="text-3xl font-bold tracking-tight text-foreground mono">{value}</p>
           {change && (

@@ -25,12 +25,10 @@ import {
   TrendingUp,
   DollarSign,
   CreditCard,
-  Percent,
   PauseCircle,
   FolderKanban,
   Loader2,
   AlertCircle,
-  Info,
   RotateCcw,
 } from 'lucide-react';
 import { useJiraData } from '@/hooks/useJiraData';
@@ -44,12 +42,6 @@ import {
   mockTopCustomers,
 } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 
 // Helper to convert dateRange to date range object (start and end dates)
 function getDateRangeFromSelection(range: string): { start: string; end: string } {
@@ -568,20 +560,9 @@ export default function Dashboard() {
     URL.revokeObjectURL(link.href);
   };
 
-  // Metric explanations for tooltips
-  const metricExplanations = {
-    activeCustomers: `Unique customers with on-track orders matching current filters.\n\nSource: JIRA CM Project → Customer field (customfield_10038)\n\nCalculation: COUNT(DISTINCT customer) from on-track orders\n\nExcludes: Customers with only at-risk/off-track orders`,
-    activeOrders: `On-track orders matching current filters.\n\nSource: JIRA CM Project → All CM issues\n\nCalculation: COUNT(*) from filtered orders WHERE orderHealth = 'on-track'\n\nExcludes: Cancelled, Done, Shipped, Complete statuses AND at-risk/off-track orders`,
-    monthlyRevenue: `Sum of all order totals matching current filters.\n\nSource: JIRA CM Project → Order Total field (customfield_11567)\n\nCalculation: SUM(orderTotal) from filtered orders`,
-    outstanding: `Total remaining payments due on filtered orders (excludes On Hold orders).\n\nSource: JIRA CM Project → Remaining Amount field (customfield_11569)\n\nCalculation: SUM(remainingDue) from filtered orders WHERE status != 'On Hold'`,
-    commissions: `Total commissions due from JIRA.\n\nSource: JIRA CM Project → Commission Due field (customfield_11577)\n\nCalculation: SUM(commissionDue) from filtered orders`,
-    activeProjects: `Web development projects currently in progress.\n\nSource: JIRA WEB Project → Epic issues\n\nCalculation: COUNT(*) where status = 'active'`,
-    onHold: `Orders currently on hold with outstanding payments.\n\nSource: JIRA CM Project → Orders with status 'On Hold'\n\nCalculation: COUNT(*) and SUM(remainingDue) from orders WHERE status = 'On Hold'`,
-  };
 
   return (
-    <TooltipProvider>
-      <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
         <Sidebar 
           activeSection={activeSection} 
           onSectionChange={handleSectionChange}
@@ -683,148 +664,78 @@ export default function Dashboard() {
             <h2 className="text-lg font-semibold mb-4 text-foreground">Executive Summary</h2>
             {/* First row - 4 cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div onClick={() => setActiveCustomersDialogOpen(true)} className="cursor-pointer">
-                    <MetricCard
-                      title="Active Contract Manufacturing Customers"
-                      value={reactiveMetrics.totalActiveCustomers}
-                      icon={Users}
-                      iconColor="text-primary"
-                      delay={100}
-                      showInfo
-                    />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-xs whitespace-pre-line">
-                  {metricExplanations.activeCustomers}
-                  <br /><br />
-                  <span className="text-primary">Click to view details</span>
-                </TooltipContent>
-              </Tooltip>
+              <div onClick={() => setActiveCustomersDialogOpen(true)} className="cursor-pointer">
+                <MetricCard
+                  title="Active Contract Manufacturing Customers"
+                  value={reactiveMetrics.totalActiveCustomers}
+                  icon={Users}
+                  iconColor="text-primary"
+                  delay={100}
+                />
+              </div>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div onClick={() => setActiveOrdersDialogOpen(true)} className="cursor-pointer">
-                    <MetricCard
-                      title="Active Contract Manufacturing Orders"
-                      value={reactiveMetrics.totalActiveOrders}
-                      icon={Package}
-                      iconColor="text-secondary"
-                      delay={150}
-                      showInfo
-                    />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-xs whitespace-pre-line">
-                  {metricExplanations.activeOrders}
-                  <br /><br />
-                  <span className="text-primary">Click to view details</span>
-                </TooltipContent>
-              </Tooltip>
+              <div onClick={() => setActiveOrdersDialogOpen(true)} className="cursor-pointer">
+                <MetricCard
+                  title="Active Contract Manufacturing Orders"
+                  value={reactiveMetrics.totalActiveOrders}
+                  icon={Package}
+                  iconColor="text-secondary"
+                  delay={150}
+                />
+              </div>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div onClick={() => setRevenueDialogOpen(true)} className="cursor-pointer">
-                    <MetricCard
-                      title="Collected $$ this month"
-                      value={`$${reactiveMetrics.totalMonthlyRevenue > 0 ? (reactiveMetrics.totalMonthlyRevenue / 1000).toFixed(0) + 'k' : '0'}`}
-                      icon={TrendingUp}
-                      iconColor="text-primary"
-                      delay={200}
-                      showInfo
-                    />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-xs whitespace-pre-line">
-                  {metricExplanations.monthlyRevenue}
-                  <br /><br />
-                  <span className="text-primary">Click to view details</span>
-                </TooltipContent>
-              </Tooltip>
+              <div onClick={() => setRevenueDialogOpen(true)} className="cursor-pointer">
+                <MetricCard
+                  title="Collected $$ this month"
+                  value={`$${reactiveMetrics.totalMonthlyRevenue > 0 ? (reactiveMetrics.totalMonthlyRevenue / 1000).toFixed(0) + 'k' : '0'}`}
+                  icon={TrendingUp}
+                  iconColor="text-primary"
+                  delay={200}
+                />
+              </div>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div onClick={() => setOutstandingDialogOpen(true)} className="cursor-pointer">
-                    <MetricCard
-                      title="Cash Receivables"
-                      value={`$${reactiveMetrics.totalOutstandingPayments > 0 ? (reactiveMetrics.totalOutstandingPayments / 1000).toFixed(0) + 'k' : '0'}`}
-                      icon={CreditCard}
-                      iconColor="text-secondary"
-                      delay={250}
-                      showInfo
-                    />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-xs whitespace-pre-line">
-                  {metricExplanations.outstanding}
-                  <br /><br />
-                  <span className="text-primary">Click to view details</span>
-                </TooltipContent>
-              </Tooltip>
+              <div onClick={() => setOutstandingDialogOpen(true)} className="cursor-pointer">
+                <MetricCard
+                  title="Cash Receivables"
+                  value={`$${reactiveMetrics.totalOutstandingPayments > 0 ? (reactiveMetrics.totalOutstandingPayments / 1000).toFixed(0) + 'k' : '0'}`}
+                  icon={CreditCard}
+                  iconColor="text-secondary"
+                  delay={250}
+                />
+              </div>
             </div>
 
             {/* Second row - 3 cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div onClick={() => setOnHoldDialogOpen(true)} className="cursor-pointer">
-                    <MetricCard
-                      title={`Contract Manufacturing ON HOLD Orders (${onHoldOrders.length})`}
-                      value={`$${onHoldTotal > 0 ? (onHoldTotal / 1000).toFixed(0) + 'k' : '0'}`}
-                      icon={PauseCircle}
-                      iconColor="text-muted-foreground"
-                      delay={275}
-                      showInfo
-                    />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-xs whitespace-pre-line">
-                  {metricExplanations.onHold}
-                  <br /><br />
-                  <span className="text-primary">Click to view details</span>
-                </TooltipContent>
-              </Tooltip>
+              <div onClick={() => setOnHoldDialogOpen(true)} className="cursor-pointer">
+                <MetricCard
+                  title={`Contract Manufacturing ON HOLD Orders (${onHoldOrders.length})`}
+                  value={`$${onHoldTotal > 0 ? (onHoldTotal / 1000).toFixed(0) + 'k' : '0'}`}
+                  icon={PauseCircle}
+                  iconColor="text-muted-foreground"
+                  delay={275}
+                />
+              </div>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div onClick={() => setCommissionsDialogOpen(true)} className="cursor-pointer">
-                    <MetricCard
-                      title="Agent Commissions Due"
-                      value={`$${reactiveMetrics.totalCommissionsDue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
-                      icon={DollarSign}
-                      iconColor="text-primary"
-                      delay={300}
-                      showInfo
-                    />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-xs whitespace-pre-line">
-                  {metricExplanations.commissions}
-                  <br /><br />
-                  <span className="text-primary">Click to view details</span>
-                </TooltipContent>
-              </Tooltip>
+              <div onClick={() => setCommissionsDialogOpen(true)} className="cursor-pointer">
+                <MetricCard
+                  title="Agent Commissions Due"
+                  value={`$${reactiveMetrics.totalCommissionsDue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                  icon={DollarSign}
+                  iconColor="text-primary"
+                  delay={300}
+                />
+              </div>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div onClick={() => setActiveProjectsDialogOpen(true)} className="cursor-pointer">
-                    <MetricCard
-                      title="Active Development Projects"
-                      value={reactiveMetrics.totalActiveProjects}
-                      icon={FolderKanban}
-                      iconColor="text-secondary"
-                      delay={350}
-                      showInfo
-                    />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-xs whitespace-pre-line">
-                  {metricExplanations.activeProjects}
-                  <br /><br />
-                  <span className="text-primary">Click to view details</span>
-                </TooltipContent>
-              </Tooltip>
+              <div onClick={() => setActiveProjectsDialogOpen(true)} className="cursor-pointer">
+                <MetricCard
+                  title="Active Development Projects"
+                  value={reactiveMetrics.totalActiveProjects}
+                  icon={FolderKanban}
+                  iconColor="text-secondary"
+                  delay={350}
+                />
+              </div>
             </div>
           </section>
 
@@ -939,6 +850,6 @@ export default function Dashboard() {
           orders={filteredOrderHealthOrders}
         />
       </div>
-    </TooltipProvider>
+    </div>
   );
 }
