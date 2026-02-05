@@ -6,6 +6,7 @@ import { MetricCard } from '@/components/dashboard/MetricCard';
 import { OrderHealthChart } from '@/components/dashboard/OrderHealthChart';
 import { CashFlowChart } from '@/components/dashboard/CashFlowChart';
 import { NeedsAttentionTable } from '@/components/dashboard/NeedsAttentionTable';
+import { LabelsNeedingAttentionTable } from '@/components/dashboard/LabelsNeedingAttentionTable';
 import { WebProjectsTable } from '@/components/dashboard/WebProjectsTable';
 import { CommissionsTable } from '@/components/dashboard/CommissionsTable';
 import { TopCustomers } from '@/components/dashboard/TopCustomers';
@@ -128,6 +129,7 @@ export default function Dashboard() {
     activeCustomers,
     allTimeOutstandingOrders,
     webProjects,
+    labelOrders,
     customers,
     agents,
     accountManagers,
@@ -700,7 +702,10 @@ export default function Dashboard() {
 
         <section id="section-attention" className="mb-8 scroll-mt-8">
           <h2 className="text-lg font-semibold mb-4 text-foreground">Needs Attention</h2>
-          <NeedsAttentionTable orders={filteredOrderHealthOrders} />
+          <div className="space-y-6">
+            <NeedsAttentionTable orders={filteredOrderHealthOrders} />
+            <LabelsNeedingAttentionTable labelOrders={labelOrders} />
+          </div>
         </section>
 
         <section id="section-web-dev" className="mb-8 scroll-mt-8">

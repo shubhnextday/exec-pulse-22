@@ -47,13 +47,13 @@ export interface Order {
 
 export interface LabelOrder {
   id: string;
-  orderId: string;
-  labelOrderDate: string;
+  salesOrderNumber: string;
+  customer: string;
+  productName: string;
   designDueDate: string;
   currentStatus: string;
-  daysInStatus: number;
-  expectedPackagingDate: string;
-  printDaysRequired: number;
+  daysBehindSchedule: number;
+  labelHealth: 'on-track' | 'at-risk' | 'off-track';
 }
 
 export interface WebProject {
