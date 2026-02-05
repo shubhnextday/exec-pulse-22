@@ -40,6 +40,8 @@ const FIELD_MAPPINGS = {
   projectLead: 'customfield_11756',
   projectHealth: 'customfield_11903',
   progressPercent: 'customfield_11870', // Progress percentage field
+  // Design Order fields
+  designDueDate: 'customfield_10536', // Design Due Date field (reuses EST Ship Date mapping)
 };
 
 const CANCELLED_STATUSES = ['cancelled', 'canceled', 'done', 'shipped', 'complete', 'completed', 'closed', 'final product shipped'];
@@ -291,6 +293,24 @@ serve(async (req) => {
       }
       console.log(`Fetched ${activeDevelopmentIssues.length} active development projects`);
 
+      // Fetch Design Orders for Labels Needing Attention
+      const designOrdersJql = 'project = CM AND type = "Design Order" ORDER BY created DESC';
+      const designOrderFields = [
+        'summary', 'status', 'created', 'duedate',
+        FIELD_MAPPINGS.customer,
+        FIELD_MAPPINGS.salesOrderNumber,
+        FIELD_MAPPINGS.productName,
+        FIELD_MAPPINGS.designDueDate,
+      ];
+      
+      let designOrderIssues: any[] = [];
+      try {
+        designOrderIssues = await fetchAllIssues(jiraDomain, headers, designOrdersJql, designOrderFields);
+      } catch (e) {
+        console.log('Design Orders fetch failed, continuing with empty:', e);
+      }
+      console.log(`Fetched ${designOrderIssues.length} design orders`);
+
       // Helper function to transform issue to order
       const transformIssueToOrder = (issue: any) => {
         const fields = issue.fields || {};
@@ -434,6 +454,69 @@ serve(async (req) => {
         };
       });
       console.log(`Active customers from CUS project: ${activeCustomers.length}`);
+
+      // Transform Design Orders with health calculation
+      const COMPLETED_LABEL_STATUSES = [
+        'in qc laf approvals',
+        'ready to order print',
+        'ordering in progress',
+        'in packaging production',
+        'done'
+      ];
+      
+      const labelOrders = designOrderIssues
+        .filter((issue: any) => {
+          // Only include orders that need attention (not in completed statuses)
+          const status = (issue.fields?.status?.name || '').toLowerCase();
+          return !COMPLETED_LABEL_STATUSES.some(s => status.includes(s));
+        })
+        .map((issue: any) => {
+          const fields = issue.fields || {};
+          const customerName = extractCustomerName(fields[FIELD_MAPPINGS.customer]);
+          const currentStatus = fields.status?.name || 'Unknown';
+          const designDueDate = fields[FIELD_MAPPINGS.designDueDate] || fields.duedate;
+          
+          // Calculate health based on Design Due Date
+          let labelHealth: 'on-track' | 'at-risk' | 'off-track' = 'on-track';
+          let daysBehindSchedule = 0;
+          
+          if (designDueDate) {
+            const dueDate = new Date(designDueDate);
+            const now = new Date();
+            const daysUntilDue = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+            
+            // OFF TRACK: Design Due Date is in the past
+            if (daysUntilDue < 0) {
+              labelHealth = 'off-track';
+              daysBehindSchedule = Math.abs(daysUntilDue);
+            }
+            // AT RISK: 2-0 days before Design Due Date
+            else if (daysUntilDue <= 2) {
+              labelHealth = 'at-risk';
+              daysBehindSchedule = 0;
+            }
+            // ON TRACK: More than 2 days until due
+            else {
+              labelHealth = 'on-track';
+              daysBehindSchedule = 0;
+            }
+          }
+          
+          return {
+            id: issue.key,
+            salesOrderNumber: fields[FIELD_MAPPINGS.salesOrderNumber] || issue.key,
+            customer: customerName,
+            productName: fields[FIELD_MAPPINGS.productName] || fields.summary || 'Unknown Product',
+            designDueDate: designDueDate || '',
+            currentStatus,
+            daysBehindSchedule,
+            labelHealth,
+          };
+        })
+        // Only show at-risk or off-track labels
+        .filter((label: any) => label.labelHealth === 'at-risk' || label.labelHealth === 'off-track');
+      
+      console.log(`Label orders needing attention: ${labelOrders.length}`);
 
       // Calculate all-time outstanding from order health orders
       const allTimeOutstandingOrders = orderHealthOrders
@@ -604,6 +687,7 @@ serve(async (req) => {
           activeCustomers, // Active customers from CUS project
           allTimeOutstandingOrders,
           webProjects,
+          labelOrders,
           customers: ['All Customers', ...uniqueCustomersFromOrders.sort()],
           agents: ['All Agents', ...new Set(activeOrders.map((o: any) => o.agent).filter(Boolean))],
           accountManagers: ['All Account Managers', ...new Set(activeOrders.map((o: any) => o.accountManager).filter(Boolean))],

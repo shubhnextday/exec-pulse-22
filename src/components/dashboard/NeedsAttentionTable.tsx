@@ -320,7 +320,7 @@ export function NeedsAttentionTable({ orders }: NeedsAttentionTableProps) {
             <AlertTriangle className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-base font-semibold text-foreground">Needs Attention</h3>
+            <h3 className="text-base font-semibold text-foreground">Orders Needing Attention</h3>
             <p className="text-xs text-muted-foreground">
               {sortedOrders.length} orders requiring immediate review
             </p>
