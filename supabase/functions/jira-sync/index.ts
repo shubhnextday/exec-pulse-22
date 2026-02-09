@@ -314,8 +314,8 @@ serve(async (req) => {
       }
       console.log(`Fetched ${designOrderIssues.length} design orders`);
 
-      // Fetch Agent Management Payment tickets with Pending Payment status
-      const agentPaymentsJql = 'project = "Agent Management" AND type = Payment AND status = "Pending Payment" ORDER BY created DESC';
+      // Fetch Agent/Customer Payment tickets with Pending Payment status
+      const agentPaymentsJql = 'project IN (AGENT, CUS) AND type IN (Payment, Customer) AND status = "Pending Payment" ORDER BY created DESC';
       const agentPaymentFields = [
         'summary', 'status', 'created',
         FIELD_MAPPINGS.agent,
