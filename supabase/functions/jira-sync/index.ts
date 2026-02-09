@@ -476,27 +476,32 @@ serve(async (req) => {
       console.log(`Active customers from CUS project: ${activeCustomers.length}`);
 
       // Transform Design Orders with health calculation
-      const COMPLETED_LABEL_STATUSES = [
-        'in qc laf approvals',
-        'ready to order print',
-        'ordering in progress',
-        'in packaging production',
-        'done'
+      // Statuses to completely exclude from the table
+      const EXCLUDED_LABEL_STATUSES = ['cancelled', 'on hold', 'not required'];
+      
+      // Statuses considered "safe" for AT RISK check (2-0 days before due)
+      const AT_RISK_SAFE_STATUSES = [
+        'in qc laf approvals', 'ready to order print', 'ordering in progress',
+        'in packaging production', 'done'
+      ];
+      
+      // Statuses considered "safe" for OFF TRACK check (past due)
+      const OFF_TRACK_SAFE_STATUSES = [
+        'ordering in progress', 'in packaging production', 'done'
       ];
       
       const labelOrders = designOrderIssues
         .filter((issue: any) => {
-          // Only include orders that need attention (not in completed statuses)
-          const status = (issue.fields?.status?.name || '').toLowerCase();
-          return !COMPLETED_LABEL_STATUSES.some(s => status.includes(s));
+          const status = (issue.fields?.status?.name || '').toLowerCase().trim();
+          return !EXCLUDED_LABEL_STATUSES.some(s => status === s || status.includes(s));
         })
         .map((issue: any) => {
           const fields = issue.fields || {};
           const customerName = extractCustomerName(fields[FIELD_MAPPINGS.customer]);
           const currentStatus = fields.status?.name || 'Unknown';
+          const statusLower = currentStatus.toLowerCase().trim();
           const designDueDate = fields[FIELD_MAPPINGS.designDueDate] || fields.duedate;
           
-          // Calculate health based on Design Due Date
           let labelHealth: 'on-track' | 'at-risk' | 'off-track' = 'on-track';
           let daysBehindSchedule = 0;
           
@@ -505,20 +510,19 @@ serve(async (req) => {
             const now = new Date();
             const daysUntilDue = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
             
-            // OFF TRACK: Design Due Date is in the past
-            if (daysUntilDue < 0) {
+            // OFF TRACK: Design Due Date is in the past AND not in safe statuses
+            const isOffTrackSafe = OFF_TRACK_SAFE_STATUSES.some(s => statusLower.includes(s));
+            if (daysUntilDue < 0 && !isOffTrackSafe) {
               labelHealth = 'off-track';
               daysBehindSchedule = Math.abs(daysUntilDue);
             }
-            // AT RISK: 2-0 days before Design Due Date
-            else if (daysUntilDue <= 2) {
-              labelHealth = 'at-risk';
-              daysBehindSchedule = 0;
-            }
-            // ON TRACK: More than 2 days until due
-            else {
-              labelHealth = 'on-track';
-              daysBehindSchedule = 0;
+            // AT RISK: 2-0 days before Design Due Date AND not in safe statuses
+            else if (daysUntilDue <= 2 && daysUntilDue >= 0) {
+              const isAtRiskSafe = AT_RISK_SAFE_STATUSES.some(s => statusLower.includes(s));
+              if (!isAtRiskSafe) {
+                labelHealth = 'at-risk';
+                daysBehindSchedule = 0;
+              }
             }
           }
           
