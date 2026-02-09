@@ -6,7 +6,8 @@ import {
   WebProject,
   OutstandingOrder,
   ActiveCustomer,
-  LabelOrder
+  LabelOrder,
+  AgentPayment
 } from '@/types/dashboard';
 import { toast } from '@/hooks/use-toast';
 
@@ -18,6 +19,7 @@ interface JiraDataState {
   allTimeOutstandingOrders: OutstandingOrder[];
   webProjects: WebProject[];
   labelOrders: LabelOrder[]; // Design Orders needing attention
+  agentPayments: AgentPayment[]; // Agent Management Payment tickets
   customers: string[];
   agents: string[];
   accountManagers: string[];
@@ -34,6 +36,7 @@ const initialState: JiraDataState = {
   allTimeOutstandingOrders: [],
   webProjects: [],
   labelOrders: [],
+  agentPayments: [],
   customers: ['All Customers'],
   agents: ['All Agents'],
   accountManagers: ['All Account Managers'],
@@ -85,6 +88,7 @@ export function useJiraData() {
         allTimeOutstandingOrders: data.data.allTimeOutstandingOrders || [],
         webProjects: data.data.webProjects || [],
         labelOrders: data.data.labelOrders || [],
+        agentPayments: data.data.agentPayments || [],
         customers: data.data.customers || ['All Customers'],
         agents: data.data.agents || ['All Agents'],
         accountManagers: data.data.accountManagers || ['All Account Managers'],

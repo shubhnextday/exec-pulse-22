@@ -84,6 +84,15 @@ export interface TeamMember {
   completedThisMonth: number;
 }
 
+export interface AgentPayment {
+  id: string;
+  agent: string;
+  summary: string;
+  commissionDue: number; // Order Commission Total field
+  created: string;
+}
+
+/** @deprecated Use AgentPayment instead */
 export interface Commission {
   id: string;
   agent: string;
