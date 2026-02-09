@@ -314,8 +314,8 @@ serve(async (req) => {
       }
       console.log(`Fetched ${designOrderIssues.length} design orders`);
 
-      // Fetch Agent/Customer Payment tickets with Pending Payment status filtered by agent
-      const agentPaymentsJql = 'project IN (AGENT, CUS) AND type IN (Payment, Customer) AND status = "Pending Payment" AND "agent[dropdown]" IN (Simone, "Phil Hixson") ORDER BY created DESC';
+      // Fetch Agent/Customer Payment tickets with Pending Payment status (dynamic - any ticket with agent assigned)
+      const agentPaymentsJql = 'project IN (AGENT, CUS) AND type IN (Payment, Customer) AND status = "Pending Payment" AND "agent[dropdown]" is not EMPTY ORDER BY created DESC';
       const agentPaymentFields = [
         'summary', 'status', 'created',
         FIELD_MAPPINGS.agent,
