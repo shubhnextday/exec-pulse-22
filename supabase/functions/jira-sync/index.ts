@@ -42,6 +42,9 @@ const FIELD_MAPPINGS = {
   progressPercent: 'customfield_11870', // Progress percentage field
   // Design Order fields
   designDueDate: 'customfield_10536', // Design Due Date field (reuses EST Ship Date mapping)
+  // Agent Management fields
+  orderCommissionTotal: 'customfield_11575', // Order Commission Total (number)
+  agentName: 'customfield_11791', // Agent Name (text) - used in Agent Management project
 };
 
 const CANCELLED_STATUSES = ['cancelled', 'canceled', 'done', 'shipped', 'complete', 'completed', 'closed', 'final product shipped'];
@@ -311,6 +314,23 @@ serve(async (req) => {
       }
       console.log(`Fetched ${designOrderIssues.length} design orders`);
 
+      // Fetch Agent Management Payment tickets with Pending Payment status
+      const agentPaymentsJql = 'project = "Agent Management" AND type = Payment AND status = "Pending Payment" ORDER BY created DESC';
+      const agentPaymentFields = [
+        'summary', 'status', 'created',
+        FIELD_MAPPINGS.agent,
+        FIELD_MAPPINGS.agentName,
+        FIELD_MAPPINGS.orderCommissionTotal,
+      ];
+      
+      let agentPaymentIssues: any[] = [];
+      try {
+        agentPaymentIssues = await fetchAllIssues(jiraDomain, headers, agentPaymentsJql, agentPaymentFields);
+      } catch (e) {
+        console.log('Agent Management Payment fetch failed, continuing with empty:', e);
+      }
+      console.log(`Fetched ${agentPaymentIssues.length} agent payment tickets`);
+
       // Helper function to transform issue to order
       const transformIssueToOrder = (issue: any) => {
         const fields = issue.fields || {};
@@ -518,6 +538,31 @@ serve(async (req) => {
       
       console.log(`Label orders needing attention: ${labelOrders.length}`);
 
+      // Transform Agent Management Payment tickets
+      const agentPayments = agentPaymentIssues.map((issue: any) => {
+        const fields = issue.fields || {};
+        // Try Agent dropdown first, then Agent Name text field, then assignee
+        const agentField = fields[FIELD_MAPPINGS.agent];
+        const agentNameField = fields[FIELD_MAPPINGS.agentName];
+        let agentName = 'Unknown';
+        if (agentField) {
+          agentName = agentField.displayName || agentField.value || agentField.name || (typeof agentField === 'string' ? agentField : 'Unknown');
+        } else if (agentNameField) {
+          agentName = typeof agentNameField === 'string' ? agentNameField : 'Unknown';
+        }
+        
+        const orderCommissionTotal = parseFloat(fields[FIELD_MAPPINGS.orderCommissionTotal]) || 0;
+        
+        return {
+          id: issue.key,
+          agent: agentName,
+          summary: fields.summary || '',
+          commissionDue: orderCommissionTotal,
+          created: fields.created?.substring(0, 10) || '',
+        };
+      });
+      console.log(`Agent payments (Pending Payment): ${agentPayments.length}, total: $${agentPayments.reduce((s: number, p: any) => s + p.commissionDue, 0)}`);
+
       // Calculate all-time outstanding from order health orders
       const allTimeOutstandingOrders = orderHealthOrders
         .filter((o: any) => {
@@ -662,7 +707,7 @@ serve(async (req) => {
         totalMonthlyRevenue: orderHealthOrders.reduce((sum: number, o: any) => sum + (o.orderTotal || 0), 0),
         totalOutstandingPayments: orderHealthOrders.reduce((sum: number, o: any) => sum + (o.remainingDue || 0), 0),
         allTimeOutstandingPayments: allTimeOutstanding,
-        totalCommissionsDue: orderHealthOrders.reduce((sum: number, o: any) => sum + (o.commissionDue || 0), 0),
+        totalCommissionsDue: agentPayments.reduce((sum: number, p: any) => sum + (p.commissionDue || 0), 0),
         totalActiveProjects: activeDevelopmentIssues.length, // Count from JQL: status NOT IN (Cancelled, Done, Open)
         // Order Health breakdown from orderHealthOrders (all non-cancelled orders)
         orderHealthBreakdown: {
@@ -688,6 +733,7 @@ serve(async (req) => {
           allTimeOutstandingOrders,
           webProjects,
           labelOrders,
+          agentPayments,
           customers: ['All Customers', ...uniqueCustomersFromOrders.sort()],
           agents: ['All Agents', ...new Set(activeOrders.map((o: any) => o.agent).filter(Boolean))],
           accountManagers: ['All Account Managers', ...new Set(activeOrders.map((o: any) => o.accountManager).filter(Boolean))],

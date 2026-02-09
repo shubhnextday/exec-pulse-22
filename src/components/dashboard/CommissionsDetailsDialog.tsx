@@ -12,20 +12,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { TableControlsBar, SortableHeader, TableFilter } from '@/components/ui/table-controls';
 import { useTableFeatures } from '@/hooks/useTableFeatures';
-import type { Order } from '@/types/dashboard';
+import type { AgentPayment } from '@/types/dashboard';
 
 interface CommissionsDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  orders: Order[];
+  agentPayments: AgentPayment[];
 }
 
-export function CommissionsDetailsDialog({ open, onOpenChange, orders }: CommissionsDetailsDialogProps) {
-  const ordersWithCommission = orders.filter(o => (o.commissionDue || 0) > 0);
-  
+export function CommissionsDetailsDialog({ open, onOpenChange, agentPayments }: CommissionsDetailsDialogProps) {
   const {
     filteredData,
     searchQuery,
@@ -37,28 +34,27 @@ export function CommissionsDetailsDialog({ open, onOpenChange, orders }: Commiss
     removeFilter,
     clearFilters,
   } = useTableFeatures({
-    data: ordersWithCommission,
-    searchableKeys: ['customer', 'agent', 'id'],
+    data: agentPayments,
+    searchableKeys: ['agent', 'summary', 'id'],
   });
 
-  const totalCommissions = filteredData.reduce((sum, o) => sum + (o.commissionDue || 0), 0);
+  const totalCommissions = filteredData.reduce((sum, p) => sum + (p.commissionDue || 0), 0);
   
   // Group by agent
-  const agentData = filteredData.reduce((acc, order) => {
-    const agent = order.agent || 'Unassigned';
+  const agentData = filteredData.reduce((acc, payment) => {
+    const agent = payment.agent || 'Unknown';
     if (!acc[agent]) {
-      acc[agent] = { orderCount: 0, totalValue: 0, commissionDue: 0 };
+      acc[agent] = { count: 0, total: 0 };
     }
-    acc[agent].orderCount += 1;
-    acc[agent].totalValue += order.orderTotal || 0;
-    acc[agent].commissionDue += order.commissionDue || 0;
+    acc[agent].count += 1;
+    acc[agent].total += payment.commissionDue || 0;
     return acc;
-  }, {} as Record<string, { orderCount: number; totalValue: number; commissionDue: number }>);
+  }, {} as Record<string, { count: number; total: number }>);
 
   const agentList = Object.entries(agentData)
-    .sort((a, b) => b[1].commissionDue - a[1].commissionDue);
+    .sort((a, b) => b[1].total - a[1].total);
 
-  const agentOptions = [...new Set(ordersWithCommission.map(o => o.agent || 'Unassigned'))].map(a => ({
+  const agentOptions = [...new Set(agentPayments.map(p => p.agent || 'Unknown'))].map(a => ({
     label: a,
     value: a,
   }));
@@ -68,7 +64,7 @@ export function CommissionsDetailsDialog({ open, onOpenChange, orders }: Commiss
       <DialogContent className="max-w-5xl max-h-[80vh]">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">
-            Commissions Due - ${totalCommissions.toLocaleString()}
+            Agent Commissions Due - ${totalCommissions.toLocaleString()}
           </DialogTitle>
         </DialogHeader>
         
@@ -79,21 +75,21 @@ export function CommissionsDetailsDialog({ open, onOpenChange, orders }: Commiss
               <div key={agent} className="p-3 bg-muted/50 rounded-lg">
                 <div className="font-medium truncate">{agent}</div>
                 <div className="text-lg font-bold text-primary">
-                  ${data.commissionDue.toLocaleString()}
+                  ${data.total.toLocaleString()}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {data.orderCount} orders
+                  {data.count} payments
                 </div>
               </div>
             ))}
           </div>
         </div>
         
-        <h3 className="font-semibold mb-2">Order Details</h3>
+        <h3 className="font-semibold mb-2">Payment Details</h3>
         <TableControlsBar
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
-          searchPlaceholder="Search orders..."
+          searchPlaceholder="Search payments..."
           filters={filters}
           onRemoveFilter={removeFilter}
           onClearFilters={clearFilters}
@@ -113,26 +109,6 @@ export function CommissionsDetailsDialog({ open, onOpenChange, orders }: Commiss
               <TableRow className="border-b border-border">
                 <TableHead>
                   <SortableHeader
-                    sortKey="id"
-                    currentSortKey={sortConfig.key as string}
-                    direction={sortConfig.direction}
-                    onSort={() => handleSort('id')}
-                  >
-                    Order ID
-                  </SortableHeader>
-                </TableHead>
-                <TableHead>
-                  <SortableHeader
-                    sortKey="customer"
-                    currentSortKey={sortConfig.key as string}
-                    direction={sortConfig.direction}
-                    onSort={() => handleSort('customer')}
-                  >
-                    Customer
-                  </SortableHeader>
-                </TableHead>
-                <TableHead>
-                  <SortableHeader
                     sortKey="agent"
                     currentSortKey={sortConfig.key as string}
                     direction={sortConfig.direction}
@@ -141,15 +117,14 @@ export function CommissionsDetailsDialog({ open, onOpenChange, orders }: Commiss
                     Agent
                   </SortableHeader>
                 </TableHead>
-                <TableHead className="text-right">
+                <TableHead>
                   <SortableHeader
-                    sortKey="orderTotal"
+                    sortKey="summary"
                     currentSortKey={sortConfig.key as string}
                     direction={sortConfig.direction}
-                    onSort={() => handleSort('orderTotal')}
-                    className="justify-end"
+                    onSort={() => handleSort('summary')}
                   >
-                    Order Total
+                    Summary
                   </SortableHeader>
                 </TableHead>
                 <TableHead className="text-right">
@@ -160,29 +135,36 @@ export function CommissionsDetailsDialog({ open, onOpenChange, orders }: Commiss
                     onSort={() => handleSort('commissionDue')}
                     className="justify-end"
                   >
-                    Commission
+                    Commission Due
+                  </SortableHeader>
+                </TableHead>
+                <TableHead>
+                  <SortableHeader
+                    sortKey="created"
+                    currentSortKey={sortConfig.key as string}
+                    direction={sortConfig.direction}
+                    onSort={() => handleSort('created')}
+                  >
+                    Created
                   </SortableHeader>
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredData.map((order) => (
-                <TableRow key={order.id}>
-                  <TableCell className="font-medium">{order.id}</TableCell>
-                  <TableCell>{order.customer}</TableCell>
-                  <TableCell>{order.agent || 'Unassigned'}</TableCell>
-                  <TableCell className="text-right">
-                    ${order.orderTotal?.toLocaleString() || '0'}
-                  </TableCell>
+              {filteredData.map((payment) => (
+                <TableRow key={payment.id}>
+                  <TableCell className="font-medium">{payment.agent}</TableCell>
+                  <TableCell className="max-w-[250px] truncate">{payment.summary}</TableCell>
                   <TableCell className="text-right font-medium text-primary">
-                    ${order.commissionDue?.toLocaleString() || '0'}
+                    ${payment.commissionDue?.toLocaleString() || '0'}
                   </TableCell>
+                  <TableCell>{payment.created}</TableCell>
                 </TableRow>
               ))}
               {filteredData.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                    No commissions found
+                  <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                    No pending payments found
                   </TableCell>
                 </TableRow>
               )}
@@ -191,7 +173,7 @@ export function CommissionsDetailsDialog({ open, onOpenChange, orders }: Commiss
         </div>
         
         <div className="text-sm text-muted-foreground pt-2 border-t">
-          {filteredData.length} orders have commissions due
+          {filteredData.length} pending payment tickets
         </div>
       </DialogContent>
     </Dialog>

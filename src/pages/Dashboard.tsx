@@ -38,7 +38,6 @@ import {
   mockExecutiveSummary,
   mockOrders,
   mockWebProjects,
-  mockCommissions,
   mockCashFlowProjections,
   mockTopCustomers,
 } from '@/data/mockData';
@@ -130,6 +129,7 @@ export default function Dashboard() {
     allTimeOutstandingOrders,
     webProjects,
     labelOrders,
+    agentPayments,
     customers,
     agents,
     accountManagers,
@@ -239,7 +239,7 @@ export default function Dashboard() {
     const outstandingPayments = (summary?.allTimeOutstandingPayments ?? 
       filteredOrders.reduce((sum, order) => sum + (order.remainingDue || 0), 0)) - onHoldTotal;
     
-    const commissionsDue = displayOrders.reduce((sum, order) => sum + (order.commissionDue || 0), 0);
+    const commissionsDue = agentPayments.reduce((sum, p) => sum + (p.commissionDue || 0), 0);
     
     const ACTIVE_STATUSES = ['Technical Discovery', 'In Technical Discovery', 'In Design', 'In Website Development', 'In Final QA Testing', 'Continuous Development', 'Customer Handover'];
     const activeProjects = displayWebProjects.filter(p => ACTIVE_STATUSES.includes(p.status)).length;
@@ -263,7 +263,7 @@ export default function Dashboard() {
       totalActiveProjects: activeProjects,
       orderHealthBreakdown,
     };
-  }, [displayWebProjects, displayOrders, filteredActiveOrders, filteredOrderHealthOrders, activeCustomers, summary, allTimeOutstandingOrders, filteredOrders]);
+  }, [displayWebProjects, displayOrders, filteredActiveOrders, filteredOrderHealthOrders, activeCustomers, summary, allTimeOutstandingOrders, filteredOrders, agentPayments]);
 
   const ordersReceivedThisMonth = useMemo(() => {
     const now = new Date();
@@ -376,44 +376,7 @@ export default function Dashboard() {
       .slice(0, 12);
   }, [displayOrderHealthOrders]);
 
-  const realCommissions = useMemo(() => {
-    const agentMap = new Map<string, { 
-      orders: { customer: string; orderTotal: number; commissionDue: number; commissionPercent: number; orderId: string }[];
-      totalCommission: number;
-    }>();
-    
-    filteredOrders.forEach(order => {
-      const agent = order.agent || 'Unassigned';
-      if (!agentMap.has(agent)) {
-        agentMap.set(agent, { orders: [], totalCommission: 0 });
-      }
-      const data = agentMap.get(agent)!;
-      data.orders.push({
-        customer: order.customer,
-        orderTotal: order.orderTotal || 0,
-        commissionDue: order.commissionDue || 0,
-        commissionPercent: order.commissionPercent || 0,
-        orderId: order.id,
-      });
-      data.totalCommission += order.commissionDue || 0;
-    });
 
-    return Array.from(agentMap.entries())
-      .filter(([agent]) => agent !== 'Unassigned')
-      .flatMap(([agent, data]) => 
-        data.orders
-          .filter(order => order.commissionDue > 0)
-          .map((order) => ({
-            id: order.orderId,
-            agent,
-            customer: order.customer,
-            orderTotal: order.orderTotal,
-            commissionPercent: order.commissionPercent,
-            commissionDue: order.commissionDue,
-            commissionPaid: 0,
-          }))
-      );
-  }, [filteredOrders]);
 
   const realTopCustomers = useMemo(() => {
     const customerMap = new Map<string, { totalOrders: number; orderCount: number }>();
@@ -715,7 +678,7 @@ export default function Dashboard() {
 
         <section id="section-commissions" className="mb-8 scroll-mt-8">
           <h2 className="text-lg font-semibold mb-4 text-foreground">Agent Commissions</h2>
-          <CommissionsTable commissions={realCommissions} />
+          <CommissionsTable agentPayments={agentPayments} />
         </section>
       </main>
       
@@ -756,7 +719,7 @@ export default function Dashboard() {
       <CommissionsDetailsDialog
         open={commissionsDialogOpen}
         onOpenChange={setCommissionsDialogOpen}
-        orders={displayOrders}
+        agentPayments={agentPayments}
       />
       
       <ActiveProjectsDialog
