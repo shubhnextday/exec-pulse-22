@@ -89,7 +89,15 @@ function getDateFromRange(range: string): string {
 
 export default function Dashboard() {
   const [activeSection, setActiveSection] = useState('overview');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    const saved = localStorage.getItem('dashboard-sidebar-collapsed');
+    return saved === 'true';
+  });
+
+  const handleSidebarCollapse = (collapsed: boolean) => {
+    setSidebarCollapsed(collapsed);
+    localStorage.setItem('dashboard-sidebar-collapsed', String(collapsed));
+  };
   
   const handleSectionChange = (section: string) => {
     setActiveSection(section);
@@ -469,6 +477,8 @@ export default function Dashboard() {
       <Sidebar 
         activeSection={activeSection} 
         onSectionChange={handleSectionChange}
+        collapsed={sidebarCollapsed}
+        onCollapsedChange={handleSidebarCollapse}
       />
       
       <main className={cn(
