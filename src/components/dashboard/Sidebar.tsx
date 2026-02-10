@@ -8,11 +8,12 @@ import {
   AlertTriangle,
   ChevronLeft
 } from 'lucide-react';
-import { useState } from 'react';
 
 interface SidebarProps {
   activeSection: string;
   onSectionChange: (section: string) => void;
+  collapsed: boolean;
+  onCollapsedChange: (collapsed: boolean) => void;
 }
 
 const navItems = [
@@ -24,9 +25,7 @@ const navItems = [
   { id: 'commissions', label: 'Agent Commissions', icon: Users },
 ];
 
-export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
-  const [collapsed, setCollapsed] = useState(false);
-
+export function Sidebar({ activeSection, onSectionChange, collapsed, onCollapsedChange }: SidebarProps) {
   return (
     <aside 
       className={cn(
@@ -49,7 +48,7 @@ export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
             </div>
           )}
           <button
-            onClick={() => setCollapsed(!collapsed)}
+            onClick={() => onCollapsedChange(!collapsed)}
             className={cn(
               "p-1.5 rounded-lg hover:bg-sidebar-accent transition-colors",
               collapsed && "mx-auto"
