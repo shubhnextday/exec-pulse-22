@@ -506,7 +506,7 @@ export default function Dashboard() {
         )}
 
         {isLoading && !summary && (
-          <div className="fixed inset-0 bg-background/90 backdrop-blur-sm flex items-center justify-center z-50 ml-64">
+          <div className={cn("fixed inset-0 bg-background/90 backdrop-blur-sm flex items-center justify-center z-50 transition-all duration-300", sidebarCollapsed ? "ml-16" : "ml-64")}>
             <div className="text-center">
               <div className="relative">
                 <Loader2 className="h-14 w-14 animate-spin text-primary mx-auto mb-4" />
