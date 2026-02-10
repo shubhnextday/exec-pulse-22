@@ -20,6 +20,7 @@ import { ExpectedCashFlowDialog } from '@/components/dashboard/ExpectedCashFlowD
 import { OrderHealthDialog } from '@/components/dashboard/OrderHealthDialog';
 import { OnHoldOrdersDialog } from '@/components/dashboard/OnHoldOrdersDialog';
 import { cn } from '@/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Users,
   Package,
@@ -665,10 +666,18 @@ export default function Dashboard() {
 
         <section id="section-attention" className="mb-8 scroll-mt-8">
           <h2 className="text-lg font-semibold mb-4 text-foreground">Needs Attention</h2>
-          <div className="space-y-6">
-            <NeedsAttentionTable orders={filteredOrderHealthOrders} />
-            <LabelsNeedingAttentionTable labelOrders={labelOrders} />
-          </div>
+          <Tabs defaultValue="orders" className="w-full">
+            <TabsList className="mb-4">
+              <TabsTrigger value="orders">Orders</TabsTrigger>
+              <TabsTrigger value="labels">Labels</TabsTrigger>
+            </TabsList>
+            <TabsContent value="orders">
+              <NeedsAttentionTable orders={filteredOrderHealthOrders} />
+            </TabsContent>
+            <TabsContent value="labels">
+              <LabelsNeedingAttentionTable labelOrders={labelOrders} />
+            </TabsContent>
+          </Tabs>
         </section>
 
         <section id="section-web-dev" className="mb-8 scroll-mt-8">
