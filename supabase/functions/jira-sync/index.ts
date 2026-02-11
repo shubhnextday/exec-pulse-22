@@ -41,7 +41,7 @@ const FIELD_MAPPINGS = {
   projectHealth: 'customfield_11903',
   progressPercent: 'customfield_11870', // Progress percentage field
   // Design Order fields
-  designDueDate: 'customfield_10536', // Design Due Date field (reuses EST Ship Date mapping)
+  designDueDate: 'customfield_10369', // Design Due Date field (separate from EST Ship Date)
   // Agent Management fields
   orderCommissionTotal: 'customfield_11575', // Order Commission Total (number)
   agentName: 'customfield_11791', // Agent Name (text) - used in Agent Management project
@@ -493,7 +493,7 @@ serve(async (req) => {
       const labelOrders = designOrderIssues
         .filter((issue: any) => {
           const status = (issue.fields?.status?.name || '').toLowerCase().trim();
-          return !EXCLUDED_LABEL_STATUSES.some(s => status === s || status.includes(s));
+          return !EXCLUDED_LABEL_STATUSES.some(s => status === s);
         })
         .map((issue: any) => {
           const fields = issue.fields || {};
@@ -511,14 +511,14 @@ serve(async (req) => {
             const daysUntilDue = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
             
             // OFF TRACK: Design Due Date is in the past AND not in safe statuses
-            const isOffTrackSafe = OFF_TRACK_SAFE_STATUSES.some(s => statusLower.includes(s));
+            const isOffTrackSafe = OFF_TRACK_SAFE_STATUSES.some(s => statusLower === s);
             if (daysUntilDue < 0 && !isOffTrackSafe) {
               labelHealth = 'off-track';
               daysBehindSchedule = Math.abs(daysUntilDue);
             }
             // AT RISK: 2-0 days before Design Due Date AND not in safe statuses
             else if (daysUntilDue <= 2 && daysUntilDue >= 0) {
-              const isAtRiskSafe = AT_RISK_SAFE_STATUSES.some(s => statusLower.includes(s));
+              const isAtRiskSafe = AT_RISK_SAFE_STATUSES.some(s => statusLower === s);
               if (!isAtRiskSafe) {
                 labelHealth = 'at-risk';
                 daysBehindSchedule = 0;
