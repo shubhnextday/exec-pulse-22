@@ -62,7 +62,7 @@ export function LabelsNeedingAttentionTable({ labelOrders }: LabelsNeedingAttent
           <div>
             <h3 className="text-base font-semibold text-foreground">Labels Needing Attention</h3>
             <p className="text-xs text-muted-foreground">
-              {sortedOrders.length} design orders requiring review
+              {sortedOrders.length} labels requiring review
             </p>
           </div>
         </div>
@@ -83,7 +83,7 @@ export function LabelsNeedingAttentionTable({ labelOrders }: LabelsNeedingAttent
             <Tag className="h-6 w-6 text-success" />
           </div>
           <p className="text-sm font-medium text-foreground">All Labels On Track</p>
-          <p className="text-xs text-muted-foreground">No design orders need attention</p>
+          <p className="text-xs text-muted-foreground">No labels need attention</p>
         </div>
       ) : (
         <ScrollArea className="h-[400px]">
