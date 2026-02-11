@@ -512,7 +512,7 @@ export default function Dashboard() {
                 <Loader2 className="h-14 w-14 animate-spin text-primary mx-auto mb-4" />
                 <div className="absolute inset-0 h-14 w-14 mx-auto rounded-full bg-primary/20 blur-xl" />
               </div>
-              <p className="text-lg font-semibold text-foreground">Syncing with JIRA...</p>
+              <p className="text-lg font-semibold text-foreground">Syncing Live Data...</p>
               <p className="text-sm text-muted-foreground mt-1">Fetching orders and projects</p>
             </div>
           </div>
