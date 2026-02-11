@@ -99,7 +99,7 @@ export function useJiraData() {
 
       toast({
         title: "Data synced",
-        description: `Successfully synced ${data.data.orders?.length || 0} orders from JIRA`,
+        description: `Successfully synced ${data.data.orders?.length || 0} orders`,
       });
 
     } catch (err) {
