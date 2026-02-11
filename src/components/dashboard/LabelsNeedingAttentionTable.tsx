@@ -151,14 +151,17 @@ export function LabelsNeedingAttentionTable({ labelOrders }: LabelsNeedingAttent
                       Design Due Date
                     </SortableHeader>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 min-w-[130px]">
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 min-w-[180px]">
                     <SortableHeader
                       sortKey="daysBehindSchedule"
                       currentSortKey={sortConfig.key as string}
                       direction={sortConfig.direction}
                       onSort={() => handleSort('daysBehindSchedule' as keyof LabelOrder)}
                     >
-                      Days Behind
+                      <span className="flex flex-col leading-tight">
+                        <span>Days Behind Schedule</span>
+                        <span className="text-[10px] normal-case font-normal opacity-70">(Days behind Design Due Date)</span>
+                      </span>
                     </SortableHeader>
                   </th>
                 </tr>
