@@ -372,17 +372,59 @@ export default function Dashboard() {
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
     
-    return Array.from(projectionMap.entries())
-      .filter(([date]) => date >= todayStr)
-      .map(([date, data]) => ({
-        date,
-        expectedAmount: data.amount,
-        customer: data.customers.size === 1 ? Array.from(data.customers)[0] : `${data.customers.size} customers`,
-        orderCount: data.orderCount,
-        orders: data.orders,
-      }))
-      .sort((a, b) => a.date.localeCompare(b.date))
-      .slice(0, 12);
+    // Collect overdue orders (past ship date but still unpaid) into today's bucket
+    const overdueOrders: { id: string; customer: string; productName: string; remainingDue: number; status: string }[] = [];
+    let overdueAmount = 0;
+    const overdueCustomers = new Set<string>();
+    let overdueCount = 0;
+
+    const futureEntries: typeof Array.prototype = [];
+
+    Array.from(projectionMap.entries()).forEach(([date, data]) => {
+      if (date < todayStr) {
+        // Past-due: roll into overdue bucket
+        overdueAmount += data.amount;
+        data.customers.forEach(c => overdueCustomers.add(c));
+        overdueCount += data.orderCount;
+        overdueOrders.push(...data.orders);
+      } else {
+        futureEntries.push({
+          date,
+          expectedAmount: data.amount,
+          customer: data.customers.size === 1 ? Array.from(data.customers)[0] : `${data.customers.size} customers`,
+          orderCount: data.orderCount,
+          orders: data.orders,
+        });
+      }
+    });
+
+    // If there are overdue orders, add them as the first entry pinned to today
+    const result: any[] = [];
+    if (overdueAmount > 0) {
+      result.push({
+        date: todayStr,
+        expectedAmount: overdueAmount,
+        customer: overdueCustomers.size === 1 ? Array.from(overdueCustomers)[0] : `${overdueCustomers.size} customers`,
+        orderCount: overdueCount,
+        orders: overdueOrders,
+        isOverdue: true,
+      });
+    }
+
+    // Merge: if today already has future orders, combine with overdue
+    futureEntries.sort((a: any, b: any) => a.date.localeCompare(b.date));
+    futureEntries.forEach((entry: any) => {
+      if (entry.date === todayStr && result.length > 0 && result[0].date === todayStr) {
+        // Merge today's future orders with overdue bucket
+        result[0].expectedAmount += entry.expectedAmount;
+        result[0].orderCount += entry.orderCount;
+        result[0].orders.push(...entry.orders);
+      } else {
+        result.push(entry);
+      }
+    });
+
+    return result.slice(0, 12);
   }, [displayOrderHealthOrders]);
 
 
