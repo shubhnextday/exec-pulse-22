@@ -27,7 +27,7 @@ interface ExpectedCashFlowDialogProps {
   customers: string[];
 }
 
-type MonthFilter = 'all' | 'this-month' | 'next-month' | 'month-after' | 'future';
+type MonthFilter = 'all' | 'overdue' | 'this-month' | 'next-month' | 'month-after' | 'future';
 
 // Helper function to get status number from order
 // JIRA statuses can be either "12 - Finished Goods Testing" or sometimes just the label.
@@ -116,6 +116,7 @@ export function ExpectedCashFlowDialog({
   // Apply month filter
   const monthFilteredOrders = useMemo(() => {
     const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
     const thisMonthStart = startOfMonth(now);
     const thisMonthEnd = endOfMonth(now);
     const nextMonthStart = startOfMonth(addMonths(now, 1));
@@ -127,13 +128,16 @@ export function ExpectedCashFlowDialog({
       const shipDate = order.estShipDate || order.dueDate;
       if (!shipDate) return false;
       
+      const shipDateStr = shipDate.substring(0, 10);
       const shipDateParsed = parseISO(shipDate);
       
       switch (monthFilter) {
         case 'all':
           return true;
+        case 'overdue':
+          return shipDateStr < todayStr;
         case 'this-month':
-          return isWithinInterval(shipDateParsed, { start: thisMonthStart, end: thisMonthEnd });
+          return shipDateStr >= todayStr && isWithinInterval(shipDateParsed, { start: thisMonthStart, end: thisMonthEnd });
         case 'next-month':
           return isWithinInterval(shipDateParsed, { start: nextMonthStart, end: nextMonthEnd });
         case 'month-after':
@@ -201,8 +205,9 @@ export function ExpectedCashFlowDialog({
 
         {/* Month Filter Tabs */}
         <Tabs value={monthFilter} onValueChange={(v) => setMonthFilter(v as MonthFilter)} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="overdue" className="text-destructive data-[state=active]:text-destructive">Overdue</TabsTrigger>
             <TabsTrigger value="this-month">{thisMonthLabel}</TabsTrigger>
             <TabsTrigger value="next-month">{nextMonthLabel}</TabsTrigger>
             <TabsTrigger value="month-after">{monthAfterLabel}</TabsTrigger>
