@@ -23,9 +23,11 @@ const CustomDot = (props: any) => {
 };
 
 export function CashFlowChart({ data }: CashFlowChartProps) {
+  const overdueTotal = data.filter((d: any) => d.isOverdue).reduce((s, d) => s + d.expectedAmount, 0);
+  
   const chartData = data.map(item => ({
     ...item,
-    formattedDate: format(parseISO(item.date), 'MMM d'),
+    formattedDate: (item as any).isOverdue ? '⚠ Overdue' : format(parseISO(item.date), 'MMM d'),
   }));
 
   const totalExpected = data.reduce((sum, item) => sum + item.expectedAmount, 0);
@@ -47,6 +49,11 @@ export function CashFlowChart({ data }: CashFlowChartProps) {
           <p className="text-2xl font-bold text-primary mono">
             ${totalExpected.toLocaleString()}
           </p>
+          {overdueTotal > 0 && (
+            <p className="text-xs text-destructive font-medium">
+              ${overdueTotal.toLocaleString()} overdue
+            </p>
+          )}
         </div>
       </div>
       <div className="h-[240px] px-5 pb-5 pt-4">

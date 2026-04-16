@@ -27,7 +27,7 @@ interface ExpectedCashFlowDialogProps {
   customers: string[];
 }
 
-type MonthFilter = 'all' | 'this-month' | 'next-month' | 'month-after' | 'future';
+type MonthFilter = 'all' | 'overdue' | 'this-month' | 'next-month' | 'month-after' | 'future';
 
 // Helper function to get status number from order
 // JIRA statuses can be either "12 - Finished Goods Testing" or sometimes just the label.
@@ -116,6 +116,7 @@ export function ExpectedCashFlowDialog({
   // Apply month filter
   const monthFilteredOrders = useMemo(() => {
     const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
     const thisMonthStart = startOfMonth(now);
     const thisMonthEnd = endOfMonth(now);
     const nextMonthStart = startOfMonth(addMonths(now, 1));
@@ -127,13 +128,16 @@ export function ExpectedCashFlowDialog({
       const shipDate = order.estShipDate || order.dueDate;
       if (!shipDate) return false;
       
+      const shipDateStr = shipDate.substring(0, 10);
       const shipDateParsed = parseISO(shipDate);
       
       switch (monthFilter) {
         case 'all':
           return true;
+        case 'overdue':
+          return shipDateStr < todayStr;
         case 'this-month':
-          return isWithinInterval(shipDateParsed, { start: thisMonthStart, end: thisMonthEnd });
+          return shipDateStr >= todayStr && isWithinInterval(shipDateParsed, { start: thisMonthStart, end: thisMonthEnd });
         case 'next-month':
           return isWithinInterval(shipDateParsed, { start: nextMonthStart, end: nextMonthEnd });
         case 'month-after':
@@ -201,8 +205,9 @@ export function ExpectedCashFlowDialog({
 
         {/* Month Filter Tabs */}
         <Tabs value={monthFilter} onValueChange={(v) => setMonthFilter(v as MonthFilter)} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="overdue" className="text-destructive data-[state=active]:text-destructive">Overdue</TabsTrigger>
             <TabsTrigger value="this-month">{thisMonthLabel}</TabsTrigger>
             <TabsTrigger value="next-month">{nextMonthLabel}</TabsTrigger>
             <TabsTrigger value="month-after">{monthAfterLabel}</TabsTrigger>
@@ -334,9 +339,10 @@ export function ExpectedCashFlowDialog({
                 const commissionPercent = order.commissionPercent != null 
                   ? order.commissionPercent.toFixed(1)
                   : '0.0';
+                const isOverdue = shipDate ? shipDate.substring(0, 10) < new Date().toISOString().split('T')[0] : false;
                 
                 return (
-                  <TableRow key={order.id}>
+                  <TableRow key={order.id} className={isOverdue ? 'bg-destructive/5' : ''}>
                     <TableCell className="font-mono text-sm">{order.salesOrderNumber || order.id}</TableCell>
                     <TableCell className="max-w-[200px] truncate" title={order.productName}>
                       {order.productName}
@@ -345,8 +351,9 @@ export function ExpectedCashFlowDialog({
                     <TableCell className="text-sm">
                       {order.startDate ? format(parseISO(order.startDate), 'MMM d, yyyy') : '-'}
                     </TableCell>
-                    <TableCell className="text-sm font-medium">
+                    <TableCell className={`text-sm font-medium ${isOverdue ? 'text-destructive' : ''}`}>
                       {shipDate ? format(parseISO(shipDate), 'MMM d, yyyy') : '-'}
+                      {isOverdue && <span className="ml-1 text-xs">(overdue)</span>}
                     </TableCell>
                     <TableCell className="text-right font-medium">
                       ${(order.orderTotal || 0).toLocaleString()}
