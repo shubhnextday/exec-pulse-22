@@ -339,9 +339,10 @@ export function ExpectedCashFlowDialog({
                 const commissionPercent = order.commissionPercent != null 
                   ? order.commissionPercent.toFixed(1)
                   : '0.0';
+                const isOverdue = shipDate ? shipDate.substring(0, 10) < new Date().toISOString().split('T')[0] : false;
                 
                 return (
-                  <TableRow key={order.id}>
+                  <TableRow key={order.id} className={isOverdue ? 'bg-destructive/5' : ''}>
                     <TableCell className="font-mono text-sm">{order.salesOrderNumber || order.id}</TableCell>
                     <TableCell className="max-w-[200px] truncate" title={order.productName}>
                       {order.productName}
@@ -350,8 +351,9 @@ export function ExpectedCashFlowDialog({
                     <TableCell className="text-sm">
                       {order.startDate ? format(parseISO(order.startDate), 'MMM d, yyyy') : '-'}
                     </TableCell>
-                    <TableCell className="text-sm font-medium">
+                    <TableCell className={`text-sm font-medium ${isOverdue ? 'text-destructive' : ''}`}>
                       {shipDate ? format(parseISO(shipDate), 'MMM d, yyyy') : '-'}
+                      {isOverdue && <span className="ml-1 text-xs">(overdue)</span>}
                     </TableCell>
                     <TableCell className="text-right font-medium">
                       ${(order.orderTotal || 0).toLocaleString()}
