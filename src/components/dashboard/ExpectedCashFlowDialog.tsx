@@ -108,8 +108,15 @@ export function ExpectedCashFlowDialog({
       
       const shipDate = order.estShipDate || order.dueDate;
       if (!shipDate) return false;
-      // Include orders with remaining due > 0 OR orderTotal > 0 (to show expected revenue)
-      return (order.remainingDue > 0 || order.orderTotal > 0);
+
+      // Match the chart's logic exactly: include orders with effective remaining due > 0
+      // (status 0-11 use remainingDue; status 12 uses finalPaymentDue/finalPayment)
+      const effectiveDue = isStatus0to11(order)
+        ? (order.remainingDue || 0)
+        : isStatus12(order)
+          ? getFinalPaymentValue(order)
+          : 0;
+      return effectiveDue > 0;
     });
   }, [orders]);
 
