@@ -116,7 +116,13 @@ export function ExpectedCashFlowDialog({
   // Apply month filter
   const monthFilteredOrders = useMemo(() => {
     const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
+    // Use Chicago (Central) time so orders due today aren't flagged overdue
+    const todayStr = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Chicago',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(now);
     const thisMonthStart = startOfMonth(now);
     const thisMonthEnd = endOfMonth(now);
     const nextMonthStart = startOfMonth(addMonths(now, 1));
@@ -339,7 +345,13 @@ export function ExpectedCashFlowDialog({
                 const commissionPercent = order.commissionPercent != null 
                   ? order.commissionPercent.toFixed(1)
                   : '0.0';
-                const isOverdue = shipDate ? shipDate.substring(0, 10) < new Date().toISOString().split('T')[0] : false;
+                const chicagoToday = new Intl.DateTimeFormat('en-CA', {
+                  timeZone: 'America/Chicago',
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                }).format(new Date());
+                const isOverdue = shipDate ? shipDate.substring(0, 10) < chicagoToday : false;
                 
                 return (
                   <TableRow key={order.id} className={isOverdue ? 'bg-destructive/5' : ''}>
