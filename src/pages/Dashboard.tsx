@@ -369,8 +369,13 @@ export default function Dashboard() {
       }
     });
 
-    const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
+    // Use Chicago (Central) time to determine "today" so orders due today aren't flagged overdue
+    const todayStr = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Chicago',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
     
     // Collect overdue orders (past ship date but still unpaid) into today's bucket
     const overdueOrders: { id: string; customer: string; productName: string; remainingDue: number; status: string }[] = [];
