@@ -416,17 +416,9 @@ export default function Dashboard() {
       });
     }
 
-    // Merge: if today already has future orders, combine with overdue
     futureEntries.sort((a: any, b: any) => a.date.localeCompare(b.date));
     futureEntries.forEach((entry: any) => {
-      if (entry.date === todayStr && result.length > 0 && result[0].date === todayStr) {
-        // Merge today's future orders with overdue bucket
-        result[0].expectedAmount += entry.expectedAmount;
-        result[0].orderCount += entry.orderCount;
-        result[0].orders.push(...entry.orders);
-      } else {
-        result.push(entry);
-      }
+      result.push(entry);
     });
 
     return result.slice(0, 12);
