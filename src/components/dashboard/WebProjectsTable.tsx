@@ -532,7 +532,7 @@ export function WebProjectsTable({ projects }: WebProjectsTableProps) {
             </>
           )}
         </DialogContent>
-      </Rectangular_Dialog_Placeholder>
+      </Dialog>
     </div>
   );
 }
