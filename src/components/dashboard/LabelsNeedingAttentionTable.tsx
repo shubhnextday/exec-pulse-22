@@ -1,15 +1,11 @@
 import { LabelOrder } from '@/types/dashboard';
 import { AlertTriangle, Tag } from 'lucide-react';
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { TableControlsBar, SortableHeader } from '@/components/ui/table-controls';
 import { useTableFeatures } from '@/hooks/useTableFeatures';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface LabelsNeedingAttentionTableProps {
   labelOrders: LabelOrder[];
