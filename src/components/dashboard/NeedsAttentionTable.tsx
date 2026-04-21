@@ -1,6 +1,6 @@
 import { Order, OrderHealth } from '@/types/dashboard';
-import { AlertTriangle, ChevronDown, ChevronRight, GripVertical } from 'lucide-react';
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { AlertTriangle, GripVertical } from 'lucide-react';
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { TableControlsBar, SortableHeader, TableFilter } from '@/components/ui/table-controls';
@@ -22,12 +22,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface NeedsAttentionTableProps {
   orders: Order[];
@@ -195,58 +190,28 @@ function OrderRowTooltipContent({ order }: { order: Order }) {
   );
 }
 
-function OrderRow({ order, columns, expanded, onToggle }: { 
+function OrderRow({ order, columns, onClick }: { 
   order: Order; 
   columns: ColumnDef[];
-  expanded: boolean;
-  onToggle: () => void;
+  onClick: () => void;
 }) {
   return (
-    <>
-      <TooltipProvider delayDuration={500}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <tr 
-              className="cursor-pointer hover:bg-primary/5 transition-colors"
-              onClick={onToggle}
-            >
-              <td className="px-4 py-3.5 border-t border-border/30 sticky left-0 bg-card z-10">
-                <div className="flex items-center gap-2">
-                  {expanded ? (
-                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </div>
-              </td>
-              {columns.map((col) => (
-                <td key={col.id} className={cn("px-4 py-3.5 border-t border-border/30", col.width)}>
-                  {col.accessor(order)}
-                </td>
-              ))}
-            </tr>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" align="start" className="p-0">
-            <OrderRowTooltipContent order={order} />
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-      {expanded && order.orderNotes && (
-        <tr>
-          <td colSpan={columns.length + 1} className="px-4 py-3.5 bg-muted/20 border-t border-border/30">
-            <div className="ml-6 p-3 rounded-xl bg-card border border-border/50">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Order Notes:</p>
-              <p className="text-sm text-foreground">{order.orderNotes}</p>
-            </div>
-          </td>
-        </tr>
-      )}
-    </>
+    <tr 
+      className="cursor-pointer hover:bg-primary/5 transition-colors"
+      onClick={onClick}
+    >
+      <td className="px-4 py-3.5 border-t border-border/30 sticky left-0 bg-card z-10" />
+      {columns.map((col) => (
+        <td key={col.id} className={cn("px-4 py-3.5 border-t border-border/30", col.width)}>
+          {col.accessor(order)}
+        </td>
+      ))}
+    </tr>
   );
 }
 
 export function NeedsAttentionTable({ orders }: NeedsAttentionTableProps) {
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [columnOrder, setColumnOrder] = useState<string[]>(ALL_COLUMNS.map(c => c.id));
 
   const attentionOrders = orders.filter(
@@ -297,15 +262,6 @@ export function NeedsAttentionTable({ orders }: NeedsAttentionTableProps) {
       });
     }
   };
-
-  const toggleRow = useCallback((id: string) => {
-    setExpandedRows(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
 
   const healthOptions = [
     { label: 'Off Track', value: 'off-track' },
@@ -381,8 +337,7 @@ export function NeedsAttentionTable({ orders }: NeedsAttentionTableProps) {
                       key={order.id}
                       order={order}
                       columns={orderedColumns}
-                      expanded={expandedRows.has(order.id)}
-                      onToggle={() => toggleRow(order.id)}
+                      onClick={() => setSelectedOrder(order)}
                     />
                   ))}
                 </tbody>
@@ -392,6 +347,15 @@ export function NeedsAttentionTable({ orders }: NeedsAttentionTableProps) {
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
       )}
+
+      <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{selectedOrder?.customer}</DialogTitle>
+          </DialogHeader>
+          {selectedOrder && <OrderRowTooltipContent order={selectedOrder} />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
