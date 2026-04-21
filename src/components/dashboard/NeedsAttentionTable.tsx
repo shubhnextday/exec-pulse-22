@@ -211,7 +211,7 @@ function OrderRow({ order, columns, onClick }: {
 }
 
 export function NeedsAttentionTable({ orders }: NeedsAttentionTableProps) {
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [columnOrder, setColumnOrder] = useState<string[]>(ALL_COLUMNS.map(c => c.id));
 
   const attentionOrders = orders.filter(
