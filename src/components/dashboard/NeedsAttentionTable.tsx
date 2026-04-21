@@ -159,9 +159,8 @@ function SortableColumnHeader({ column, children }: { column: ColumnDef; childre
 
 function OrderRowTooltipContent({ order }: { order: Order }) {
   return (
-    <div className="p-3 max-w-md space-y-2 text-sm bg-card rounded-lg">
-      <div className="font-semibold text-base border-b border-border pb-2 text-foreground">{order.customer}</div>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+    <div className="space-y-3 text-sm">
+      <div className="grid grid-cols-[140px_1fr] gap-y-2.5">
         <span className="text-muted-foreground">Product:</span>
         <span className="text-foreground">{order.productName}</span>
         <span className="text-muted-foreground">Sales Order:</span>
@@ -182,7 +181,7 @@ function OrderRowTooltipContent({ order }: { order: Order }) {
         <span className="mono text-foreground">${order.orderTotal.toLocaleString()}</span>
       </div>
       {order.orderNotes && (
-        <div className="border-t border-border pt-2 mt-2">
+        <div className="border-t border-border pt-3">
           <span className="text-muted-foreground text-xs font-semibold uppercase">Notes:</span>
           <p className="mt-1 text-foreground">{order.orderNotes}</p>
         </div>
