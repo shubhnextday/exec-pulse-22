@@ -7,12 +7,7 @@ import { TableControlsBar, SortableHeader, TableFilter } from '@/components/ui/t
 import { useTableFeatures } from '@/hooks/useTableFeatures';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface WebProjectsTableProps {
   projects: WebProject[];
@@ -173,7 +168,8 @@ function ProgressBar({
 
 export function WebProjectsTable({ projects }: WebProjectsTableProps) {
   const [activeTab, setActiveTab] = useState('active');
-  
+  const [selectedProject, setSelectedProject] = useState<WebProject | null>(null);
+
   const {
     filteredData,
     searchQuery,
@@ -325,102 +321,65 @@ export function WebProjectsTable({ projects }: WebProjectsTableProps) {
             </thead>
             <tbody>
               {sortedProjects.map((project) => (
-                <TooltipProvider key={project.id} delayDuration={500}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <tr className="hover:bg-primary/5 transition-colors cursor-pointer">
-                        <td className="px-4 py-3.5 border-t border-border/30">
-                          <ProjectHealthBadge health={project.projectHealth} />
-                        </td>
-                        <td className="px-4 py-3.5 border-t border-border/30">
-                          <div className="truncate">
-                            <p className="font-medium text-foreground truncate">{project.epicName}</p>
-                            <p className="text-[11px] text-muted-foreground mono truncate">{project.epicKey}</p>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3.5 border-t border-border/30">
-                          <StatusBadge status={project.status} isOffTrack={project.isOffTrack} />
-                        </td>
-                        <td className="px-4 py-3.5 border-t border-border/30 text-sm truncate">
-                          {project.startDate || '-'}
-                        </td>
-                        <td className="px-4 py-3.5 border-t border-border/30 text-sm truncate">
-                          {project.dueDate || '-'}
-                        </td>
-                        <td className="px-4 py-3.5 border-t border-border/30">
-                          {STATUS_CATEGORIES.coming_soon.includes(project.status) ? (
-                            <span className="text-muted-foreground text-sm">-</span>
-                          ) : (
-                            <ProgressBar 
-                              percentComplete={project.percentComplete}
-                            />
-                          )}
-                        </td>
-                        <td className="px-4 py-3.5 border-t border-border/30 text-center">
-                          {STATUS_CATEGORIES.coming_soon.includes(project.status) ? (
-                            <span className="text-muted-foreground text-sm">-</span>
-                          ) : (
-                            <span className="mono font-medium text-sm text-primary">
-                              {Number.isInteger(project.percentComplete) 
-                                ? `${project.percentComplete}%` 
-                                : `${project.percentComplete.toFixed(2)}%`}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3.5 border-t border-border/30 mono text-sm text-center">
-                          {project.totalTasks}
-                        </td>
-                        <td className="px-4 py-3.5 border-t border-border/30">
-                          <span className={cn(
-                            "mono text-sm",
-                            (project.totalBugs || 0) > 0 && "text-destructive font-medium"
-                          )}>
-                            {project.totalBugs || 0}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3.5 border-t border-border/30 text-sm truncate">
-                          {project.projectLead || '-'}
-                        </td>
-                        <td className="px-4 py-3.5 border-t border-border/30 text-sm truncate">
-                          {project.devLead || '-'}
-                        </td>
-                      </tr>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" align="start" className="p-0">
-                      <div className="p-3 max-w-md space-y-2 text-sm bg-card rounded-lg">
-                        <div className="font-semibold text-base border-b border-border pb-2 text-foreground">{project.epicName}</div>
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                          <span className="text-muted-foreground">Epic Key:</span>
-                          <span className="mono text-foreground">{project.epicKey}</span>
-                          <span className="text-muted-foreground">Status:</span>
-                          <span className="text-foreground">{project.status}</span>
-                          <span className="text-muted-foreground">Health:</span>
-                          <span className="text-foreground">{project.projectHealth || '-'}</span>
-                          <span className="text-muted-foreground">Start Date:</span>
-                          <span className="text-foreground">{project.startDate || '-'}</span>
-                          <span className="text-muted-foreground">Due Date:</span>
-                          <span className="text-foreground">{project.dueDate || '-'}</span>
-                          <span className="text-muted-foreground">Progress:</span>
-                          <span className="mono text-foreground">
-                            {Number.isInteger(project.percentComplete) 
-                              ? `${project.percentComplete}%` 
-                              : `${project.percentComplete.toFixed(2)}%`}
-                          </span>
-                          <span className="text-muted-foreground">Total Tasks:</span>
-                          <span className="text-foreground">{project.totalTasks}</span>
-                          <span className="text-muted-foreground">Bugs:</span>
-                          <span className={cn("text-foreground", (project.totalBugs || 0) > 0 && "text-destructive font-medium")}>
-                            {project.totalBugs || 0}
-                          </span>
-                          <span className="text-muted-foreground">Project Lead:</span>
-                          <span className="text-foreground">{project.projectLead || '-'}</span>
-                          <span className="text-muted-foreground">Dev Lead:</span>
-                          <span className="text-foreground">{project.devLead || '-'}</span>
-                        </div>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <tr
+                  key={project.id}
+                  className="hover:bg-primary/5 transition-colors cursor-pointer"
+                  onClick={() => setSelectedProject(project)}
+                >
+                  <td className="px-4 py-3.5 border-t border-border/30">
+                    <ProjectHealthBadge health={project.projectHealth} />
+                  </td>
+                  <td className="px-4 py-3.5 border-t border-border/30">
+                    <div className="truncate">
+                      <p className="font-medium text-foreground truncate">{project.epicName}</p>
+                      <p className="text-[11px] text-muted-foreground mono truncate">{project.epicKey}</p>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3.5 border-t border-border/30">
+                    <StatusBadge status={project.status} isOffTrack={project.isOffTrack} />
+                  </td>
+                  <td className="px-4 py-3.5 border-t border-border/30 text-sm truncate">
+                    {project.startDate || '-'}
+                  </td>
+                  <td className="px-4 py-3.5 border-t border-border/30 text-sm truncate">
+                    {project.dueDate || '-'}
+                  </td>
+                  <td className="px-4 py-3.5 border-t border-border/30">
+                    {STATUS_CATEGORIES.coming_soon.includes(project.status) ? (
+                      <span className="text-muted-foreground text-sm">-</span>
+                    ) : (
+                      <ProgressBar percentComplete={project.percentComplete} />
+                    )}
+                  </td>
+                  <td className="px-4 py-3.5 border-t border-border/30 text-center">
+                    {STATUS_CATEGORIES.coming_soon.includes(project.status) ? (
+                      <span className="text-muted-foreground text-sm">-</span>
+                    ) : (
+                      <span className="mono font-medium text-sm text-primary">
+                        {Number.isInteger(project.percentComplete)
+                          ? `${project.percentComplete}%`
+                          : `${project.percentComplete.toFixed(2)}%`}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3.5 border-t border-border/30 mono text-sm text-center">
+                    {project.totalTasks}
+                  </td>
+                  <td className="px-4 py-3.5 border-t border-border/30">
+                    <span className={cn(
+                      "mono text-sm",
+                      (project.totalBugs || 0) > 0 && "text-destructive font-medium"
+                    )}>
+                      {project.totalBugs || 0}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3.5 border-t border-border/30 text-sm truncate">
+                    {project.projectLead || '-'}
+                  </td>
+                  <td className="px-4 py-3.5 border-t border-border/30 text-sm truncate">
+                    {project.devLead || '-'}
+                  </td>
+                </tr>
               ))}
             </tbody>
           </table>
@@ -487,6 +446,48 @@ export function WebProjectsTable({ projects }: WebProjectsTableProps) {
       />
       
       {renderTable()}
+
+      <Dialog open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)}>
+        <DialogContent className="max-w-lg">
+          {selectedProject && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-base font-semibold text-foreground pr-6">
+                  {selectedProject.epicName}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="grid grid-cols-[140px_1fr] gap-x-4 gap-y-2.5 text-sm pt-2">
+                <span className="text-muted-foreground">Epic Key:</span>
+                <span className="mono text-foreground">{selectedProject.epicKey}</span>
+                <span className="text-muted-foreground">Status:</span>
+                <span className="text-foreground">{selectedProject.status}</span>
+                <span className="text-muted-foreground">Health:</span>
+                <span className="text-foreground">{selectedProject.projectHealth || '-'}</span>
+                <span className="text-muted-foreground">Start Date:</span>
+                <span className="text-foreground">{selectedProject.startDate || '-'}</span>
+                <span className="text-muted-foreground">Due Date:</span>
+                <span className="text-foreground">{selectedProject.dueDate || '-'}</span>
+                <span className="text-muted-foreground">Progress:</span>
+                <span className="mono text-foreground">
+                  {Number.isInteger(selectedProject.percentComplete)
+                    ? `${selectedProject.percentComplete}%`
+                    : `${selectedProject.percentComplete.toFixed(2)}%`}
+                </span>
+                <span className="text-muted-foreground">Total Tasks:</span>
+                <span className="text-foreground">{selectedProject.totalTasks}</span>
+                <span className="text-muted-foreground">Bugs:</span>
+                <span className={cn("text-foreground", (selectedProject.totalBugs || 0) > 0 && "text-destructive font-medium")}>
+                  {selectedProject.totalBugs || 0}
+                </span>
+                <span className="text-muted-foreground">Project Lead:</span>
+                <span className="text-foreground">{selectedProject.projectLead || '-'}</span>
+                <span className="text-muted-foreground">Dev Lead:</span>
+                <span className="text-foreground">{selectedProject.devLead || '-'}</span>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
