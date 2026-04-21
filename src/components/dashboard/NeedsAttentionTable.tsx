@@ -349,11 +349,95 @@ export function NeedsAttentionTable({ orders }: NeedsAttentionTableProps) {
       )}
 
       <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{selectedOrder?.customer}</DialogTitle>
-          </DialogHeader>
-          {selectedOrder && <OrderRowTooltipContent order={selectedOrder} />}
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          {selectedOrder && (
+            <>
+              <DialogHeader className="pr-6">
+                <p className="text-[11px] mono text-muted-foreground tracking-wider uppercase">
+                  {selectedOrder.salesOrderNumber}
+                </p>
+                <DialogTitle className="text-lg font-semibold text-foreground leading-tight">
+                  {selectedOrder.customer}
+                </DialogTitle>
+                <p className="text-sm text-muted-foreground pt-0.5">{selectedOrder.productName}</p>
+                <div className="flex flex-wrap items-center gap-2 pt-2">
+                  <HealthBadge health={selectedOrder.orderHealth} />
+                  {selectedOrder.daysBehindSchedule > 0 && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border border-danger/30 bg-danger/10 text-danger">
+                      <AlertTriangle className="h-3 w-3" />
+                      {selectedOrder.daysBehindSchedule} days behind
+                    </span>
+                  )}
+                </div>
+              </DialogHeader>
+
+              {/* Status section */}
+              <div className="rounded-lg border border-border/50 bg-muted/20 p-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Current Status</p>
+                    <p className="text-sm font-medium text-foreground">{selectedOrder.currentStatus}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Expected Status</p>
+                    <p className="text-sm font-medium text-foreground">{stripStatusPrefix(selectedOrder.expectedStatus)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Metrics cards */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-lg border border-border/50 bg-card p-3 text-center">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Quantity</p>
+                  <p className="mono text-lg font-semibold text-foreground">
+                    {selectedOrder.quantityOrdered.toLocaleString()}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-card p-3 text-center">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Order Total</p>
+                  <p className="mono text-lg font-semibold text-foreground">
+                    ${selectedOrder.orderTotal.toLocaleString()}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-card p-3 text-center">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Behind</p>
+                  <p className={cn(
+                    "mono text-lg font-semibold",
+                    selectedOrder.daysBehindSchedule > 0 ? "text-danger" : "text-foreground"
+                  )}>
+                    {selectedOrder.daysBehindSchedule > 0 ? `-${selectedOrder.daysBehindSchedule}` : '0'} days
+                  </p>
+                </div>
+              </div>
+
+              {/* Schedule */}
+              <div className="rounded-lg border border-border/50">
+                <div className="px-4 py-2.5 border-b border-border/50 bg-muted/20">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Schedule</span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-3 p-4 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-0.5">Est. Ship Date</p>
+                    <p className="text-foreground">{selectedOrder.estShipDate || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-0.5">Sales Order #</p>
+                    <p className="mono text-foreground">{selectedOrder.salesOrderNumber}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notes */}
+              {selectedOrder.orderNotes && (
+                <div className="rounded-lg border border-border/50">
+                  <div className="px-4 py-2.5 border-b border-border/50 bg-muted/20">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Order Notes</span>
+                  </div>
+                  <p className="p-4 text-sm text-foreground whitespace-pre-wrap">{selectedOrder.orderNotes}</p>
+                </div>
+              )}
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>
