@@ -26,6 +26,7 @@ function HealthBadge({ health }: { health: 'on-track' | 'at-risk' | 'off-track' 
 }
 
 export function LabelsNeedingAttentionTable({ labelOrders }: LabelsNeedingAttentionTableProps) {
+  const [selectedLabel, setSelectedLabel] = useState<LabelOrder | null>(null);
   const {
     filteredData,
     searchQuery,
