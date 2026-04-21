@@ -168,7 +168,8 @@ function ProgressBar({
 
 export function WebProjectsTable({ projects }: WebProjectsTableProps) {
   const [activeTab, setActiveTab] = useState('active');
-  
+  const [selectedProject, setSelectedProject] = useState<WebProject | null>(null);
+
   const {
     filteredData,
     searchQuery,
