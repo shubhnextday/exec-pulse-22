@@ -7,12 +7,7 @@ import { TableControlsBar, SortableHeader, TableFilter } from '@/components/ui/t
 import { useTableFeatures } from '@/hooks/useTableFeatures';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface WebProjectsTableProps {
   projects: WebProject[];
