@@ -449,46 +449,90 @@ export function WebProjectsTable({ projects }: WebProjectsTableProps) {
       {renderTable()}
 
       <Dialog open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           {selectedProject && (
             <>
-              <DialogHeader>
-                <DialogTitle className="text-base font-semibold text-foreground pr-6">
+              <DialogHeader className="pr-6">
+                <p className="text-[11px] mono text-muted-foreground tracking-wider uppercase">{selectedProject.epicKey}</p>
+                <DialogTitle className="text-lg font-semibold text-foreground leading-tight">
                   {selectedProject.epicName}
                 </DialogTitle>
+                <div className="flex flex-wrap items-center gap-2 pt-2">
+                  <StatusBadge status={selectedProject.status} isOffTrack={selectedProject.isOffTrack} />
+                  {selectedProject.projectHealth && (
+                    <ProjectHealthBadge health={selectedProject.projectHealth} />
+                  )}
+                </div>
               </DialogHeader>
-              <div className="grid grid-cols-[140px_1fr] gap-x-4 gap-y-2.5 text-sm pt-2">
-                <span className="text-muted-foreground">Epic Key:</span>
-                <span className="mono text-foreground">{selectedProject.epicKey}</span>
-                <span className="text-muted-foreground">Status:</span>
-                <span className="text-foreground">{selectedProject.status}</span>
-                <span className="text-muted-foreground">Health:</span>
-                <span className="text-foreground">{selectedProject.projectHealth || '-'}</span>
-                <span className="text-muted-foreground">Start Date:</span>
-                <span className="text-foreground">{selectedProject.startDate || '-'}</span>
-                <span className="text-muted-foreground">Due Date:</span>
-                <span className="text-foreground">{selectedProject.dueDate || '-'}</span>
-                <span className="text-muted-foreground">Progress:</span>
-                <span className="mono text-foreground">
-                  {Number.isInteger(selectedProject.percentComplete)
-                    ? `${selectedProject.percentComplete}%`
-                    : `${selectedProject.percentComplete.toFixed(2)}%`}
-                </span>
-                <span className="text-muted-foreground">Total Tasks:</span>
-                <span className="text-foreground">{selectedProject.totalTasks}</span>
-                <span className="text-muted-foreground">Bugs:</span>
-                <span className={cn("text-foreground", (selectedProject.totalBugs || 0) > 0 && "text-destructive font-medium")}>
-                  {selectedProject.totalBugs || 0}
-                </span>
-                <span className="text-muted-foreground">Project Lead:</span>
-                <span className="text-foreground">{selectedProject.projectLead || '-'}</span>
-                <span className="text-muted-foreground">Dev Lead:</span>
-                <span className="text-foreground">{selectedProject.devLead || '-'}</span>
+
+              {/* Progress section */}
+              {!STATUS_CATEGORIES.coming_soon.includes(selectedProject.status) && (
+                <div className="rounded-lg border border-border/50 bg-muted/20 p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Progress</span>
+                    <span className="mono font-semibold text-sm text-primary">
+                      {Number.isInteger(selectedProject.percentComplete)
+                        ? `${selectedProject.percentComplete}%`
+                        : `${selectedProject.percentComplete.toFixed(2)}%`}
+                    </span>
+                  </div>
+                  <ProgressBar percentComplete={selectedProject.percentComplete} />
+                </div>
+              )}
+
+              {/* Task Breakdown */}
+              <div className="grid grid-cols-4 gap-3">
+                <div className="rounded-lg border border-border/50 bg-card p-3 text-center">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Total</p>
+                  <p className="mono text-lg font-semibold text-foreground">{selectedProject.totalTasks}</p>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-card p-3 text-center">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Done</p>
+                  <p className="mono text-lg font-semibold text-success">{selectedProject.completed}</p>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-card p-3 text-center">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">In Progress</p>
+                  <p className="mono text-lg font-semibold text-primary">{selectedProject.inProgress}</p>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-card p-3 text-center">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Bugs</p>
+                  <p className={cn(
+                    "mono text-lg font-semibold",
+                    (selectedProject.totalBugs || 0) > 0 ? "text-destructive" : "text-foreground"
+                  )}>
+                    {selectedProject.totalBugs || 0}
+                  </p>
+                </div>
+              </div>
+
+              {/* Details grid */}
+              <div className="rounded-lg border border-border/50">
+                <div className="px-4 py-2.5 border-b border-border/50 bg-muted/20">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Schedule & Team</span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-3 p-4 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-0.5">Start Date</p>
+                    <p className="text-foreground">{selectedProject.startDate || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-0.5">Due Date</p>
+                    <p className="text-foreground">{selectedProject.dueDate || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-0.5">Project Lead</p>
+                    <p className="text-foreground">{selectedProject.projectLead || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-0.5">Dev Lead</p>
+                    <p className="text-foreground">{selectedProject.devLead || '—'}</p>
+                  </div>
+                </div>
               </div>
             </>
           )}
         </DialogContent>
-      </Dialog>
+      </Rectangular_Dialog_Placeholder>
     </div>
   );
 }
