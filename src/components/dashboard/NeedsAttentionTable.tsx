@@ -337,8 +337,7 @@ export function NeedsAttentionTable({ orders }: NeedsAttentionTableProps) {
                       key={order.id}
                       order={order}
                       columns={orderedColumns}
-                      expanded={expandedRows.has(order.id)}
-                      onToggle={() => toggleRow(order.id)}
+                      onClick={() => setSelectedOrder(order)}
                     />
                   ))}
                 </tbody>
@@ -348,6 +347,15 @@ export function NeedsAttentionTable({ orders }: NeedsAttentionTableProps) {
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
       )}
+
+      <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{selectedOrder?.customer}</DialogTitle>
+          </DialogHeader>
+          {selectedOrder && <OrderRowTooltipContent order={selectedOrder} />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
