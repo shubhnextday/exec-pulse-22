@@ -263,15 +263,6 @@ export function NeedsAttentionTable({ orders }: NeedsAttentionTableProps) {
     }
   };
 
-  const toggleRow = useCallback((id: string) => {
-    setExpandedRows(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
-
   const healthOptions = [
     { label: 'Off Track', value: 'off-track' },
     { label: 'At Risk', value: 'at-risk' },
