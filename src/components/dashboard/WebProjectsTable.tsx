@@ -446,6 +446,48 @@ export function WebProjectsTable({ projects }: WebProjectsTableProps) {
       />
       
       {renderTable()}
+
+      <Dialog open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)}>
+        <DialogContent className="max-w-lg">
+          {selectedProject && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-base font-semibold text-foreground pr-6">
+                  {selectedProject.epicName}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="grid grid-cols-[140px_1fr] gap-x-4 gap-y-2.5 text-sm pt-2">
+                <span className="text-muted-foreground">Epic Key:</span>
+                <span className="mono text-foreground">{selectedProject.epicKey}</span>
+                <span className="text-muted-foreground">Status:</span>
+                <span className="text-foreground">{selectedProject.status}</span>
+                <span className="text-muted-foreground">Health:</span>
+                <span className="text-foreground">{selectedProject.projectHealth || '-'}</span>
+                <span className="text-muted-foreground">Start Date:</span>
+                <span className="text-foreground">{selectedProject.startDate || '-'}</span>
+                <span className="text-muted-foreground">Due Date:</span>
+                <span className="text-foreground">{selectedProject.dueDate || '-'}</span>
+                <span className="text-muted-foreground">Progress:</span>
+                <span className="mono text-foreground">
+                  {Number.isInteger(selectedProject.percentComplete)
+                    ? `${selectedProject.percentComplete}%`
+                    : `${selectedProject.percentComplete.toFixed(2)}%`}
+                </span>
+                <span className="text-muted-foreground">Total Tasks:</span>
+                <span className="text-foreground">{selectedProject.totalTasks}</span>
+                <span className="text-muted-foreground">Bugs:</span>
+                <span className={cn("text-foreground", (selectedProject.totalBugs || 0) > 0 && "text-destructive font-medium")}>
+                  {selectedProject.totalBugs || 0}
+                </span>
+                <span className="text-muted-foreground">Project Lead:</span>
+                <span className="text-foreground">{selectedProject.projectLead || '-'}</span>
+                <span className="text-muted-foreground">Dev Lead:</span>
+                <span className="text-foreground">{selectedProject.devLead || '-'}</span>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
