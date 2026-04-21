@@ -1,6 +1,6 @@
 import { Order, OrderHealth } from '@/types/dashboard';
-import { AlertTriangle, ChevronDown, ChevronRight, GripVertical } from 'lucide-react';
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { AlertTriangle, GripVertical } from 'lucide-react';
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { TableControlsBar, SortableHeader, TableFilter } from '@/components/ui/table-controls';
@@ -22,12 +22,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface NeedsAttentionTableProps {
   orders: Order[];
