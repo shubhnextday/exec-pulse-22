@@ -165,59 +165,38 @@ export function LabelsNeedingAttentionTable({ labelOrders }: LabelsNeedingAttent
               </thead>
               <tbody>
                 {sortedOrders.map((label) => (
-                  <TooltipProvider key={label.id} delayDuration={500}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <tr className="hover:bg-primary/5 transition-colors cursor-pointer">
-                          <td className="px-4 py-3.5 border-t border-border/30">
-                            <HealthBadge health={label.labelHealth} />
-                          </td>
-                          <td className="px-4 py-3.5 border-t border-border/30">
-                            <span className="font-medium text-foreground">{label.customer}</span>
-                          </td>
-                          <td className="px-4 py-3.5 border-t border-border/30 max-w-[180px]">
-                            <span className="text-muted-foreground truncate block">{label.productName}</span>
-                          </td>
-                          <td className="px-4 py-3.5 border-t border-border/30">
-                            <span className="mono text-sm">{label.salesOrderNumber}</span>
-                          </td>
-                          <td className="px-4 py-3.5 border-t border-border/30">
-                            <span className="text-sm">{label.currentStatus}</span>
-                          </td>
-                          <td className="px-4 py-3.5 border-t border-border/30">
-                            <span className="mono text-sm">{label.designDueDate || '—'}</span>
-                          </td>
-                          <td className="px-4 py-3.5 border-t border-border/30">
-                            <span className={cn(
-                              "mono text-sm font-medium",
-                              label.daysBehindSchedule > 0 && "text-danger"
-                            )}>
-                              {label.daysBehindSchedule > 0 ? `-${label.daysBehindSchedule}` : '0'} days
-                            </span>
-                          </td>
-                        </tr>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" align="start" className="p-0">
-                        <div className="p-3 max-w-md space-y-2 text-sm bg-card rounded-lg">
-                          <div className="font-semibold text-base border-b border-border pb-2 text-foreground">{label.customer}</div>
-                          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                            <span className="text-muted-foreground">Product:</span>
-                            <span className="text-foreground">{label.productName}</span>
-                            <span className="text-muted-foreground">Sales Order:</span>
-                            <span className="mono text-foreground">{label.salesOrderNumber}</span>
-                            <span className="text-muted-foreground">Current Status:</span>
-                            <span className="text-foreground">{label.currentStatus}</span>
-                            <span className="text-muted-foreground">Design Due Date:</span>
-                            <span className="text-foreground">{label.designDueDate || '—'}</span>
-                            <span className="text-muted-foreground">Days Behind:</span>
-                            <span className={cn("text-foreground", label.daysBehindSchedule > 0 && "text-danger font-medium")}>
-                              {label.daysBehindSchedule > 0 ? `-${label.daysBehindSchedule}` : '0'} days
-                            </span>
-                          </div>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <tr
+                    key={label.id}
+                    className="hover:bg-primary/5 transition-colors cursor-pointer"
+                    onClick={() => setSelectedLabel(label)}
+                  >
+                    <td className="px-4 py-3.5 border-t border-border/30">
+                      <HealthBadge health={label.labelHealth} />
+                    </td>
+                    <td className="px-4 py-3.5 border-t border-border/30">
+                      <span className="font-medium text-foreground">{label.customer}</span>
+                    </td>
+                    <td className="px-4 py-3.5 border-t border-border/30 max-w-[180px]">
+                      <span className="text-muted-foreground truncate block">{label.productName}</span>
+                    </td>
+                    <td className="px-4 py-3.5 border-t border-border/30">
+                      <span className="mono text-sm">{label.salesOrderNumber}</span>
+                    </td>
+                    <td className="px-4 py-3.5 border-t border-border/30">
+                      <span className="text-sm">{label.currentStatus}</span>
+                    </td>
+                    <td className="px-4 py-3.5 border-t border-border/30">
+                      <span className="mono text-sm">{label.designDueDate || '—'}</span>
+                    </td>
+                    <td className="px-4 py-3.5 border-t border-border/30">
+                      <span className={cn(
+                        "mono text-sm font-medium",
+                        label.daysBehindSchedule > 0 && "text-danger"
+                      )}>
+                        {label.daysBehindSchedule > 0 ? `-${label.daysBehindSchedule}` : '0'} days
+                      </span>
+                    </td>
+                  </tr>
                 ))}
               </tbody>
             </table>
