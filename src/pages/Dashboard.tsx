@@ -633,7 +633,7 @@ export default function Dashboard() {
             <div onClick={() => setRevenueDialogOpen(true)} className="cursor-pointer">
               <MetricCard
                 title="Collected $$ this month"
-                value={`$${reactiveMetrics.totalMonthlyRevenue > 0 ? (reactiveMetrics.totalMonthlyRevenue / 1000).toFixed(0) + 'k' : '0'}`}
+                value={formatCompactCurrency(reactiveMetrics.totalMonthlyRevenue || 0)}
                 icon={TrendingUp}
                 iconColor="text-primary"
                 delay={200}
@@ -643,7 +643,7 @@ export default function Dashboard() {
             <div onClick={() => setOutstandingDialogOpen(true)} className="cursor-pointer">
               <MetricCard
                 title="Cash Receivables"
-                value={`$${reactiveMetrics.totalOutstandingPayments > 0 ? (reactiveMetrics.totalOutstandingPayments / 1000).toFixed(0) + 'k' : '0'}`}
+                value={formatCompactCurrency(reactiveMetrics.totalOutstandingPayments || 0)}
                 icon={CreditCard}
                 iconColor="text-secondary"
                 delay={250}
@@ -655,7 +655,7 @@ export default function Dashboard() {
             <div onClick={() => setOnHoldDialogOpen(true)} className="cursor-pointer">
               <MetricCard
                 title={`Contract Manufacturing ON HOLD Orders (${onHoldOrders.length})`}
-                value={`$${onHoldTotal > 0 ? (onHoldTotal / 1000).toFixed(0) + 'k' : '0'}`}
+                value={formatCompactCurrency(onHoldTotal || 0)}
                 icon={PauseCircle}
                 iconColor="text-muted-foreground"
                 delay={275}
