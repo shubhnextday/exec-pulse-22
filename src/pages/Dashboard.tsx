@@ -19,7 +19,7 @@ import { ActiveProjectsDialog } from '@/components/dashboard/ActiveProjectsDialo
 import { ExpectedCashFlowDialog } from '@/components/dashboard/ExpectedCashFlowDialog';
 import { OrderHealthDialog } from '@/components/dashboard/OrderHealthDialog';
 import { OnHoldOrdersDialog } from '@/components/dashboard/OnHoldOrdersDialog';
-import { cn } from '@/lib/utils';
+import { cn, formatCompactCurrency } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Users,
